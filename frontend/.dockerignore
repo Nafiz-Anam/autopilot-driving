@@ -1,0 +1,32 @@
+# Dependencies (re-installed during build)
+node_modules
+.pnpm-store
+
+# Next.js build cache
+.next
+out
+
+# Development / local files
+.env
+.env.local
+.env.*.local
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Version control
+.git
+.gitignore
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Test output
+coverage
+.nyc_output
+
+# Documentation
+README.md

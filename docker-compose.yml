@@ -1,0 +1,170 @@
+# AutoPilot Driving School — Unified Production Compose
+#
+# Port map (offset +8 from defaults to avoid collisions with local dev):
+#   Frontend  (Next.js)  : 3008  (default 3000)
+#   Backend   (Express)  : 8008  (default 8000)
+#   PostgreSQL           : 5440  (default 5432)
+#   Redis                : 6387  (default 6379)
+#   Redis Insight        : 8009  (profile: tools)
+#   pgAdmin              : 5058  (profile: tools)
+#
+# Usage:
+#   docker compose up -d                      # core services
+#   docker compose --profile tools up -d      # + pgAdmin + Redis Insight
+#   docker compose --profile migrate up       # run DB migrations once
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: autopilot_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-autopilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-autopilot_secret}
+      POSTGRES_DB:       ${POSTGRES_DB:-autopilot}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5440:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autopilot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ───────────────────────────────────────────────────────────────────
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: autopilot_redis
+    restart: unless-stopped
+    ports:
+      - "6387:6379"
+    volumes:
+      - redis_data:/data
+      - ./backend/docker/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── Backend API (Express + TypeScript) ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runner
+    container_name: autopilot_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV:    production
+      PORT:        8000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-autopilot}:${POSTGRES_PASSWORD:-autopilot_secret}@db:5432/${POSTGRES_DB:-autopilot}
+      REDIS_HOST:  redis
+      REDIS_PORT:  6379
+      CLIENT_URL:  ${NEXT_PUBLIC_APP_URL:-http://localhost:3008}
+      # Backend config uses SMTP_USERNAME/SMTP_PASSWORD — map from common SMTP_USER/SMTP_PASS
+      SMTP_USERNAME: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASS:-}
+      JWT_SECRET: ${JWT_SECRET:-change-me-jwt-secret}
+    ports:
+      - "8008:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── Frontend (Next.js) ──────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: runner
+    container_name: autopilot_frontend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL:    postgresql://${POSTGRES_USER:-autopilot}:${POSTGRES_PASSWORD:-autopilot_secret}@db:5432/${POSTGRES_DB:-autopilot}
+      NEXTAUTH_URL:    ${NEXTAUTH_URL:-http://localhost:3008}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      GOOGLE_CLIENT_ID:     ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      STRIPE_SECRET_KEY:           ${STRIPE_SECRET_KEY:-}
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET:       ${STRIPE_WEBHOOK_SECRET:-}
+      SMTP_HOST:  ${SMTP_HOST:-}
+      SMTP_PORT:  ${SMTP_PORT:-587}
+      SMTP_USER:  ${SMTP_USER:-}
+      SMTP_PASS:  ${SMTP_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-hello@autopilotdriving.co.uk}
+      NEXT_PUBLIC_APP_URL:    ${NEXT_PUBLIC_APP_URL:-http://localhost:3008}
+      NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:8008}
+      NODE_ENV: production
+      PORT:     3008
+      AUTH_TRUST_HOST: "true"
+    ports:
+      - "3008:3008"
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  # ── DB migration + seed (one-shot) ──────────────────────────────────────────
+  migrate:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: autopilot_migrate
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-autopilot}:${POSTGRES_PASSWORD:-autopilot_secret}@db:5432/${POSTGRES_DB:-autopilot}
+    command: sh -c "pnpm dlx prisma db push --schema=prisma/schema.prisma && pnpm db:seed"
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - migrate
+
+  # ── pgAdmin (optional GUI) ───────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: autopilot_pgadmin
+    restart: unless-stopped
+    profiles:
+      - tools
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_EMAIL:-admin@autopilot.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "5058:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Redis Insight (optional GUI) ─────────────────────────────────────────────
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: autopilot_redis_insight
+    restart: unless-stopped
+    profiles:
+      - tools
+    ports:
+      - "8009:5540"
+    volumes:
+      - redis_insight_data:/data
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data:
+    name: autopilot_postgres_data
+  redis_data:
+    name: autopilot_redis_data
+  redis_insight_data:
+    name: autopilot_redis_insight_data
