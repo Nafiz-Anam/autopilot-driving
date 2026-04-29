@@ -63,7 +63,7 @@ export async function GET(request: Request) {
       const dateStr = format(current, "yyyy-MM-dd");
 
       // Check if instructor works this day
-      const pattern = availabilityPatterns.find((p) => p.dayOfWeek === dayOfWeek);
+      const pattern = availabilityPatterns.find((p: { dayOfWeek: number }) => p.dayOfWeek === dayOfWeek);
 
       if (pattern) {
         const availableSlots = ALL_SLOTS.filter((slot) => {

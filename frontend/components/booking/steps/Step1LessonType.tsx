@@ -10,7 +10,7 @@ const LESSON_TYPES: {
   id: LessonType;
   label: string;
   description: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
 }[] = [
   {
     id: "MANUAL",

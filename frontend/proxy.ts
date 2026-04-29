@@ -8,12 +8,24 @@ export default auth((req) => {
 
   const isStudentRoute = nextUrl.pathname.startsWith("/student");
   const isInstructorRoute = nextUrl.pathname.startsWith("/instructor");
-  const isProtected = isStudentRoute || isInstructorRoute;
+  const isAdminRoute = nextUrl.pathname.startsWith("/admin");
+  const isProtected = isStudentRoute || isInstructorRoute || isAdminRoute;
 
   if (isProtected && !session) {
     const loginUrl = new URL("/login", nextUrl.origin);
     loginUrl.searchParams.set("callbackUrl", nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Admin users always go to admin dashboard
+  if (session?.user?.role === "ADMIN" && (isStudentRoute || isInstructorRoute)) {
+    return NextResponse.redirect(new URL("/admin/dashboard", nextUrl.origin));
+  }
+
+  // Non-admins cannot access admin routes
+  if (isAdminRoute && session?.user?.role !== "ADMIN") {
+    const fallback = session?.user?.role === "INSTRUCTOR" ? "/instructor/dashboard" : "/student/dashboard";
+    return NextResponse.redirect(new URL(fallback, nextUrl.origin));
   }
 
   if (isStudentRoute && session?.user?.role === "INSTRUCTOR") {
@@ -28,5 +40,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/student/:path*", "/instructor/:path*"],
+  matcher: ["/student/:path*", "/instructor/:path*", "/admin/:path*"],
 };

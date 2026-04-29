@@ -53,7 +53,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       data: {
-        questions: questions.map((q) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        questions: questions.map((q: any) => ({
           id: q.id,
           category: q.category,
           question: q.question,

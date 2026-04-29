@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 interface Category {
   id: string;
   name: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   progress: number;
   total: number;
   answered: number;
@@ -36,49 +36,27 @@ interface Question {
   explanation: string;
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const categories: Category[] = [
-  {
-    id: "road-signs",
-    name: "Road Signs",
-    icon: MapPin,
-    progress: 70,
-    total: 50,
-    answered: 35,
-  },
-  {
-    id: "rules",
-    name: "Rules of the Road",
-    icon: BookOpen,
-    progress: 65,
-    total: 60,
-    answered: 39,
-  },
-  {
-    id: "safety",
-    name: "Vehicle Safety",
-    icon: Shield,
-    progress: 55,
-    total: 40,
-    answered: 22,
-  },
-  {
-    id: "hazards",
-    name: "Hazard Perception",
-    icon: AlertTriangle,
-    progress: 60,
-    total: 45,
-    answered: 27,
-  },
-  {
-    id: "handling",
-    name: "Vehicle Handling",
-    icon: Car,
-    progress: 58,
-    total: 35,
-    answered: 20,
-  },
+interface ApiProgressEntry {
+  categoryId: string;
+  progress: number;
+  answered: number;
+  total: number;
+}
+
+// ─── Base category definitions (icons + totals) ───────────────────────────────
+const BASE_CATEGORIES: Omit<Category, "progress" | "answered">[] = [
+  { id: "road-signs", name: "Road Signs", icon: MapPin, total: 50 },
+  { id: "rules", name: "Rules of the Road", icon: BookOpen, total: 60 },
+  { id: "safety", name: "Vehicle Safety", icon: Shield, total: 40 },
+  { id: "hazards", name: "Hazard Perception", icon: AlertTriangle, total: 45 },
+  { id: "handling", name: "Vehicle Handling", icon: Car, total: 35 },
 ];
+
+const DEFAULT_CATEGORIES: Category[] = BASE_CATEGORIES.map((c) => ({
+  ...c,
+  progress: 0,
+  answered: 0,
+}));
 
 const mockQuestions: Question[] = [
   {
@@ -146,8 +124,7 @@ const mockQuestions: Question[] = [
   {
     id: "q6",
     category: "handling",
-    question:
-      "What is the two-second rule used for?",
+    question: "What is the two-second rule used for?",
     options: [
       "Checking mirrors before a manoeuvre",
       "Maintaining a safe following distance",
@@ -244,7 +221,15 @@ function ProgressBar({
 }
 
 // ─── Mock Test Component ─────────────────────────────────────────────────────
-function MockTest({ onClose }: { onClose: () => void }) {
+function MockTest({
+  categories,
+  onClose,
+  onComplete,
+}: {
+  categories: Category[];
+  onClose: () => void;
+  onComplete: () => void;
+}) {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(
     Array(mockQuestions.length).fill(null)
@@ -254,11 +239,25 @@ function MockTest({ onClose }: { onClose: () => void }) {
   const q = mockQuestions[current];
   const userAnswer = answers[current];
 
-  function handleSelect(idx: number) {
+  async function handleSelect(idx: number) {
     if (userAnswer !== null) return;
     const next = [...answers];
     next[current] = idx;
     setAnswers(next);
+
+    // POST progress for this answer (use index as dummy questionId)
+    try {
+      await fetch("/api/student/theory/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionId: `mock-${current}`,
+          isCorrect: idx === q.correct,
+        }),
+      });
+    } catch {
+      // silently ignore
+    }
   }
 
   function handleNext() {
@@ -266,13 +265,14 @@ function MockTest({ onClose }: { onClose: () => void }) {
       setCurrent((c) => c + 1);
     } else {
       setShowResult(true);
+      onComplete();
     }
   }
 
   const score = answers.filter(
     (a, i) => a === mockQuestions[i].correct
   ).length;
-  const passed = score / mockQuestions.length >= 0.86; // DVSA pass mark ~86%
+  const passed = score / mockQuestions.length >= 0.86;
   const percent = Math.round((score / mockQuestions.length) * 100);
 
   if (showResult) {
@@ -495,6 +495,36 @@ function MockTest({ onClose }: { onClose: () => void }) {
 export default function StudentTheoryPage() {
   useSession();
   const [testOpen, setTestOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+
+  const fetchProgress = useCallback(async () => {
+    try {
+      const res = await fetch("/api/student/theory/progress");
+      if (res.ok) {
+        const data: ApiProgressEntry[] | { data: ApiProgressEntry[] } = await res.json();
+        const entries: ApiProgressEntry[] = Array.isArray(data) ? data : (data as { data: ApiProgressEntry[] }).data ?? [];
+        if (entries.length > 0) {
+          setCategories(
+            BASE_CATEGORIES.map((base) => {
+              const match = entries.find((e) => e.categoryId === base.id);
+              return {
+                ...base,
+                progress: match?.progress ?? 0,
+                answered: match?.answered ?? 0,
+                total: match?.total ?? base.total,
+              };
+            })
+          );
+        }
+      }
+    } catch {
+      // keep defaults on error
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProgress();
+  }, [fetchProgress]);
 
   const totalAnswered = categories.reduce((sum, c) => sum + c.answered, 0);
   const totalQuestions = categories.reduce((sum, c) => sum + c.total, 0);
@@ -537,7 +567,16 @@ export default function StudentTheoryPage() {
             transition={{ duration: 0.3 }}
             className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden"
           >
-            <MockTest onClose={() => setTestOpen(false)} />
+            <MockTest
+              categories={categories}
+              onClose={() => {
+                setTestOpen(false);
+                fetchProgress();
+              }}
+              onComplete={() => {
+                // Progress will be refetched when the modal closes
+              }}
+            />
           </motion.div>
         ) : (
           <motion.div
@@ -586,7 +625,7 @@ export default function StudentTheoryPage() {
 
             {/* ── Category grid ── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {categories.map((cat, i) => (
+              {categories.map((cat) => (
                 <motion.div
                   key={cat.id}
                   variants={itemVariants}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Info } from "lucide-react";
@@ -25,31 +25,15 @@ const HOURS = Array.from({ length: 11 }, (_, i) =>
   String(i + 8).padStart(2, "0") + ":00"
 ); // 08:00 – 18:00
 
-// Mock booked slots (cannot be toggled)
-const BOOKED_SLOTS = new Set([
-  "Monday-09:00",
-  "Monday-10:00",
-  "Tuesday-14:00",
-  "Wednesday-11:00",
-  "Thursday-09:00",
-  "Friday-10:00",
-  "Friday-11:00",
-]);
-
-// ─── Build initial grid ───────────────────────────────────────────────────────
-function buildInitialGrid(): AvailabilityGrid {
+// ─── Build default grid ───────────────────────────────────────────────────────
+function buildDefaultGrid(): AvailabilityGrid {
   const grid: AvailabilityGrid = {};
   for (const day of DAYS) {
     for (const hour of HOURS) {
       const key = `${day}-${hour}`;
-      if (BOOKED_SLOTS.has(key)) {
-        grid[key] = "booked";
-      } else {
-        const h = parseInt(hour);
-        const isWeekend = day === "Sunday";
-        // Mon–Sat 08:00–18:00 available by default
-        grid[key] = !isWeekend && h >= 8 && h < 18 ? "available" : "unavailable";
-      }
+      const h = parseInt(hour);
+      const isWeekend = day === "Sunday";
+      grid[key] = !isWeekend && h >= 8 && h < 18 ? "available" : "unavailable";
     }
   }
   return grid;
@@ -103,9 +87,38 @@ function Cell({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function InstructorSchedulePage() {
   useSession();
-  const [grid, setGrid] = useState<AvailabilityGrid>(buildInitialGrid);
+  const [grid, setGrid] = useState<AvailabilityGrid>(buildDefaultGrid);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(true);
+
+  // Fetch existing availability on mount
+  useEffect(() => {
+    async function fetchSchedule() {
+      try {
+        const res = await fetch("/api/instructor/schedule");
+        if (res.ok) {
+          const data = await res.json();
+          // API returns array of slot objects: { day, hour, state }
+          const slots: { day: string; hour: string; state: CellState }[] =
+            Array.isArray(data) ? data : data.slots ?? [];
+          if (slots.length > 0) {
+            const newGrid = buildDefaultGrid();
+            for (const slot of slots) {
+              const key = `${slot.day}-${slot.hour}`;
+              if (key in newGrid) {
+                newGrid[key] = slot.state;
+              }
+            }
+            setGrid(newGrid);
+          }
+        }
+      } finally {
+        setLoadingInitial(false);
+      }
+    }
+    fetchSchedule();
+  }, []);
 
   function toggle(day: string, hour: string) {
     const key = `${day}-${hour}`;
@@ -119,16 +132,39 @@ export default function InstructorSchedulePage() {
 
   async function handleSave() {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 700)); // simulate API
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      // Convert grid to array of slot objects
+      const slots = Object.entries(grid).map(([key, state]) => {
+        const [day, hour] = key.split(/-(?=\d{2}:)/);
+        return { day, hour, state };
+      });
+      const res = await fetch("/api/instructor/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slots }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
   const availableCount = Object.values(grid).filter(
     (v) => v === "available"
   ).length;
   const bookedCount = Object.values(grid).filter((v) => v === "booked").length;
+
+  if (loadingInitial) {
+    return (
+      <div className="space-y-4">
+        <div className="h-12 bg-gray-100 rounded-lg animate-pulse w-64" />
+        <div className="h-96 bg-gray-100 rounded-2xl animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -204,7 +240,7 @@ export default function InstructorSchedulePage() {
         </div>
         <div className="flex items-center gap-1.5 text-xs text-brand-muted ml-auto">
           <Info className="w-3.5 h-3.5" />
-          Week of 28 Apr – 4 May 2025
+          Weekly availability template
         </div>
       </motion.div>
 

@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 interface NavItem {
   href: string;
   label: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 const studentNav: NavItem[] = [
@@ -314,11 +314,14 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace(
-        "/login?callbackUrl=" + encodeURIComponent(window.location.pathname)
-      );
+      router.replace("/login?callbackUrl=" + encodeURIComponent(window.location.pathname));
+      return;
     }
-  }, [status, router]);
+    if (status === "authenticated" && role === "ADMIN") {
+      router.replace("/admin/dashboard");
+      return;
+    }
+  }, [status, role, router]);
 
   if (status === "loading") {
     return (

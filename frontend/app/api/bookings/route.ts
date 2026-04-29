@@ -25,7 +25,8 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      data: bookings.map((b) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: bookings.map((b: any) => ({
         id: b.id,
         reference: b.reference,
         lessonType: b.lessonType,

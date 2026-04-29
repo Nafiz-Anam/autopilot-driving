@@ -9,15 +9,12 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
+import type { Stripe } from "@stripe/stripe-js";
 import axios from "axios";
-import { Tag, Lock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Tag, Lock, CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import { BookingSummary } from "@/components/booking/BookingSummary";
 import { cn } from "@/lib/utils";
-
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ""
-);
 
 /* ── Inner payment form (inside <Elements>) ─────────────────── */
 function PaymentForm({
@@ -228,11 +225,24 @@ export function Step6Payment() {
     prevStep,
   } = useBookingStore();
 
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadingIntent, setLoadingIntent] = useState(false);
   const [initError, setInitError] = useState("");
 
   const total = Math.max(0, (selectedPackage?.price ?? 0) - promoDiscount);
+
+  // Load Stripe publishable key from server (admin can change it via DB)
+  useEffect(() => {
+    fetch("/api/stripe/config")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.publishableKey) {
+          setStripePromise(loadStripe(d.publishableKey));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (selectedPackage && selectedInstructor && selectedDate && selectedSlot && lessonType) {
@@ -277,6 +287,8 @@ export function Step6Payment() {
         setPaymentIntentId(piRes.data.data.clientSecret);
       } else if (piRes.data.data?.fullyDiscounted) {
         nextStep();
+      } else if (!piRes.data.success) {
+        setInitError(piRes.data.error ?? "Payment setup failed. Please try again.");
       }
     } catch {
       setInitError("Something went wrong. Please go back and try again.");
@@ -305,7 +317,14 @@ export function Step6Payment() {
           <PromoInput />
 
           <div className="bg-white border border-brand-border rounded-2xl p-6 shadow-sm">
-            {loadingIntent ? (
+            {!stripePromise && !loadingIntent ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-10">
+                <AlertCircle className="w-8 h-8 text-yellow-500" />
+                <p className="text-sm text-brand-muted text-center">
+                  Payment gateway is not configured yet. Please contact support.
+                </p>
+              </div>
+            ) : loadingIntent ? (
               <div className="flex flex-col items-center justify-center gap-3 py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-brand-red" />
                 <p className="text-sm text-brand-muted">Setting up secure payment…</p>
@@ -315,7 +334,7 @@ export function Step6Payment() {
                 <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
                 {initError}
               </div>
-            ) : clientSecret ? (
+            ) : clientSecret && stripePromise ? (
               <Elements
                 stripe={stripePromise}
                 options={{

@@ -49,12 +49,13 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      data: instructors.map((inst) => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: instructors.map((inst: any) => ({
         id: inst.id,
         userId: inst.userId,
         bio: inst.bio,
         photoUrl: inst.photoUrl,
-        rating: inst.rating,
+        rating: Number(inst.rating),
         reviewCount: inst.reviewCount,
         yearsExp: inst.yearsExp,
         transmission: inst.transmission,

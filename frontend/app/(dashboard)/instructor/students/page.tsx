@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -22,7 +22,7 @@ interface LessonRecord {
   notes: string;
 }
 
-interface MockStudent {
+interface Student {
   id: string;
   name: string;
   initials: string;
@@ -34,138 +34,75 @@ interface MockStudent {
   notes: string;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const mockStudents: MockStudent[] = [
-  {
-    id: "s1",
-    name: "Amy Johnson",
-    initials: "AJ",
-    totalLessons: 8,
-    lastLesson: "Mon 28 Apr 2025",
-    progress: 60,
-    phone: "07700 900001",
-    lessons: [
-      {
-        date: "Mon 28 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "Good roundabout practice",
-      },
-      {
-        date: "Mon 21 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "Worked on bay parking",
-      },
-      {
-        date: "Mon 14 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "Dual carriageway intro",
-      },
-    ],
-    notes: "Good progress — confident on roundabouts. Work on mirror checks.",
-  },
-  {
-    id: "s2",
-    name: "Ben Clarke",
-    initials: "BC",
-    totalLessons: 5,
-    lastLesson: "Fri 25 Apr 2025",
-    progress: 38,
-    phone: "07700 900002",
-    lessons: [
-      {
-        date: "Fri 25 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "Parallel parking struggles",
-      },
-      {
-        date: "Fri 18 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "Town centre driving",
-      },
-    ],
-    notes:
-      "Needs more practice on parallel parking. Anxious in busy traffic — reassure.",
-  },
-  {
-    id: "s3",
-    name: "Chloe Davis",
-    initials: "CD",
-    totalLessons: 3,
-    lastLesson: "Thu 24 Apr 2025",
-    progress: 22,
-    phone: "07700 900003",
-    lessons: [
-      {
-        date: "Thu 24 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "Clutch control improving",
-      },
-      {
-        date: "Thu 17 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "First lesson — car familiarisation",
-      },
-    ],
-    notes: "Early stage — still building confidence. Very eager to learn.",
-  },
-  {
-    id: "s4",
-    name: "Daniel Brown",
-    initials: "DB",
-    totalLessons: 12,
-    lastLesson: "Wed 23 Apr 2025",
-    progress: 85,
-    phone: "07700 900004",
-    lessons: [
-      {
-        date: "Wed 23 Apr 2025",
-        type: "Mock Test Prep",
-        duration: "2 hrs",
-        notes: "Full mock — minor on mirrors",
-      },
-      {
-        date: "Wed 16 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "Independent driving practice",
-      },
-      {
-        date: "Wed 9 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "Emergency stop + manoeuvres",
-      },
-    ],
-    notes:
-      "Ready for test — needs to book. Only weakness is mirror-signal-manoeuvre sequence under pressure.",
-  },
-  {
-    id: "s5",
-    name: "Emma Wilson",
-    initials: "EW",
-    totalLessons: 1,
-    lastLesson: "Tue 22 Apr 2025",
-    progress: 8,
-    phone: "07700 900005",
-    lessons: [
-      {
-        date: "Tue 22 Apr 2025",
-        type: "Manual Lesson",
-        duration: "1 hr",
-        notes: "First lesson — complete beginner. Very nervous but managed moving off",
-      },
-    ],
-    notes:
-      "Complete beginner — very nervous. Use quiet roads to build confidence. Lots of encouragement needed.",
-  },
-];
+interface ApiStudentBooking {
+  scheduledAt: string;
+  lessonType: string;
+  durationMins: number;
+  status: string;
+  notes?: string;
+}
+
+interface ApiStudent {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  totalLessons: number;
+  completedLessons: number;
+  lastLesson: string | null;
+  progress: number;
+  recentBookings: ApiStudentBooking[];
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function formatLessonType(type: string): string {
+  const map: Record<string, string> = {
+    MANUAL: "Manual Lesson",
+    AUTOMATIC: "Auto Lesson",
+    INTENSIVE: "Intensive Course",
+    REFRESHER: "Refresher",
+    PASS_PLUS: "Pass Plus",
+    THEORY: "Theory",
+  };
+  return map[type] ?? type;
+}
+
+function formatBookingDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function mapApiStudent(s: ApiStudent): Student {
+  return {
+    id: s.id,
+    name: s.name,
+    initials: getInitials(s.name),
+    totalLessons: s.totalLessons,
+    lastLesson: s.lastLesson ? formatBookingDate(s.lastLesson) : "No lessons yet",
+    progress: s.progress ?? 0,
+    phone: s.phone ?? "",
+    notes: "",
+    lessons: (s.recentBookings ?? []).map((b) => ({
+      date: formatBookingDate(b.scheduledAt),
+      type: formatLessonType(b.lessonType),
+      duration: `${b.durationMins} min`,
+      notes: b.notes ?? "",
+    })),
+  };
+}
 
 // ─── Progress colours ─────────────────────────────────────────────────────────
 function progressColor(p: number): string {
@@ -175,7 +112,7 @@ function progressColor(p: number): string {
 }
 
 // ─── Expanded panel ───────────────────────────────────────────────────────────
-function StudentPanel({ student }: { student: MockStudent }) {
+function StudentPanel({ student }: { student: Student }) {
   const [notes, setNotes] = useState(student.notes);
   const [noteSaved, setNoteSaved] = useState(false);
 
@@ -198,25 +135,31 @@ function StudentPanel({ student }: { student: MockStudent }) {
           <h4 className="text-xs font-bold text-brand-black uppercase tracking-wide mb-3">
             Lesson History
           </h4>
-          <div className="space-y-2">
-            {student.lessons.map((l, i) => (
-              <div
-                key={i}
-                className="flex gap-3 text-xs border border-brand-border rounded-xl p-3 bg-brand-surface/50"
-              >
-                <CalendarDays className="w-3.5 h-3.5 text-brand-red shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-brand-black">
-                    {l.date}{" "}
-                    <span className="font-normal text-brand-muted">
-                      &middot; {l.type} &middot; {l.duration}
-                    </span>
-                  </p>
-                  <p className="text-brand-muted mt-0.5">{l.notes}</p>
+          {student.lessons.length === 0 ? (
+            <p className="text-xs text-brand-muted">No lesson records yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {student.lessons.map((l, i) => (
+                <div
+                  key={i}
+                  className="flex gap-3 text-xs border border-brand-border rounded-xl p-3 bg-brand-surface/50"
+                >
+                  <CalendarDays className="w-3.5 h-3.5 text-brand-red shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-brand-black">
+                      {l.date}{" "}
+                      <span className="font-normal text-brand-muted">
+                        &middot; {l.type} &middot; {l.duration}
+                      </span>
+                    </p>
+                    {l.notes && (
+                      <p className="text-brand-muted mt-0.5">{l.notes}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Notes + actions */}
@@ -268,7 +211,7 @@ function StudentPanel({ student }: { student: MockStudent }) {
 }
 
 // ─── Student card ─────────────────────────────────────────────────────────────
-function StudentCard({ student }: { student: MockStudent }) {
+function StudentCard({ student }: { student: Student }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -307,12 +250,14 @@ function StudentCard({ student }: { student: MockStudent }) {
               {student.totalLessons} lessons
             </span>
             <span>Last: {student.lastLesson}</span>
-            <a
-              href={`tel:${student.phone}`}
-              className="text-brand-red font-medium hover:text-brand-orange transition-colors"
-            >
-              {student.phone}
-            </a>
+            {student.phone && (
+              <a
+                href={`tel:${student.phone}`}
+                className="text-brand-red font-medium hover:text-brand-orange transition-colors"
+              >
+                {student.phone}
+              </a>
+            )}
           </div>
 
           {/* Progress */}
@@ -343,13 +288,31 @@ function StudentCard({ student }: { student: MockStudent }) {
 export default function InstructorStudentsPage() {
   useSession();
   const [query, setQuery] = useState("");
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStudents() {
+      try {
+        const res = await fetch("/api/instructor/students");
+        if (res.ok) {
+          const data = await res.json();
+          const raw: ApiStudent[] = Array.isArray(data) ? data : data.data ?? [];
+          setStudents(raw.map(mapApiStudent));
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStudents();
+  }, []);
 
   const filtered = useMemo(
     () =>
-      mockStudents.filter((s) =>
+      students.filter((s) =>
         s.name.toLowerCase().includes(query.toLowerCase())
       ),
-    [query]
+    [students, query]
   );
 
   const containerVariants = {
@@ -360,6 +323,18 @@ export default function InstructorStudentsPage() {
     hidden: { opacity: 0, y: 14 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.35 } },
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-12 bg-gray-100 rounded-lg animate-pulse w-64" />
+        <div className="h-10 bg-gray-100 rounded-xl animate-pulse" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-28 bg-gray-100 rounded-2xl animate-pulse" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -375,13 +350,13 @@ export default function InstructorStudentsPage() {
             My Students
           </h1>
           <p className="text-brand-muted mt-1 text-sm">
-            {mockStudents.length} active students — track lessons, add notes,
+            {students.length} active student{students.length !== 1 ? "s" : ""} — track lessons, add notes,
             and manage progress.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0 bg-red-50 border border-red-100 text-brand-red rounded-xl px-3 py-2">
           <Users className="w-4 h-4" />
-          <span className="text-sm font-bold">{mockStudents.length}</span>
+          <span className="text-sm font-bold">{students.length}</span>
           <span className="text-xs text-brand-muted">students</span>
         </div>
       </motion.div>
@@ -416,7 +391,9 @@ export default function InstructorStudentsPage() {
         <div className="bg-white rounded-2xl border border-brand-border p-12 text-center shadow-sm">
           <Users className="w-10 h-10 text-brand-border mx-auto mb-3" />
           <p className="text-brand-muted text-sm">
-            No students match &ldquo;{query}&rdquo;
+            {query
+              ? `No students match "${query}"`
+              : "No students yet."}
           </p>
         </div>
       ) : (

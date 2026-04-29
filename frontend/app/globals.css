@@ -199,3 +199,14 @@
   stroke-dashoffset: 1000;
   animation: draw 2s ease-in-out forwards;
 }
+
+/* Dual-row testimonial marquee */
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}

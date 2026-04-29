@@ -1,378 +1,346 @@
 "use client";
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import {
   CalendarDays,
-  Clock,
-  User,
-  RotateCcw,
-  XCircle,
   CalendarPlus,
   InboxIcon,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type BookingStatus = "CONFIRMED" | "COMPLETED" | "CANCELLED";
+type BookingStatus = "CONFIRMED" | "COMPLETED" | "CANCELLED" | "PENDING" | "NO_SHOW";
 
-interface MockBooking {
+interface Booking {
   id: string;
   reference: string;
-  instructorName: string;
-  instructorInitials: string;
-  date: string;
-  time: string;
   lessonType: string;
-  duration: string;
+  transmission: string;
+  scheduledAt: string;
+  durationMins: number;
   status: BookingStatus;
-  lessonNumber: number;
-  withinCancellationWindow: boolean; // true = within 24hrs, cannot cancel
+  paymentStatus: string;
+  totalAmount: number;
+  instructor: {
+    user: { name: string | null; image: string | null };
+    rating: number;
+    areas: string[];
+  };
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const mockBookings: MockBooking[] = [
-  {
-    id: "b1",
-    reference: "APS-AB1234",
-    instructorName: "James Williams",
-    instructorInitials: "JW",
-    date: "Mon 5 May 2025",
-    time: "10:00am",
-    lessonType: "Manual Lesson",
-    duration: "1 hour",
-    status: "CONFIRMED",
-    lessonNumber: 5,
-    withinCancellationWindow: false,
-  },
-  {
-    id: "b2",
-    reference: "APS-CD5678",
-    instructorName: "James Williams",
-    instructorInitials: "JW",
-    date: "Sat 10 May 2025",
-    time: "2:00pm",
-    lessonType: "Mock Test Prep",
-    duration: "2 hours",
-    status: "CONFIRMED",
-    lessonNumber: 6,
-    withinCancellationWindow: true,
-  },
-  {
-    id: "b3",
-    reference: "APS-EF9012",
-    instructorName: "James Williams",
-    instructorInitials: "JW",
-    date: "Wed 30 Apr 2025",
-    time: "2:00pm",
-    lessonType: "Manual Lesson",
-    duration: "1 hour",
-    status: "COMPLETED",
-    lessonNumber: 4,
-    withinCancellationWindow: false,
-  },
-  {
-    id: "b4",
-    reference: "APS-GH3456",
-    instructorName: "James Williams",
-    instructorInitials: "JW",
-    date: "Mon 28 Apr 2025",
-    time: "10:00am",
-    lessonType: "Manual Lesson",
-    duration: "1 hour",
-    status: "COMPLETED",
-    lessonNumber: 3,
-    withinCancellationWindow: false,
-  },
-  {
-    id: "b5",
-    reference: "APS-IJ7890",
-    instructorName: "James Williams",
-    instructorInitials: "JW",
-    date: "Thu 24 Apr 2025",
-    time: "9:00am",
-    lessonType: "Manual Lesson",
-    duration: "1 hour",
-    status: "COMPLETED",
-    lessonNumber: 2,
-    withinCancellationWindow: false,
-  },
-  {
-    id: "b6",
-    reference: "APS-KL1122",
-    instructorName: "James Williams",
-    instructorInitials: "JW",
-    date: "Mon 21 Apr 2025",
-    time: "10:00am",
-    lessonType: "Manual Lesson",
-    duration: "1 hour",
-    status: "CANCELLED",
-    lessonNumber: 1,
-    withinCancellationWindow: false,
-  },
+const STATUS_TABS = [
+  { value: "ALL",       label: "All" },
+  { value: "CONFIRMED", label: "Confirmed" },
+  { value: "PENDING",   label: "Pending" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+  { value: "NO_SHOW",   label: "No Show" },
 ];
 
-// ─── Status config ─────────────────────────────────────────────────────────────
-const statusConfig: Record<BookingStatus, { label: string; classes: string }> =
-  {
-    CONFIRMED: {
-      label: "Confirmed",
-      classes: "bg-green-100 text-green-700 border border-green-200",
-    },
-    COMPLETED: {
-      label: "Completed",
-      classes: "bg-gray-100 text-brand-muted border border-gray-200",
-    },
-    CANCELLED: {
-      label: "Cancelled",
-      classes: "bg-red-50 text-brand-red border border-red-100",
-    },
-  };
+const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
+  CONFIRMED: { label: "Confirmed", classes: "bg-green-100 text-green-700 border border-green-200" },
+  PENDING:   { label: "Pending",   classes: "bg-yellow-50 text-yellow-700 border border-yellow-200" },
+  COMPLETED: { label: "Completed", classes: "bg-gray-100 text-brand-muted border border-gray-200" },
+  CANCELLED: { label: "Cancelled", classes: "bg-red-50 text-brand-red border border-red-100" },
+  NO_SHOW:   { label: "No Show",   classes: "bg-orange-50 text-orange-700 border border-orange-100" },
+};
 
-// ─── Animation ────────────────────────────────────────────────────────────────
-const listVariants = {
+const PAYMENT_CONFIG: Record<string, string> = {
+  PAID:     "bg-green-100 text-green-700 border border-green-200",
+  UNPAID:   "bg-yellow-50 text-yellow-700 border border-yellow-200",
+  REFUNDED: "bg-gray-100 text-brand-muted border border-gray-200",
+};
+
+const LESSON_TYPE_LABELS: Record<string, string> = {
+  MANUAL:    "Manual",
+  AUTOMATIC: "Auto",
+  INTENSIVE: "Intensive",
+  MOTORWAY:  "Motorway",
+  PASS_PLUS: "Pass Plus",
+  REFRESHER: "Refresher",
+};
+
+const containerVariants = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.06 } },
-};
-const rowVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
+  visible: { transition: { staggerChildren: 0.07 } },
 };
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="py-16 flex flex-col items-center gap-3 text-brand-muted">
-      <InboxIcon className="w-10 h-10 text-brand-border" />
-      <p className="text-sm font-medium">{message}</p>
-    </div>
-  );
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric", month: "short", year: "numeric",
+  });
 }
 
-// ─── Booking row ──────────────────────────────────────────────────────────────
-function BookingRow({ booking }: { booking: MockBooking }) {
-  const [cancelState, setCancelState] = useState<
-    "idle" | "confirming" | "cancelled"
-  >("idle");
-  const cfg = statusConfig[booking.status];
-
-  const isCancelled = cancelState === "cancelled";
-  const displayStatus: BookingStatus = isCancelled ? "CANCELLED" : booking.status;
-  const displayCfg = statusConfig[displayStatus];
-
-  return (
-    <motion.div
-      variants={rowVariants}
-      className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 border-b border-brand-border last:border-b-0 hover:bg-brand-surface/40 transition-colors"
-    >
-      {/* Instructor avatar */}
-      <div className="shrink-0 w-10 h-10 bg-brand-red rounded-full flex items-center justify-center text-white text-xs font-bold">
-        {booking.instructorInitials}
-      </div>
-
-      {/* Main info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2 mb-0.5">
-          <p className="text-sm font-semibold text-brand-black">
-            {booking.lessonType}
-          </p>
-          <span className="text-xs text-brand-muted">&middot; {booking.reference}</span>
-          <span
-            className={cn(
-              "text-[11px] font-semibold px-2 py-0.5 rounded-full",
-              cfg.classes
-            )}
-          >
-            {cfg.label}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-brand-muted">
-          <span className="flex items-center gap-1">
-            <CalendarDays className="w-3 h-3" />
-            {booking.date}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {booking.time}
-          </span>
-          <span className="flex items-center gap-1">
-            <User className="w-3 h-3" />
-            {booking.instructorName}
-          </span>
-        </div>
-      </div>
-
-      {/* Duration badge */}
-      <span className="shrink-0 text-xs font-medium text-brand-muted border border-brand-border px-2.5 py-1 rounded-lg">
-        {booking.duration}
-      </span>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2 shrink-0">
-        {booking.status === "CONFIRMED" && !isCancelled && (
-          <>
-            <button
-              onClick={() => void 0}
-              className="flex items-center gap-1.5 text-xs font-medium text-brand-muted border border-brand-border px-3 py-1.5 rounded-lg hover:bg-brand-surface transition-colors"
-            >
-              <CalendarPlus className="w-3.5 h-3.5" />
-              Add to Calendar
-            </button>
-            {cancelState === "confirming" ? (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setCancelState("cancelled")}
-                  className="text-xs font-semibold text-white bg-brand-red px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Confirm
-                </button>
-                <button
-                  onClick={() => setCancelState("idle")}
-                  className="text-xs font-medium text-brand-muted px-2 py-1.5"
-                >
-                  Back
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() =>
-                  booking.withinCancellationWindow
-                    ? undefined
-                    : setCancelState("confirming")
-                }
-                disabled={booking.withinCancellationWindow}
-                title={
-                  booking.withinCancellationWindow
-                    ? "Cannot cancel within 24 hours of lesson"
-                    : "Cancel this booking"
-                }
-                className={cn(
-                  "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors",
-                  booking.withinCancellationWindow
-                    ? "border-brand-border text-brand-border cursor-not-allowed opacity-50"
-                    : "border-red-200 text-brand-red hover:bg-red-50"
-                )}
-              >
-                <XCircle className="w-3.5 h-3.5" />
-                Cancel
-              </button>
-            )}
-          </>
-        )}
-        {booking.status === "COMPLETED" && (
-          <button className="flex items-center gap-1.5 text-xs font-semibold text-brand-red border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
-            <RotateCcw className="w-3.5 h-3.5" />
-            Book Again
-          </button>
-        )}
-        {(booking.status === "CANCELLED" || isCancelled) && (
-          <span
-            className={cn(
-              "text-[11px] font-semibold px-2.5 py-1 rounded-full",
-              displayCfg.classes
-            )}
-          >
-            {displayCfg.label}
-          </span>
-        )}
-      </div>
-    </motion.div>
-  );
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-GB", {
+    hour: "2-digit", minute: "2-digit",
+  });
 }
 
-// ─── Booking list ─────────────────────────────────────────────────────────────
-function BookingList({
-  bookings,
-  emptyMessage,
-}: {
-  bookings: MockBooking[];
-  emptyMessage: string;
-}) {
-  if (bookings.length === 0) {
-    return <EmptyState message={emptyMessage} />;
-  }
-  return (
-    <motion.div variants={listVariants} initial="hidden" animate="visible">
-      {bookings.map((b) => (
-        <BookingRow key={b.id} booking={b} />
-      ))}
-    </motion.div>
-  );
+function isWithin24h(scheduledAt: string) {
+  return new Date(scheduledAt).getTime() - Date.now() < 24 * 60 * 60 * 1000;
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function StudentBookingsPage() {
-  useSession();
-  const upcoming = mockBookings.filter((b) => b.status === "CONFIRMED");
-  const past = mockBookings.filter((b) => b.status === "COMPLETED");
-  const cancelled = mockBookings.filter((b) => b.status === "CANCELLED");
+  const [bookings, setBookings]       = useState<Booking[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId]   = useState<string | null>(null);
+
+  const fetchBookings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/bookings");
+      if (res.ok) {
+        const data = await res.json();
+        setBookings(data.data ?? []);
+      }
+    } catch {
+      // keep empty on error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+  function handleCancelled(id: string) {
+    setBookings((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, status: "CANCELLED" as BookingStatus } : b))
+    );
+    setConfirmCancelId(null);
+  }
+
+  async function handleCancel(id: string) {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/bookings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      if (res.ok) handleCancelled(id);
+    } catch {
+      // silent
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  const filtered = statusFilter === "ALL"
+    ? bookings
+    : bookings.filter((b) => b.status === statusFilter);
 
   return (
-    <div>
+    <motion.div variants={containerVariants} initial="hidden" animate="visible">
+      {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mb-8"
+        variants={itemVariants}
+        className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
-        <h1 className="text-3xl font-extrabold text-brand-black">
-          My Bookings
-        </h1>
-        <p className="text-brand-muted mt-1 text-sm">
-          Manage and view all your driving lessons.
-        </p>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-extrabold text-brand-black">My Bookings</h2>
+          <span className="inline-flex items-center gap-1.5 bg-red-50 border border-red-100 text-brand-red rounded-xl px-3 py-1.5 text-sm font-bold">
+            <CalendarDays className="w-4 h-4" />
+            {bookings.length}
+          </span>
+        </div>
       </motion.div>
 
+      {/* Filter tabs */}
+      <motion.div variants={itemVariants} className="flex gap-1 flex-wrap mb-6">
+        {STATUS_TABS.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => setStatusFilter(tab.value)}
+            className={cn(
+              "px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
+              statusFilter === tab.value
+                ? "bg-brand-black text-white"
+                : "text-brand-muted hover:text-brand-black"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </motion.div>
+
+      {/* Table */}
       <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
+        variants={itemVariants}
         className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden"
       >
-        <Tabs defaultValue="upcoming">
-          <div className="px-5 pt-4 border-b border-brand-border">
-            <TabsList className="bg-brand-surface gap-1">
-              <TabsTrigger value="upcoming" className="gap-1.5 text-sm">
-                Upcoming
-                {upcoming.length > 0 && (
-                  <span className="bg-brand-red text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-                    {upcoming.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="past" className="text-sm">
-                Past ({past.length})
-              </TabsTrigger>
-              <TabsTrigger value="cancelled" className="text-sm">
-                Cancelled
-              </TabsTrigger>
-            </TabsList>
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-brand-surface border-b border-brand-border">
+                {[
+                  { label: "Reference",   cls: "" },
+                  { label: "Instructor",  cls: "hidden md:table-cell" },
+                  { label: "Date & Time", cls: "hidden lg:table-cell" },
+                  { label: "Type",        cls: "hidden md:table-cell" },
+                  { label: "Duration",    cls: "hidden lg:table-cell" },
+                  { label: "Amount",      cls: "hidden lg:table-cell" },
+                  { label: "Payment",     cls: "hidden sm:table-cell" },
+                  { label: "Status",      cls: "" },
+                  { label: "Actions",     cls: "text-right" },
+                ].map((h) => (
+                  <th
+                    key={h.label}
+                    className={cn(
+                      "px-5 py-3.5 text-left text-xs font-semibold text-brand-muted uppercase tracking-wide",
+                      h.cls
+                    )}
+                  >
+                    {h.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-brand-border">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    {Array.from({ length: 9 }).map((_, j) => (
+                      <td key={j} className="px-5 py-4">
+                        <div className="h-3 bg-gray-100 rounded w-full max-w-[72px]" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-5 py-16 text-center">
+                    <InboxIcon className="w-10 h-10 text-brand-border mx-auto mb-3" />
+                    <p className="text-brand-muted text-sm">
+                      {statusFilter !== "ALL"
+                        ? `No ${statusFilter.toLowerCase()} bookings found`
+                        : "No bookings yet — book a lesson to get started!"}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((booking) => {
+                  const sc = STATUS_CONFIG[booking.status] ?? {
+                    label: booking.status,
+                    classes: "bg-gray-100 text-brand-muted border border-gray-200",
+                  };
+                  const pc = PAYMENT_CONFIG[booking.paymentStatus] ?? "bg-gray-100 text-brand-muted border border-gray-200";
+                  const typeLabel = LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType;
+                  const isUpcoming = booking.status === "CONFIRMED" || booking.status === "PENDING";
+                  const withinWindow = isWithin24h(booking.scheduledAt);
 
-          <AnimatePresence mode="wait">
-            <TabsContent key="upcoming" value="upcoming" className="mt-0 pt-2">
-              <BookingList
-                bookings={upcoming}
-                emptyMessage="No upcoming lessons — book one to get started!"
-              />
-            </TabsContent>
-            <TabsContent key="past" value="past" className="mt-0 pt-2">
-              <BookingList
-                bookings={past}
-                emptyMessage="No completed lessons yet."
-              />
-            </TabsContent>
-            <TabsContent key="cancelled" value="cancelled" className="mt-0 pt-2">
-              <BookingList
-                bookings={cancelled}
-                emptyMessage="No cancelled bookings."
-              />
-            </TabsContent>
-          </AnimatePresence>
-        </Tabs>
+                  return (
+                    <tr key={booking.id} className="hover:bg-brand-surface/50 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <span className="font-mono text-xs text-brand-muted">{booking.reference}</span>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-brand-black hidden md:table-cell">
+                        {booking.instructor.user.name ?? "—"}
+                      </td>
+                      <td className="px-5 py-3.5 hidden lg:table-cell">
+                        <p className="text-sm text-brand-black whitespace-nowrap">{formatDate(booking.scheduledAt)}</p>
+                        <p className="text-xs text-brand-muted">{formatTime(booking.scheduledAt)}</p>
+                      </td>
+                      <td className="px-5 py-3.5 hidden md:table-cell">
+                        <span className="text-xs border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">
+                          {typeLabel}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-brand-muted hidden lg:table-cell">
+                        {booking.durationMins / 60}hr
+                      </td>
+                      <td className="px-5 py-3.5 text-sm font-semibold text-brand-black hidden lg:table-cell">
+                        £{Number(booking.totalAmount).toFixed(2)}
+                      </td>
+                      <td className="px-5 py-3.5 hidden sm:table-cell">
+                        <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", pc)}>
+                          {booking.paymentStatus}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", sc.classes)}>
+                          {sc.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {isUpcoming && (
+                            <button
+                              onClick={() => {
+                                const dt = new Date(booking.scheduledAt);
+                                const end = new Date(dt.getTime() + booking.durationMins * 60000);
+                                const fmt = (d: Date) =>
+                                  d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+                                window.open(
+                                  `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(booking.lessonType)}&dates=${fmt(dt)}/${fmt(end)}`,
+                                  "_blank"
+                                );
+                              }}
+                              className="flex items-center gap-1 text-xs font-medium text-brand-muted border border-brand-border px-2.5 py-1 rounded-lg hover:bg-brand-surface transition-colors"
+                            >
+                              <CalendarPlus className="w-3 h-3" />
+                              <span className="hidden sm:inline">Calendar</span>
+                            </button>
+                          )}
+                          {isUpcoming &&
+                            (confirmCancelId === booking.id ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-brand-muted">Cancel?</span>
+                                <button
+                                  onClick={() => handleCancel(booking.id)}
+                                  disabled={updatingId === booking.id}
+                                  className="text-xs px-2.5 py-1 bg-brand-red text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                                >
+                                  {updatingId === booking.id ? "…" : "Yes"}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmCancelId(null)}
+                                  className="text-xs text-brand-muted hover:text-brand-black transition-colors"
+                                >
+                                  No
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => !withinWindow && setConfirmCancelId(booking.id)}
+                                disabled={withinWindow}
+                                title={withinWindow ? "Cannot cancel within 24 hours of lesson" : "Cancel this booking"}
+                                className={cn(
+                                  "text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors",
+                                  withinWindow
+                                    ? "border-brand-border text-brand-border cursor-not-allowed opacity-50"
+                                    : "border-red-200 text-brand-red hover:bg-red-50"
+                                )}
+                              >
+                                Cancel
+                              </button>
+                            ))}
+                          {booking.status === "COMPLETED" && (
+                            <a
+                              href="/book"
+                              className="flex items-center gap-1 text-xs font-semibold text-brand-red border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              Book Again
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

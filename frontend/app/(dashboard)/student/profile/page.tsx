@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Eye, EyeOff, AlertTriangle, X } from "lucide-react";
+import { Camera, Eye, EyeOff, AlertTriangle, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface ProfileForm {
   name: string;
   email: string;
   phone: string;
-  dateOfBirth: string;
-  postcode: string;
-  licenceNumber: string;
 }
 
 interface PasswordForm {
@@ -29,7 +24,12 @@ interface NotifPrefs {
   smsPromotions: boolean;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+interface SidebarStats {
+  lessonsCompleted: number;
+  hoursTotal: number;
+  theoryScore: number;
+}
+
 function FormField({
   label,
   name,
@@ -54,9 +54,7 @@ function FormField({
       <label className="block text-sm font-medium text-brand-black mb-1.5">
         {label}
         {readOnly && (
-          <span className="ml-1.5 text-xs font-normal text-brand-muted">
-            (read-only)
-          </span>
+          <span className="ml-1.5 text-xs font-normal text-brand-muted">(read-only)</span>
         )}
       </label>
       <input
@@ -131,9 +129,7 @@ function PasswordInput({
   const [show, setShow] = useState(false);
   return (
     <div>
-      <label className="block text-sm font-medium text-brand-black mb-1.5">
-        {label}
-      </label>
+      <label className="block text-sm font-medium text-brand-black mb-1.5">{label}</label>
       <div className="relative">
         <input
           name={name}
@@ -156,7 +152,6 @@ function PasswordInput({
   );
 }
 
-// ─── Delete Confirmation Dialog ───────────────────────────────────────────────
 function DeleteDialog({ onClose }: { onClose: () => void }) {
   const [confirmed, setConfirmed] = useState(false);
   const [input, setInput] = useState("");
@@ -183,32 +178,23 @@ function DeleteDialog({ onClose }: { onClose: () => void }) {
             <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5 text-brand-red" />
             </div>
-            <h3 className="text-lg font-bold text-brand-black">
-              Delete Account
-            </h3>
+            <h3 className="text-lg font-bold text-brand-black">Delete Account</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="text-brand-muted hover:text-brand-black transition-colors"
-          >
+          <button onClick={onClose} className="text-brand-muted hover:text-brand-black transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <p className="text-sm text-brand-muted mb-4">
-          This will permanently delete your account, all bookings, and theory
-          progress. <strong className="text-brand-black">This cannot be undone.</strong>
+          This will permanently delete your account, all bookings, and theory progress.{" "}
+          <strong className="text-brand-black">This cannot be undone.</strong>
         </p>
 
         {!confirmed ? (
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-brand-black mb-1.5">
-                Type{" "}
-                <span className="font-mono font-bold text-brand-red">
-                  {CONFIRM_PHRASE}
-                </span>{" "}
-                to continue
+                Type <span className="font-mono font-bold text-brand-red">{CONFIRM_PHRASE}</span> to continue
               </label>
               <input
                 value={input}
@@ -235,12 +221,8 @@ function DeleteDialog({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <div className="text-center py-4">
-            <p className="text-sm font-semibold text-brand-black">
-              Account deletion requested.
-            </p>
-            <p className="text-xs text-brand-muted mt-1">
-              You will receive a confirmation email within 24 hours.
-            </p>
+            <p className="text-sm font-semibold text-brand-black">Account deletion requested.</p>
+            <p className="text-xs text-brand-muted mt-1">You will receive a confirmation email within 24 hours.</p>
           </div>
         )}
       </motion.div>
@@ -248,27 +230,19 @@ function DeleteDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function StudentProfilePage() {
-  const { data: session } = useSession();
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
   const [saved, setSaved] = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const [profile, setProfile] = useState<ProfileForm>({
-    name: session?.user?.name ?? "",
-    email: session?.user?.email ?? "",
-    phone: "",
-    dateOfBirth: "",
-    postcode: "",
-    licenceNumber: "",
-  });
+  const [profile, setProfile] = useState<ProfileForm>({ name: "", email: "", phone: "" });
+  const [stats, setStats] = useState<SidebarStats>({ lessonsCompleted: 0, hoursTotal: 0, theoryScore: 0 });
 
-  const [passwords, setPasswords] = useState<PasswordForm>({
-    current: "",
-    next: "",
-    confirm: "",
-  });
+  const [passwords, setPasswords] = useState<PasswordForm>({ current: "", next: "", confirm: "" });
 
   const [notifs, setNotifs] = useState<NotifPrefs>({
     emailBookings: true,
@@ -277,17 +251,32 @@ export default function StudentProfilePage() {
     smsPromotions: false,
   });
 
-  const initials = profile.name
-    ? profile.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "U";
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/student/profile").then((r) => r.json()),
+      fetch("/api/student/stats").then((r) => r.json()),
+    ])
+      .then(([profileData, statsData]) => {
+        if (profileData.data) {
+          setProfile({
+            name: profileData.data.name ?? "",
+            email: profileData.data.email ?? "",
+            phone: profileData.data.phone ?? "",
+          });
+        }
+        setStats({
+          lessonsCompleted: statsData.lessonsCompleted ?? 0,
+          hoursTotal: statsData.hoursTotal ?? 0,
+          theoryScore: statsData.theoryScore ?? 0,
+        });
+      })
+      .catch(() => {})
+      .finally(() => setProfileLoading(false));
+  }, []);
 
-  const role =
-    (session?.user as { role?: string })?.role ?? "STUDENT";
+  const initials = profile.name
+    ? profile.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "U";
 
   function handleProfileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setProfile((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -297,52 +286,79 @@ export default function StudentProfilePage() {
     setPasswords((p) => ({ ...p, [e.target.name]: e.target.value }));
   }
 
-  function handleProfileSave(e: React.FormEvent) {
+  async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/student/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: profile.name, phone: profile.phone }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handlePasswordSave(e: React.FormEvent) {
+  async function handlePasswordSave(e: React.FormEvent) {
     e.preventDefault();
-    setPasswordSaved(true);
-    setPasswords({ current: "", next: "", confirm: "" });
-    setTimeout(() => setPasswordSaved(false), 3000);
+    setPasswordError("");
+    setSavingPassword(true);
+    try {
+      const res = await fetch("/api/student/profile/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current: passwords.current, newPassword: passwords.next }),
+      });
+      if (res.ok) {
+        setPasswordSaved(true);
+        setPasswords({ current: "", next: "", confirm: "" });
+        setTimeout(() => setPasswordSaved(false), 3000);
+      } else {
+        const data = await res.json();
+        setPasswordError(data.error ?? "Failed to update password");
+      }
+    } catch {
+      setPasswordError("Something went wrong");
+    } finally {
+      setSavingPassword(false);
+    }
   }
 
-  const passwordMatch =
-    passwords.next && passwords.confirm && passwords.next === passwords.confirm;
-  const passwordMismatch =
-    passwords.next && passwords.confirm && passwords.next !== passwords.confirm;
+  const passwordMatch = passwords.next && passwords.confirm && passwords.next === passwords.confirm;
+  const passwordMismatch = passwords.next && passwords.confirm && passwords.next !== passwords.confirm;
 
-  const containerVariants = {
-    hidden: {},
-    visible: { transition: { staggerChildren: 0.08 } },
-  };
+  const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
   const itemVariants = {
     hidden: { opacity: 0, y: 14 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.35 } },
   };
 
+  if (profileLoading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 className="w-6 h-6 animate-spin text-brand-muted" />
+      </div>
+    );
+  }
+
   return (
-    <motion.div
-      className=""
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
+    <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants} className="mb-8">
         <h1 className="text-3xl font-extrabold text-brand-black">My Profile</h1>
-        <p className="text-brand-muted mt-1 text-sm">
-          Manage your personal details and preferences.
-        </p>
+        <p className="text-brand-muted mt-1 text-sm">Manage your personal details and preferences.</p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ── Left column: avatar card ── */}
+        {/* Avatar card */}
         <motion.div variants={itemVariants} className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-6 flex flex-col items-center text-center">
-            {/* Avatar upload area */}
             <div className="relative mb-4 group cursor-pointer">
               <div className="w-24 h-24 rounded-full bg-linear-to-br from-brand-red to-brand-orange flex items-center justify-center text-white text-3xl font-extrabold shadow-lg">
                 {initials}
@@ -351,45 +367,36 @@ export default function StudentProfilePage() {
                 <Camera className="w-5 h-5 text-white" />
               </div>
             </div>
-            <p className="text-xs text-brand-muted mb-4">
-              Click to upload a photo
-            </p>
+            <p className="text-xs text-brand-muted mb-4">Click to upload a photo</p>
 
-            <p className="font-bold text-brand-black text-lg leading-tight">
-              {profile.name || "Your Name"}
-            </p>
+            <p className="font-bold text-brand-black text-lg leading-tight">{profile.name || "Your Name"}</p>
             <p className="text-xs text-brand-muted mt-0.5">{profile.email}</p>
             <span className="mt-2 text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-red-50 text-brand-red">
-              {role}
+              STUDENT
             </span>
 
             <div className="mt-6 w-full border-t border-brand-border pt-4 space-y-2 text-left">
               <div className="flex justify-between text-xs">
                 <span className="text-brand-muted">Lessons completed</span>
-                <span className="font-semibold text-brand-black">4</span>
+                <span className="font-semibold text-brand-black">{stats.lessonsCompleted}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-brand-muted">Hours driven</span>
-                <span className="font-semibold text-brand-black">4 hrs</span>
+                <span className="font-semibold text-brand-black">{stats.hoursTotal.toFixed(1)} hrs</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-brand-muted">Theory progress</span>
-                <span className="font-semibold text-brand-red">62%</span>
+                <span className="font-semibold text-brand-red">{stats.theoryScore}%</span>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* ── Right column: forms ── */}
+        {/* Forms */}
         <div className="lg:col-span-2 space-y-5">
           {/* Personal details */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-white rounded-2xl border border-brand-border shadow-sm p-6"
-          >
-            <h3 className="font-bold text-brand-black mb-5">
-              Personal Details
-            </h3>
+          <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm p-6">
+            <h3 className="font-bold text-brand-black mb-5">Personal Details</h3>
             <form onSubmit={handleProfileSave} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
@@ -413,35 +420,15 @@ export default function StudentProfilePage() {
                   type="tel"
                   placeholder="07700 900000"
                 />
-                <FormField
-                  label="Date of Birth"
-                  name="dateOfBirth"
-                  value={profile.dateOfBirth}
-                  onChange={handleProfileChange}
-                  type="date"
-                />
-                <FormField
-                  label="Postcode"
-                  name="postcode"
-                  value={profile.postcode}
-                  onChange={handleProfileChange}
-                  placeholder="SL1 1AA"
-                />
-                <FormField
-                  label="Provisional Licence No."
-                  name="licenceNumber"
-                  value={profile.licenceNumber}
-                  onChange={handleProfileChange}
-                  placeholder="SMITJ9701234AB9IJ"
-                  hint="16-character UK driving licence number"
-                />
               </div>
 
               <div className="flex items-center gap-4 pt-1">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm"
+                  disabled={saving}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm disabled:opacity-60"
                 >
+                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Save Changes
                 </button>
                 <AnimatePresence>
@@ -461,13 +448,8 @@ export default function StudentProfilePage() {
           </motion.div>
 
           {/* Password change */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-white rounded-2xl border border-brand-border shadow-sm p-6"
-          >
-            <h3 className="font-bold text-brand-black mb-5">
-              Change Password
-            </h3>
+          <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm p-6">
+            <h3 className="font-bold text-brand-black mb-5">Change Password</h3>
             <form onSubmit={handlePasswordSave} className="space-y-4">
               <PasswordInput
                 label="Current Password"
@@ -502,14 +484,25 @@ export default function StudentProfilePage() {
                       Passwords do not match
                     </motion.p>
                   )}
+                  {passwordError && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-xs text-brand-red mt-1"
+                    >
+                      {passwordError}
+                    </motion.p>
+                  )}
                 </AnimatePresence>
               </div>
               <div className="flex items-center gap-4 pt-1">
                 <button
                   type="submit"
-                  disabled={!passwordMatch || !passwords.current}
-                  className="px-6 py-2.5 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  disabled={!passwordMatch || !passwords.current || savingPassword}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 >
+                  {savingPassword && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Update Password
                 </button>
                 <AnimatePresence>
@@ -529,16 +522,9 @@ export default function StudentProfilePage() {
           </motion.div>
 
           {/* Notification preferences */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-white rounded-2xl border border-brand-border shadow-sm p-6"
-          >
-            <h3 className="font-bold text-brand-black mb-1">
-              Notification Preferences
-            </h3>
-            <p className="text-xs text-brand-muted mb-4">
-              Control how we contact you about your lessons.
-            </p>
+          <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm p-6">
+            <h3 className="font-bold text-brand-black mb-1">Notification Preferences</h3>
+            <p className="text-xs text-brand-muted mb-4">Control how we contact you about your lessons.</p>
             <ToggleSwitch
               checked={notifs.emailBookings}
               onChange={(v) => setNotifs((n) => ({ ...n, emailBookings: v }))}
@@ -547,9 +533,7 @@ export default function StudentProfilePage() {
             />
             <ToggleSwitch
               checked={notifs.emailReminders}
-              onChange={(v) =>
-                setNotifs((n) => ({ ...n, emailReminders: v }))
-              }
+              onChange={(v) => setNotifs((n) => ({ ...n, emailReminders: v }))}
               label="Email — Lesson reminders"
               description="24-hour reminder before each upcoming lesson"
             />
@@ -561,19 +545,14 @@ export default function StudentProfilePage() {
             />
             <ToggleSwitch
               checked={notifs.smsPromotions}
-              onChange={(v) =>
-                setNotifs((n) => ({ ...n, smsPromotions: v }))
-              }
+              onChange={(v) => setNotifs((n) => ({ ...n, smsPromotions: v }))}
               label="SMS — Promotions &amp; offers"
               description="Occasional offers and news from AutoPilot"
             />
           </motion.div>
 
           {/* Danger zone */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-white rounded-2xl border border-red-200 shadow-sm p-6"
-          >
+          <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-red-200 shadow-sm p-6">
             <h3 className="font-bold text-brand-red mb-1">Danger Zone</h3>
             <p className="text-xs text-brand-muted mb-4">
               Irreversible actions that permanently affect your account.
@@ -588,11 +567,8 @@ export default function StudentProfilePage() {
         </div>
       </div>
 
-      {/* Delete dialog */}
       <AnimatePresence>
-        {deleteOpen && (
-          <DeleteDialog onClose={() => setDeleteOpen(false)} />
-        )}
+        {deleteOpen && <DeleteDialog onClose={() => setDeleteOpen(false)} />}
       </AnimatePresence>
     </motion.div>
   );

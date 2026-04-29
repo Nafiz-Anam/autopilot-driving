@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { env } from "@/env";
-
-const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+import { getStripeSecretKey } from "@/lib/settings";
 
 export async function POST(request: Request) {
   try {
@@ -31,7 +29,6 @@ export async function POST(request: Request) {
     let amountPence = Math.round(Number(booking.totalAmount) * 100);
     let discountAmount = 0;
 
-    // Check voucher balance
     if (voucherCode) {
       const voucher = await prisma.giftVoucher.findUnique({
         where: { code: voucherCode },
@@ -46,7 +43,6 @@ export async function POST(request: Request) {
     }
 
     if (amountPence === 0) {
-      // Fully covered by voucher — mark as paid
       await prisma.booking.update({
         where: { id: bookingId },
         data: {
@@ -59,6 +55,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, data: { fullyDiscounted: true } });
     }
 
+    const secretKey = await getStripeSecretKey();
+    if (!secretKey) {
+      return NextResponse.json(
+        { success: false, error: "Payment gateway not configured. Contact support." },
+        { status: 503 }
+      );
+    }
+
+    const stripe = new Stripe(secretKey);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountPence,
       currency: "gbp",
@@ -70,7 +76,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // Store payment intent ID on booking
     await prisma.booking.update({
       where: { id: bookingId },
       data: { stripePaymentId: paymentIntent.id },

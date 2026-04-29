@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
-import { env } from "@/env";
+import { getStripeSecretKey, getStripeWebhookSecret } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
-
-const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
 export async function POST(request: Request) {
   try {
@@ -16,13 +14,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing signature" }, { status: 400 });
     }
 
-    let event: Stripe.Event;
+    const secretKey = await getStripeSecretKey();
+    const webhookSecret = await getStripeWebhookSecret();
 
+    if (!secretKey || !webhookSecret) {
+      console.error("[webhook] Stripe not configured");
+      return NextResponse.json({ error: "Payment gateway not configured" }, { status: 503 });
+    }
+
+    const stripe = new Stripe(secretKey);
+
+    let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
         Buffer.from(rawBody),
         signature,
-        env.STRIPE_WEBHOOK_SECRET
+        webhookSecret
       );
     } catch (err) {
       console.error("[webhook] signature verification failed:", err);
@@ -46,7 +53,6 @@ export async function POST(request: Request) {
             },
           });
 
-          // Deduct voucher balance if used
           if (voucherCode && discountAmount && parseFloat(discountAmount) > 0) {
             const voucher = await prisma.giftVoucher.findUnique({ where: { code: voucherCode } });
             if (voucher) {
@@ -78,7 +84,6 @@ export async function POST(request: Request) {
       }
 
       default:
-        // Unhandled event type — ignore
         break;
     }
 
