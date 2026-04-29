@@ -41,7 +41,7 @@ export function WhyAutopilot() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section className="bg-[#F8F7F5] py-20 lg:py-28 px-4">
+    <section className="bg-[#F8F7F5] py-14 sm:py-20 lg:py-28 px-4">
       <div className="max-w-7xl mx-auto" ref={ref}>
         {/* Header row */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-14 gap-5">

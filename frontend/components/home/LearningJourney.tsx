@@ -75,7 +75,7 @@ export function LearningJourney() {
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
   return (
-    <section className="bg-white py-20 lg:py-28 px-4 overflow-hidden">
+    <section className="bg-white py-14 sm:py-20 lg:py-28 px-4 overflow-hidden">
       <div className="max-w-5xl mx-auto" ref={ref}>
 
         {/* ── Header ── */}

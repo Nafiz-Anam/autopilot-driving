@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { ChevronLeft, ChevronRight, Star, Clock, CalendarDays, CheckCircle2, MapPin, CreditCard, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ── Phone screen UI ──────────────────────────────────────────────────────────
+// ── Phone screen UIs ─────────────────────────────────────────────────────────
 
 function Screen1() {
   return (
@@ -269,6 +269,122 @@ const SLIDES = [
   },
 ];
 
+// ── Reusable phone mockup ─────────────────────────────────────────────────────
+
+const phoneVariants: Variants = {
+  enter:  (dir: number) => ({ opacity: 0, y: dir > 0 ? 30 : -30, scale: 0.96 }),
+  center: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: "easeOut" } },
+  exit:   (dir: number) => ({ opacity: 0, y: dir > 0 ? -30 : 30, scale: 0.96, transition: { duration: 0.18 } }),
+};
+
+const textVariants: Variants = {
+  enter:  (dir: number) => ({ opacity: 0, x: dir > 0 ? 24 : -24 }),
+  center: { opacity: 1, x: 0, transition: { duration: 0.25, ease: "easeOut" } },
+  exit:   (dir: number) => ({ opacity: 0, x: dir > 0 ? -24 : 24, transition: { duration: 0.15 } }),
+};
+
+function PhoneStatusIcons() {
+  return (
+    <div className="flex items-center gap-1.5">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+        <rect x="0" y="3" width="3" height="9" rx="1" fill="#1c1c1e" />
+        <rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1c1c1e" />
+        <rect x="9" y="0" width="3" height="12" rx="1" fill="#1c1c1e" />
+        <rect x="14" y="1" width="2.5" height="10" rx="1" fill="#1c1c1e" opacity="0.3" />
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <rect x="0.5" y="0.5" width="13" height="11" rx="3.5" stroke="#1c1c1e" />
+        <rect x="14.5" y="3.5" width="1" height="5" rx="0.5" fill="#1c1c1e" opacity="0.4" />
+        <rect x="2" y="2" width="9" height="8" rx="2" fill="#34c759" />
+      </svg>
+    </div>
+  );
+}
+
+function PhoneMockup({
+  slideKey,
+  direction,
+  screen,
+  accentClass,
+  compact = false,
+}: {
+  slideKey: number;
+  direction: number;
+  screen: React.ReactNode;
+  accentClass: string;
+  compact?: boolean;
+}) {
+  const w = compact ? 240 : 290;
+  const screenH = compact ? 480 : 580;
+  const contentH = compact ? 428 : 518;
+
+  return (
+    <div className="relative">
+      <motion.div
+        key={slideKey}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className={cn(
+          "absolute left-1/2 -translate-x-1/2 blur-2xl rounded-full bg-gradient-to-r opacity-50 pointer-events-none",
+          compact ? "-bottom-5 w-36 h-10" : "-bottom-6 w-48 h-12",
+          accentClass
+        )}
+      />
+
+      <div
+        className={cn(
+          "relative bg-[#1a1a1a] shadow-2xl border border-white/10",
+          compact ? "rounded-[36px] p-2.5" : "rounded-[44px] p-3"
+        )}
+        style={{ width: w }}
+      >
+        {/* Dynamic Island */}
+        <div
+          className={cn(
+            "absolute bg-[#1a1a1a] rounded-full z-20 border border-white/5 left-1/2 -translate-x-1/2",
+            compact ? "top-3 w-20 h-5" : "top-3.5 w-24 h-6"
+          )}
+        />
+
+        {/* Screen */}
+        <div
+          className={cn("bg-white overflow-hidden", compact ? "rounded-[28px]" : "rounded-[34px]")}
+          style={{ height: screenH }}
+        >
+          {/* Status bar */}
+          <div className={cn("flex items-center justify-between bg-white", compact ? "px-4 pt-7 pb-1.5" : "px-5 pt-8 pb-2")}>
+            <span className={cn("font-bold text-gray-800", compact ? "text-[10px]" : "text-[11px]")}>9:41</span>
+            <PhoneStatusIcons />
+          </div>
+
+          {/* App content */}
+          <div style={{ height: contentH }}>
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={slideKey}
+                custom={direction}
+                variants={phoneVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                className="h-full"
+              >
+                {screen}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Home indicator */}
+        <div className="flex justify-center pt-2.5 pb-0.5">
+          <div className={cn("h-1 bg-white/20 rounded-full", compact ? "w-24" : "w-28")} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 export function AppFlowSlider() {
@@ -291,24 +407,39 @@ export function AppFlowSlider() {
     return () => clearInterval(t);
   }, []);
 
-  const phoneVariants = {
-    enter:  (dir: number) => ({ opacity: 0, y: dir > 0 ? 30 : -30, scale: 0.96 }),
-    center: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: "easeOut" as const } },
-    exit:   (dir: number) => ({ opacity: 0, y: dir > 0 ? -30 : 30, scale: 0.96, transition: { duration: 0.18 } }),
-  };
-
-  const textVariants = {
-    enter:  (dir: number) => ({ opacity: 0, x: dir > 0 ? 24 : -24 }),
-    center: { opacity: 1, x: 0, transition: { duration: 0.25, ease: "easeOut" as const } },
-    exit:   (dir: number) => ({ opacity: 0, x: dir > 0 ? -24 : 24, transition: { duration: 0.15 } }),
-  };
-
   const slide = SLIDES[current];
 
+  const NavBtn = ({ onClick, label, children }: { onClick: () => void; label: string; children: React.ReactNode }) => (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      className="shrink-0 w-11 h-11 rounded-2xl bg-white/8 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 transition-all"
+    >
+      {children}
+    </button>
+  );
+
+  const Dots = () => (
+    <div className="flex gap-2.5">
+      {SLIDES.map((_, i) => (
+        <button
+          key={i}
+          onClick={() => go(i)}
+          className={cn(
+            "h-1.5 rounded-full transition-all duration-300",
+            i === current ? "w-10 bg-brand-red" : "w-4 bg-white/20 hover:bg-white/40"
+          )}
+          aria-label={`Go to slide ${i + 1}`}
+        />
+      ))}
+    </div>
+  );
+
   return (
-    <section className="relative bg-brand-black py-24 overflow-hidden">
+    <section className="relative bg-brand-black py-14 sm:py-20 md:py-24 overflow-hidden">
       {/* Background grid */}
-      <div className="absolute inset-0 opacity-[0.04]"
+      <div
+        className="absolute inset-0 opacity-[0.04]"
         style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "32px 32px" }}
       />
       {/* Animated glow blob */}
@@ -320,110 +451,74 @@ export function AppFlowSlider() {
         className={cn("absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[120px] opacity-10 bg-gradient-to-br pointer-events-none", slide.accent)}
       />
 
-      <div className="relative max-w-6xl mx-auto px-6">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10 md:mb-16">
           <p className="text-xs font-bold uppercase tracking-widest text-brand-red mb-3">How it works</p>
-          <h2 className="text-3xl md:text-5xl font-extrabold text-white leading-tight">
-            Booking a lesson has<br className="hidden md:block" /> never been easier
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-white leading-tight">
+            Booking a lesson has
+            <br className="hidden sm:block" />
+            {" "}never been easier
           </h2>
         </div>
 
-        <div className="flex items-center gap-4 md:gap-8">
-          {/* Prev arrow */}
-          <button
-            onClick={prev}
-            aria-label="Previous"
-            className="shrink-0 w-11 h-11 rounded-2xl bg-white/8 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 transition-all"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+        {/* ── Mobile layout (< md) ──────────────────────────────────── */}
+        <div className="md:hidden flex flex-col items-center gap-8">
+          <Dots />
 
-          {/* Content grid */}
+          <PhoneMockup
+            slideKey={current}
+            direction={direction}
+            screen={slide.screen}
+            accentClass={slide.accent}
+            compact
+          />
+
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={current}
+              custom={direction}
+              variants={textVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="text-center max-w-xs w-full"
+            >
+              <p className={cn("text-sm font-extrabold uppercase tracking-widest mb-2 bg-gradient-to-r bg-clip-text text-transparent", slide.accent)}>
+                {slide.step}
+              </p>
+              <h3 className="text-xl font-extrabold text-white leading-tight mb-3">{slide.heading}</h3>
+              <p className="text-white/55 leading-relaxed text-sm">{slide.body}</p>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="flex items-center gap-5">
+            <NavBtn onClick={prev} label="Previous"><ChevronLeft className="w-5 h-5" /></NavBtn>
+            <span className="text-white/30 text-sm font-medium tabular-nums">
+              0{current + 1} / 0{SLIDES.length}
+            </span>
+            <NavBtn onClick={next} label="Next"><ChevronRight className="w-5 h-5" /></NavBtn>
+          </div>
+        </div>
+
+        {/* ── Desktop layout (md+) ───────────────────────────────────── */}
+        <div className="hidden md:flex items-center gap-4 md:gap-8">
+          <NavBtn onClick={prev} label="Previous"><ChevronLeft className="w-5 h-5" /></NavBtn>
+
           <div className="flex-1 grid md:grid-cols-2 gap-10 md:gap-20 items-center">
-
             {/* Phone */}
             <div className="flex justify-center order-1">
-              <div className="relative">
-                {/* Glow under phone */}
-                <motion.div
-                  key={current}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.4 }}
-                  className={cn("absolute -bottom-6 left-1/2 -translate-x-1/2 w-48 h-12 blur-2xl rounded-full bg-gradient-to-r opacity-50 pointer-events-none", slide.accent)}
-                />
-
-                {/* Phone shell */}
-                <div className="relative bg-[#1a1a1a] rounded-[44px] p-3 shadow-2xl border border-white/10"
-                  style={{ width: 290 }}
-                >
-                  {/* Dynamic Island */}
-                  <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-24 h-6 bg-[#1a1a1a] rounded-full z-20 border border-white/5" />
-
-                  {/* Screen */}
-                  <div className="bg-white rounded-[34px] overflow-hidden" style={{ height: 580 }}>
-                    {/* Status bar */}
-                    <div className="px-5 pt-8 pb-2 flex items-center justify-between bg-white">
-                      <span className="text-[11px] font-bold text-gray-800">9:41</span>
-                      <div className="flex items-center gap-1.5">
-                        <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
-                          <rect x="0" y="3" width="3" height="9" rx="1" fill="#1c1c1e" />
-                          <rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1c1c1e" />
-                          <rect x="9" y="0" width="3" height="12" rx="1" fill="#1c1c1e" />
-                          <rect x="14" y="1" width="2.5" height="10" rx="1" fill="#1c1c1e" opacity="0.3" />
-                        </svg>
-                        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
-                          <rect x="0.5" y="0.5" width="13" height="11" rx="3.5" stroke="#1c1c1e" />
-                          <rect x="14.5" y="3.5" width="1" height="5" rx="0.5" fill="#1c1c1e" opacity="0.4" />
-                          <rect x="2" y="2" width="9" height="8" rx="2" fill="#34c759" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    {/* App content */}
-                    <div style={{ height: 518 }}>
-                      <AnimatePresence mode="wait" custom={direction}>
-                        <motion.div
-                          key={current}
-                          custom={direction}
-                          variants={phoneVariants}
-                          initial="enter"
-                          animate="center"
-                          exit="exit"
-                          className="h-full"
-                        >
-                          {slide.screen}
-                        </motion.div>
-                      </AnimatePresence>
-                    </div>
-                  </div>
-
-                  {/* Home indicator */}
-                  <div className="flex justify-center pt-2.5 pb-0.5">
-                    <div className="w-28 h-1 bg-white/20 rounded-full" />
-                  </div>
-                </div>
-              </div>
+              <PhoneMockup
+                slideKey={current}
+                direction={direction}
+                screen={slide.screen}
+                accentClass={slide.accent}
+              />
             </div>
 
             {/* Text */}
             <div className="order-2">
-              {/* Progress dots */}
-              <div className="flex gap-2.5 mb-8">
-                {SLIDES.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => go(i)}
-                    className={cn(
-                      "h-1.5 rounded-full transition-all duration-300",
-                      i === current ? "w-10 bg-brand-red" : "w-4 bg-white/20 hover:bg-white/40"
-                    )}
-                    aria-label={`Go to slide ${i + 1}`}
-                  />
-                ))}
-              </div>
-
+              <Dots />
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                   key={current}
@@ -432,6 +527,7 @@ export function AppFlowSlider() {
                   initial="enter"
                   animate="center"
                   exit="exit"
+                  className="mt-8"
                 >
                   <p className={cn("text-sm font-extrabold uppercase tracking-widest mb-3 bg-gradient-to-r bg-clip-text text-transparent", slide.accent)}>
                     {slide.step}
@@ -442,8 +538,6 @@ export function AppFlowSlider() {
                   <p className="text-white/55 leading-relaxed text-base md:text-lg">
                     {slide.body}
                   </p>
-
-                  {/* Step counter */}
                   <div className="mt-10 flex items-center gap-3">
                     <span className="text-4xl font-black text-white/10 leading-none select-none">
                       0{current + 1}
@@ -455,14 +549,7 @@ export function AppFlowSlider() {
             </div>
           </div>
 
-          {/* Next arrow */}
-          <button
-            onClick={next}
-            aria-label="Next"
-            className="shrink-0 w-11 h-11 rounded-2xl bg-white/8 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/15 transition-all"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          <NavBtn onClick={next} label="Next"><ChevronRight className="w-5 h-5" /></NavBtn>
         </div>
       </div>
     </section>

@@ -23,7 +23,7 @@ export function AreaTeaser() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section className="bg-[#0D0D0D] py-20 lg:py-28 px-4 overflow-hidden relative">
+    <section className="bg-[#0D0D0D] py-14 sm:py-20 lg:py-28 px-4 overflow-hidden relative">
       {/* Dot grid texture */}
       <div
         className="absolute inset-0 pointer-events-none"

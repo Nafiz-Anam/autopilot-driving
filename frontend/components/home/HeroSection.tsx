@@ -44,10 +44,10 @@ export function HeroSection() {
 
       {/* ── Main grid ── */}
       <div className="relative z-10 flex-1 flex items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20 w-full">
-        <div className="grid lg:grid-cols-5 gap-10 lg:gap-14 items-center w-full">
+        <div className="grid md:grid-cols-5 gap-8 md:gap-10 lg:gap-14 items-center w-full">
 
           {/* ── LEFT — 60% ── */}
-          <div className="lg:col-span-3">
+          <div className="md:col-span-3">
             {/* Pill label */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -66,13 +66,13 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-[3.75rem] font-bold text-[#0D0D0D] leading-[1.05] tracking-tight mb-4"
+              className="text-4xl md:text-[2.4rem] lg:text-[3.75rem] font-bold text-[#0D0D0D] leading-[1.05] tracking-tight mb-4"
               style={{ fontFamily: "'Moderniz', 'Barlow', sans-serif" }}
             >
               Learn to Drive
               <br />
               with{" "}
-              <span className="relative inline-flex h-[1.15em] overflow-hidden align-bottom min-w-[12ch]">
+              <span className="relative inline-flex h-[1.15em] overflow-hidden align-bottom min-w-[9ch] md:min-w-[10ch] lg:min-w-[12ch]">
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={wordIndex}
@@ -99,7 +99,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
-              className="text-xl text-[#6B6B6B] max-w-lg mb-8 leading-relaxed"
+              className="text-base md:text-lg lg:text-xl text-[#6B6B6B] max-w-lg mb-8 leading-relaxed"
             >
               Find a DVSA-approved instructor near you and book your first
               lesson in under 60 seconds.
@@ -140,13 +140,13 @@ export function HeroSection() {
 
           {/* ── RIGHT — 40% — Three.js driving scene ── */}
           <motion.div
-            className="lg:col-span-2"
+            className="md:col-span-2"
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
             <div
-              className="relative w-full h-[380px] sm:h-[440px] lg:h-[520px] rounded-3xl overflow-hidden"
+              className="relative w-full h-[300px] sm:h-[400px] lg:h-[520px] rounded-3xl overflow-hidden"
               style={{
                 boxShadow:
                   "0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.14)",

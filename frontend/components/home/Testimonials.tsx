@@ -152,7 +152,7 @@ export function Testimonials() {
   const row2 = [...testimonials].reverse();
 
   return (
-    <section className="bg-white py-20 lg:py-28 overflow-hidden">
+    <section className="bg-white py-14 sm:py-20 lg:py-28 overflow-hidden">
       {/* Header — padded */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-14" ref={ref}>
         <motion.p

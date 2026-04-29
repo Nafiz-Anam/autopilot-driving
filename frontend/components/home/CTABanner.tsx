@@ -10,7 +10,7 @@ export function CTABanner() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section className="relative py-24 px-4 overflow-hidden">
+    <section className="relative py-16 sm:py-20 md:py-24 px-4 overflow-hidden">
       {/* Red gradient base */}
       <div
         className="absolute inset-0"
