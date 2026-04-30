@@ -13,18 +13,12 @@ declare const global: CustomNodeJsGlobal;
 
 let connectionString = process.env.DATABASE_URL;
 
-// Fix SSL mode to avoid PostgreSQL warnings
-if (connectionString) {
-  // Remove any existing sslmode parameter
+// Enforce SSL only in production; local/Docker dev Postgres has no SSL configured
+if (connectionString && config.env === 'production') {
   const url = new URL(connectionString);
-  const originalSslMode = url.searchParams.get('sslmode');
-  url.searchParams.delete('sslmode');
-  // Add the correct sslmode
-  url.searchParams.set('sslmode', 'verify-full');
-  connectionString = url.toString();
-
-  if (originalSslMode !== 'verify-full') {
-    logger.info('Fixed SSL mode from', { originalSSL: originalSslMode, newSSL: 'verify-full' });
+  if (!url.searchParams.get('sslmode')) {
+    url.searchParams.set('sslmode', 'require');
+    connectionString = url.toString();
   }
 }
 

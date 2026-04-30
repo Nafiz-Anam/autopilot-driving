@@ -12,7 +12,7 @@ import ApiError from '../../src/utils/ApiError';
 import setupTestDB from '../utils/setupTestDb';
 import { describe, beforeEach, test, expect, jest } from '@jest/globals';
 import { userOne, admin, insertUsers } from '../fixtures/user.fixture';
-import { Role, TokenType, User } from '@prisma/client';
+import { BackendUserRole, TokenType, User } from '@prisma/client';
 import prisma from '../../src/client';
 import { roleRights } from '../../src/config/roles';
 
@@ -39,7 +39,7 @@ describe('Auth routes', () => {
         id: expect.anything(),
         name: null,
         email: newUser.email,
-        role: Role.USER,
+        role: BackendUserRole.USER,
         isEmailVerified: false,
       });
 
@@ -49,7 +49,7 @@ describe('Auth routes', () => {
       expect(dbUser).toMatchObject({
         name: null,
         email: newUser.email,
-        role: Role.USER,
+        role: BackendUserRole.USER,
         isEmailVerified: false,
       });
 
@@ -844,7 +844,7 @@ describe('Auth middleware', () => {
     });
     const next = jest.fn();
 
-    await auth(...(roleRights.get(Role.ADMIN) as string[]))(req, httpMocks.createResponse(), next);
+    await auth(...(roleRights.get(BackendUserRole.ADMIN) as string[]))(req, httpMocks.createResponse(), next);
 
     expect(next).toHaveBeenCalledWith();
   });

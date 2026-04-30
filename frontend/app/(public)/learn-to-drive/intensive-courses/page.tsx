@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
 import {
   Accordion,
@@ -11,6 +12,81 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+
+const articleSections = [
+  {
+    id: "pace",
+    title: "Learn to drive at a pace that works for you",
+    body: [
+      "At AutoPilot, we believe learning to drive should focus on building the skills, confidence and awareness needed to become a safe driver — not just passing a test.",
+      "Some learners prefer to take lessons more frequently so they can practise regularly and build their skills sooner. Others prefer a more gradual approach. Our DVSA-approved instructors tailor lessons to suit each learner's pace and experience.",
+      "Your instructor will only recommend booking your driving test once they're confident you're ready.",
+    ],
+  },
+  {
+    id: "quicker",
+    title: "Want to learn more quickly?",
+    body: [
+      "One option is to take lessons more frequently over a shorter period of time.",
+      "These are often called intensive driving courses. They might involve sessions lasting between two and five hours, taken over several days or weeks.",
+      "For some learners, this approach helps them focus on developing key driving skills through regular, concentrated practice — and reach test standard far faster than weekly lessons allow.",
+    ],
+  },
+  {
+    id: "block",
+    title: "Block booking lessons",
+    body: [
+      "If you'd like to take lessons more regularly without committing to a full intensive week, you can book lessons in blocks. These are typically taken as two-hour sessions, giving you time to practise and build your confidence on the road.",
+      "Regular block lessons help you develop driving skills step by step — and tend to attract a small per-hour discount versus single bookings.",
+    ],
+  },
+  {
+    id: "when-test",
+    title: "When can I book my driving test?",
+    body: ["There is no minimum number of lessons required before booking your practical driving test."],
+    list: ["A valid provisional driving licence", "Proof that you've passed your theory test"],
+    listLeadIn: "To book your test, you'll need:",
+    closing: "Your AutoPilot instructor will help you decide when you're ready to take your test.",
+  },
+  {
+    id: "how-quickly",
+    title: "How quickly can I get my licence?",
+    body: [
+      "Driving test availability can vary depending on where you live. In many areas, test centres can be booked several weeks or even months in advance.",
+      "Because of this, it's helpful to consider local test availability when planning your lessons — your instructor can advise on the quickest realistic timeline for your area.",
+    ],
+  },
+  {
+    id: "guarantee",
+    title: "Do intensive driving courses guarantee a pass?",
+    body: [
+      "No driving course can guarantee a pass.",
+      "All learner drivers must pass the same DVSA practical driving test. The result depends on your performance on the day and the number of faults recorded by the examiner.",
+      "Your instructor will work with you to build the skills and confidence needed before booking your test.",
+    ],
+  },
+  {
+    id: "how-many",
+    title: "How many lessons do most learners take?",
+    body: [
+      "Everyone learns differently. Some learners progress quickly, while others prefer more time to build confidence — both are completely valid.",
+      "You could start with a 10-hour lesson bundle, after which your instructor can help you decide what might work best for the rest of your journey to test day.",
+    ],
+  },
+];
+
+const popularLocations = [
+  "Birmingham",
+  "Bristol",
+  "Cardiff",
+  "Leeds",
+  "Leicester",
+  "Liverpool",
+  "London",
+  "Manchester",
+  "Nottingham",
+  "Sheffield",
+];
 
 const steps = [
   {
@@ -124,11 +200,92 @@ export default function IntensiveCoursesPage() {
   return (
     <>
       <PageHero
-        title="Pass in as Little as 1–2 Weeks"
-        subtitle="Structured daily lessons with a dedicated instructor — the fastest route to your licence."
-        dark={true}
-        eyebrow="Intensive Courses"
+        title="Learn with AutoPilot"
+        subtitle="Structured daily lessons with a dedicated instructor — the fastest route to your UK driving licence."
+        dark={false}
+        eyebrow="Intensive Driving Courses"
       />
+
+      {/* Long-form SEO article */}
+      <section className="py-16 lg:py-20 bg-white px-4">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-10">
+          <aside className="lg:sticky lg:top-24 self-start">
+            <h2
+              className="text-3xl lg:text-4xl font-extrabold text-brand-black leading-tight"
+              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            >
+              Intensive driving lessons
+            </h2>
+            <div className="hidden lg:block mt-6 space-y-3 text-sm">
+              {articleSections.map((s) => (
+                <a key={s.id} href={`#${s.id}`} className="block text-brand-muted hover:text-brand-red transition-colors">
+                  {s.title}
+                </a>
+              ))}
+              <a href="#near-you" className="block text-brand-muted hover:text-brand-red transition-colors">
+                Intensive lessons near you
+              </a>
+            </div>
+          </aside>
+
+          <article className="text-brand-black/80 leading-relaxed">
+            {articleSections.map((section) => (
+              <div key={section.id} className="mb-8">
+                <h3
+                  id={section.id}
+                  className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
+                  style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+                >
+                  {section.title}
+                </h3>
+                <div className="space-y-4">
+                  {section.body.map((p, i) => (
+                    <p key={i}>{p}</p>
+                  ))}
+                  {section.listLeadIn && <p>{section.listLeadIn}</p>}
+                  {section.list && (
+                    <ul className="list-disc list-inside space-y-1.5 text-brand-black/85">
+                      {section.list.map((li) => (
+                        <li key={li}>{li}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {section.closing && <p>{section.closing}</p>}
+                </div>
+              </div>
+            ))}
+
+            <h3
+              id="near-you"
+              className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
+              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            >
+              Intensive driving lessons near you
+            </h3>
+            <p className="mb-3">
+              Wherever you are in the UK, you shouldn&apos;t be too far from our network of expert AutoPilot instructors.
+              Popular locations include{" "}
+              {popularLocations.map((loc, i) => (
+                <span key={loc}>
+                  <Link
+                    href={`/locations/${loc.toLowerCase()}`}
+                    className="text-brand-red font-semibold hover:underline"
+                  >
+                    {loc}
+                  </Link>
+                  {i < popularLocations.length - 2 ? ", " : i === popularLocations.length - 2 ? " and " : "."}
+                </span>
+              ))}
+            </p>
+            <Link
+              href="/booking"
+              className="inline-flex items-center gap-2 mt-3 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"
+            >
+              Find an instructor <ArrowRight className="w-4 h-4" />
+            </Link>
+          </article>
+        </div>
+      </section>
 
       {/* How It Works */}
       <section className="py-16 lg:py-24 bg-white px-4">
@@ -271,21 +428,28 @@ export default function IntensiveCoursesPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16 bg-brand-red px-4 text-center text-white">
-        <h2
-          className="text-3xl font-bold mb-3"
-          style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+      {/* CTA Banner */}
+      <section className="px-4 py-12">
+        <div
+          className="max-w-6xl mx-auto rounded-3xl px-6 py-12 text-center text-white"
+          style={{ background: "linear-gradient(120deg, #E8200A 0%, #FF5500 100%)" }}
         >
-          Ready to Pass Fast?
-        </h2>
-        <p className="text-white/80 mb-8">Book your intensive course and we&apos;ll take care of everything.</p>
-        <Link
-          href="/booking"
-          className="inline-block px-8 py-3 bg-white text-brand-red rounded-full font-bold hover:bg-gray-100 transition-colors duration-200"
-        >
-          Book Intensive Course
-        </Link>
+          <h2
+            className="text-2xl sm:text-3xl font-bold mb-3"
+            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          >
+            Ready to start learning?
+          </h2>
+          <p className="opacity-90 mb-6 max-w-xl mx-auto text-sm sm:text-base">
+            Book your lessons today and begin building the skills you need to become a safe, confident driver.
+          </p>
+          <Link
+            href="/booking"
+            className="inline-flex items-center gap-2 bg-white text-brand-red px-8 py-3 rounded-full font-bold hover:bg-brand-surface transition-colors"
+          >
+            See Prices <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </section>
     </>
   );

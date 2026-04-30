@@ -2,7 +2,7 @@
 CREATE TYPE "IPSecurityRuleType" AS ENUM ('WHITELIST', 'BLACKLIST', 'SUSPICIOUS');
 
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN', 'MODERATOR');
+CREATE TYPE "BackendUserRole" AS ENUM ('USER', 'ADMIN', 'MODERATOR');
 
 -- CreateEnum
 CREATE TYPE "TokenType" AS ENUM ('ACCESS', 'REFRESH', 'RESET_PASSWORD', 'VERIFY_EMAIL', 'TWO_FACTOR');
@@ -64,7 +64,7 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "name" TEXT,
     "password" TEXT NOT NULL,
-    "role" "Role" NOT NULL DEFAULT 'USER',
+    "role" "BackendUserRole" NOT NULL DEFAULT 'USER',
     "isEmailVerified" BOOLEAN NOT NULL DEFAULT false,
     "failedLoginAttempts" INTEGER NOT NULL DEFAULT 0,
     "lockoutUntil" TIMESTAMP(3),

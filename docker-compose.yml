@@ -68,9 +68,8 @@ services:
       REDIS_HOST:  redis
       REDIS_PORT:  6379
       CLIENT_URL:  ${NEXT_PUBLIC_APP_URL:-http://localhost:3008}
-      # Backend config uses SMTP_USERNAME/SMTP_PASSWORD — map from common SMTP_USER/SMTP_PASS
-      SMTP_USERNAME: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASS:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
       JWT_SECRET: ${JWT_SECRET:-change-me-jwt-secret}
     ports:
       - "8008:8000"
@@ -115,7 +114,7 @@ services:
       backend:
         condition: service_started
 
-  # ── DB migration + seed (one-shot) ──────────────────────────────────────────
+  # ── Frontend DB migration + seed (one-shot) ─────────────────────────────────
   migrate:
     build:
       context: ./frontend
@@ -125,6 +124,25 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-autopilot}:${POSTGRES_PASSWORD:-autopilot_secret}@db:5432/${POSTGRES_DB:-autopilot}
     command: sh -c "pnpm dlx prisma db push --schema=prisma/schema.prisma && pnpm db:seed"
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - migrate
+
+  # ── Backend DB migration (one-shot) ─────────────────────────────────────────
+  # Applies the auth-infrastructure schema (users, tokens, sessions, devices, etc.)
+  migrate-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: autopilot_migrate_backend
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-autopilot}:${POSTGRES_PASSWORD:-autopilot_secret}@db:5432/${POSTGRES_DB:-autopilot}
+      NODE_ENV: development
+      JWT_SECRET: ${JWT_SECRET:-change-me-jwt-secret}
+    command: sh -c "pnpm dlx prisma migrate deploy"
     depends_on:
       db:
         condition: service_healthy

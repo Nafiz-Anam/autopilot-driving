@@ -3,7 +3,7 @@ import auth from '../../middlewares/auth';
 import validate from '../../middlewares/validate';
 import { userValidation } from '../../validations';
 import { userController } from '../../controllers';
-import { Role } from '../../config/roles';
+import { BackendUserRole } from '../../config/roles';
 
 const router = express.Router();
 
@@ -12,14 +12,14 @@ const router = express.Router();
  * @desc Create user (Admin only)
  * @access Private (Admin only)
  */
-router.post('/', auth(Role.ADMIN), validate(userValidation.createUser), userController.createUser);
+router.post('/', auth(BackendUserRole.ADMIN), validate(userValidation.createUser), userController.createUser);
 
 /**
  * @route GET /v1/users
  * @desc Get users (Admin only)
  * @access Private (Admin only)
  */
-router.get('/', auth(Role.ADMIN), validate(userValidation.getUsers), userController.getUsers);
+router.get('/', auth(BackendUserRole.ADMIN), validate(userValidation.getUsers), userController.getUsers);
 
 /**
  * @route GET /v1/users/:userId
@@ -42,7 +42,7 @@ router.patch('/:userId', auth(), validate(userValidation.updateUser), userContro
  */
 router.delete(
   '/:userId',
-  auth(Role.ADMIN),
+  auth(BackendUserRole.ADMIN),
   validate(userValidation.deleteUser),
   userController.deleteUser
 );
@@ -351,7 +351,7 @@ router.delete(
  */
 router.get(
   '/expiring-passwords',
-  auth(Role.ADMIN),
+  auth(BackendUserRole.ADMIN),
   validate(userValidation.getUsersWithExpiringPasswords),
   userController.getUsersWithExpiringPasswords
 );
@@ -361,7 +361,7 @@ router.get(
  * @desc Get locked users (Admin only)
  * @access Private (Admin only)
  */
-router.get('/locked', auth(Role.ADMIN), userController.getLockedUsers);
+router.get('/locked', auth(BackendUserRole.ADMIN), userController.getLockedUsers);
 
 /**
  * @route PATCH /v1/users/:userId/unlock
@@ -370,7 +370,7 @@ router.get('/locked', auth(Role.ADMIN), userController.getLockedUsers);
  */
 router.patch(
   '/:userId/unlock',
-  auth(Role.ADMIN),
+  auth(BackendUserRole.ADMIN),
   validate(userValidation.unlockUserAccount),
   userController.unlockUserAccount
 );
@@ -382,7 +382,7 @@ router.patch(
  */
 router.patch(
   '/:userId/force-password-change',
-  auth(Role.ADMIN),
+  auth(BackendUserRole.ADMIN),
   validate(userValidation.forcePasswordChange),
   userController.forcePasswordChange
 );
@@ -394,7 +394,7 @@ router.patch(
  */
 router.get(
   '/export',
-  auth(Role.ADMIN),
+  auth(BackendUserRole.ADMIN),
   validate(userValidation.exportUsers),
   userController.exportUsers
 );

@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import { User, Role } from '@prisma/client';
+import { User, BackendUserRole } from '@prisma/client';
 import ApiError from '../utils/ApiError';
 import prisma from '../client';
 import { encryptPassword, isPasswordMatch } from '../utils/encryption';

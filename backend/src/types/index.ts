@@ -11,7 +11,7 @@ export type {
   UserActivity,
   UserSession,
   Device,
-  Role,
+  BackendUserRole,
   TokenType,
   Gender,
 } from '@prisma/client';

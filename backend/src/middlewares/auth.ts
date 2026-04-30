@@ -7,7 +7,7 @@ import { User } from '../types/response';
 import jwt from 'jsonwebtoken';
 import config from '../config/config';
 import prisma from '../client';
-import { Role } from '@prisma/client';
+import { BackendUserRole } from '@prisma/client';
 
 // Extend Express Request to include user
 declare global {
@@ -59,7 +59,7 @@ const auth =
   };
 
 const authByRole =
-  (requiredRole?: Role) => async (req: Request, res: Response, next: NextFunction) => {
+  (requiredRole?: BackendUserRole) => async (req: Request, res: Response, next: NextFunction) => {
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];

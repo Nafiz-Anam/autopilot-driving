@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { User, Role } from '@prisma/client';
+import { User, BackendUserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { jest } from '@jest/globals';
@@ -10,7 +10,7 @@ export const generateTestUser = (overrides: Partial<User> = {}): Partial<User> =
   email: faker.internet.email(),
   password: faker.internet.password(),
   name: faker.person.fullName(),
-  role: Role.USER,
+  role: BackendUserRole.USER,
   isEmailVerified: true,
   ...overrides,
 });

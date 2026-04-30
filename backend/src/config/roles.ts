@@ -1,7 +1,7 @@
-import { Role } from '@prisma/client';
+import { BackendUserRole } from '@prisma/client';
 
 const allRoles = {
-  [Role.USER]: [
+  [BackendUserRole.USER]: [
     'getProfile',
     'updateProfile',
     'getPreferences',
@@ -35,7 +35,7 @@ const allRoles = {
     'getTwoFactorStatus',
     'regenerateBackupCodes',
   ],
-  [Role.ADMIN]: [
+  [BackendUserRole.ADMIN]: [
     'getUsers',
     'manageUsers',
     'getUserProfile',
@@ -82,4 +82,4 @@ export const roles = Object.keys(allRoles);
 export const roleRights = new Map(Object.entries(allRoles));
 
 // Export roles object for use in routes
-export { Role };
+export { BackendUserRole };

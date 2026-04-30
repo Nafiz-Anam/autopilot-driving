@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { BackendUserRole } from '@prisma/client';
 import { z } from 'zod';
 
 const createUser = {
@@ -9,7 +9,7 @@ const createUser = {
       .string()
       .min(1, { message: 'Name is required' })
       .max(100, { message: 'Name cannot exceed 100 characters' }),
-    role: z.enum([Role.USER, Role.ADMIN]).optional(),
+    role: z.enum([BackendUserRole.USER, BackendUserRole.ADMIN]).optional(),
   }),
 };
 
@@ -17,7 +17,7 @@ const getUsers = {
   query: z.object({
     name: z.string().optional(),
     email: z.string().email().optional(),
-    role: z.enum([Role.USER, Role.ADMIN]).optional(),
+    role: z.enum([BackendUserRole.USER, BackendUserRole.ADMIN]).optional(),
     isActive: z.boolean().optional(),
     isEmailVerified: z.boolean().optional(),
     country: z.string().optional(),
@@ -51,7 +51,7 @@ const updateUser = {
       .min(1, { message: 'Name is required' })
       .max(100, { message: 'Name cannot exceed 100 characters' })
       .optional(),
-    role: z.enum([Role.USER, Role.ADMIN]).optional(),
+    role: z.enum([BackendUserRole.USER, BackendUserRole.ADMIN]).optional(),
     isActive: z.boolean().optional(),
     isEmailVerified: z.boolean().optional(),
   }),
@@ -335,7 +335,7 @@ const exportUsers = {
   query: z.object({
     name: z.string().optional(),
     email: z.string().email().optional(),
-    role: z.enum([Role.USER, Role.ADMIN]).optional(),
+    role: z.enum([BackendUserRole.USER, BackendUserRole.ADMIN]).optional(),
     isActive: z.boolean().optional(),
     isEmailVerified: z.boolean().optional(),
     country: z.string().optional(),

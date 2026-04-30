@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, BackendUserRole } from '@prisma/client';
 import authService from '../../../src/services/auth.service';
 import tokenService from '../../../src/services/token.service';
 import userService from '../../../src/services/user.service';
@@ -35,7 +35,7 @@ describe('AuthService Examples', () => {
         email: 'test@example.com',
         password: 'password123',
         name: 'Test User',
-        role: Role.USER,
+        role: BackendUserRole.USER,
         isEmailVerified: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -95,7 +95,7 @@ describe('AuthService Examples', () => {
       const testUser = {
         id: 'test-user-id',
         email: 'test@example.com',
-        role: Role.USER,
+        role: BackendUserRole.USER,
       };
       const req = { ip: '127.0.0.1' } as any;
       const refreshToken = 'valid-refresh-token';

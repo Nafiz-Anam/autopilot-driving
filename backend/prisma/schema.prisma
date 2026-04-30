@@ -54,7 +54,7 @@ model User {
   email               String   @unique
   name                String?
   password            String
-  role                Role
+  role                BackendUserRole
   isEmailVerified     Boolean  @default(false)
   failedLoginAttempts Int      @default(0)
   lockoutUntil        DateTime?
@@ -247,7 +247,8 @@ model Otp {
 }
 
 // Enums
-enum Role {
+// Renamed from Role to avoid conflict with the frontend schema's Role enum (STUDENT/INSTRUCTOR/ADMIN)
+enum BackendUserRole {
   USER
   ADMIN
   MODERATOR
