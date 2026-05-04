@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { useBookingStore } from "@/store/bookingStore";
 import { WizardProgress } from "@/components/booking/WizardProgress";
@@ -25,7 +28,26 @@ function StepContent({ step }: { step: number }) {
 }
 
 export default function BookingPageClient() {
-  const { currentStep } = useBookingStore();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { currentStep, setStep } = useBookingStore();
+
+  /* After 3D Secure, Stripe returns with ?payment_intent=…&step=7 — sync step and confirm server-side */
+  useEffect(() => {
+    const pi = searchParams.get("payment_intent");
+    const stepParam = searchParams.get("step");
+    if (!pi || stepParam !== "7") return;
+
+    setStep(7);
+    axios
+      .post("/api/payments/confirm", { paymentIntentId: pi })
+      .catch(() => {
+        /* webhook may still complete the booking */
+      })
+      .finally(() => {
+        router.replace("/booking?step=7", { scroll: false });
+      });
+  }, [searchParams, router, setStep]);
 
   return (
     <div className="min-h-screen bg-brand-surface">

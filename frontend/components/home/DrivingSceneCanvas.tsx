@@ -4,7 +4,7 @@ import { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-/* ─── Road surface ──────────────────────────────────────────── */
+/* --- Road surface --- */
 function Road() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -22]} receiveShadow>
@@ -14,7 +14,7 @@ function Road() {
   );
 }
 
-/* ─── Kerb / edge strips ────────────────────────────────────── */
+/* --- Kerb / edge strips --- */
 function RoadEdges() {
   return (
     <>
@@ -36,7 +36,7 @@ function RoadEdges() {
   );
 }
 
-/* ─── Animated centre-lane dashes ───────────────────────────── */
+/* --- Animated centre-lane dashes --- */
 function LaneDashes({ x = 0 }: { x?: number }) {
   const ref = useRef<THREE.Group>(null);
   useFrame((_, dt) => {
@@ -66,7 +66,7 @@ function LaneDashes({ x = 0 }: { x?: number }) {
   );
 }
 
-/* ─── Stylized geometric car ────────────────────────────────── */
+/* --- Stylized geometric car --- */
 interface CarProps {
   laneX: number;
   startZ: number;
@@ -173,7 +173,7 @@ function Car({ laneX, startZ, speed, color, brand = false }: CarProps) {
   );
 }
 
-/* ─── Bokeh particles ───────────────────────────────────────── */
+/* --- Bokeh particles --- */
 function Particles() {
   const count = 90;
   const { geometry } = useMemo(() => {
@@ -208,7 +208,7 @@ function Particles() {
   );
 }
 
-/* ─── Street-light poles ────────────────────────────────────── */
+/* --- Street-light poles --- */
 function StreetLights() {
   const positions: [number, number, number][] = [
     [-3.6, 0, -5],
@@ -253,7 +253,7 @@ function StreetLights() {
   );
 }
 
-/* ─── Full Scene ────────────────────────────────────────────── */
+/* --- Full Scene --- */
 function Scene() {
   return (
     <>
@@ -284,7 +284,7 @@ function Scene() {
   );
 }
 
-/* ─── Canvas export ─────────────────────────────────────────── */
+/* --- Canvas export --- */
 export function DrivingSceneCanvas() {
   return (
     <Canvas

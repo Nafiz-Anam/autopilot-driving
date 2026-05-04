@@ -1,8 +1,9 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import type { LessonType } from "@prisma/client";
 import {
   Star,
   MessageCircle,
@@ -12,8 +13,10 @@ import {
   Phone,
   ChevronRight,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { PublicPricingCategory, PublicPricingPackage } from "@/lib/lesson-pricing-public";
 import {
   Select,
   SelectContent,
@@ -21,60 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-/* ─── Data ─────────────────────────────────────────────── */
-
-const manualLessons = [
-  { label: "1 Hour", pricePerHour: 42, total: 42, note: "Pay per lesson" },
-  {
-    label: "5 Hours",
-    pricePerHour: 39,
-    total: 195,
-    note: "£195 block booked",
-    savings: 15,
-    popular: true,
-  },
-  {
-    label: "10 Hours",
-    pricePerHour: 38,
-    total: 380,
-    note: "£380 block booked",
-    savings: 40,
-  },
-];
-
-const automaticLessons = [
-  { label: "1 Hour", pricePerHour: 44, total: 44, note: "Pay per lesson" },
-  {
-    label: "5 Hours",
-    pricePerHour: 41,
-    total: 205,
-    note: "£205 block booked",
-    savings: 15,
-  },
-  {
-    label: "10 Hours",
-    pricePerHour: 40,
-    total: 400,
-    note: "£400 block booked",
-    savings: 40,
-  },
-];
-
-const intensivePackages = [
-  { hours: 10, price: 380, desc: "Ideal for experienced drivers", highlight: false },
-  { hours: 20, price: 720, desc: "Ideal for intermediate drivers", highlight: true },
-  { hours: 30, price: 1050, desc: "Ideal for beginner drivers", highlight: false },
-  { hours: 40, price: 1380, desc: "Ideal for beginner drivers", highlight: false },
-  { hours: 50, price: 1700, desc: "Ideal for new drivers", highlight: false },
-  {
-    hours: 0,
-    label: "Retest Course",
-    price: 180,
-    desc: "For experienced drivers wanting to pass fast",
-    highlight: false,
-  },
-];
 
 const testCentres = [
   { name: "Goodmayes", fee: 175 },
@@ -86,12 +35,6 @@ const testCentres = [
   { name: "Hither Green", fee: 175 },
   { name: "South Norwood", fee: 175 },
   { name: "Romford", fee: 175 },
-];
-
-const otherLessons = [
-  { name: "Manual Refresher", price: 42, unit: "per lesson" },
-  { name: "Automatic Refresher", price: 44, unit: "per lesson" },
-  { name: "Pass Plus Course", price: 260, unit: "8 modules" },
 ];
 
 const trustBadges = [
@@ -150,24 +93,21 @@ function SectionTitle({
 }
 
 function LessonCard({
-  label,
-  pricePerHour,
-  note,
-  savings,
-  popular,
+  pkg,
   delay = 0,
   dark = false,
 }: {
-  label: string;
-  pricePerHour: number;
-  note: string;
-  savings?: number;
-  popular?: boolean;
+  pkg: PublicPricingPackage;
   delay?: number;
   dark?: boolean;
 }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
+  const pricePerHour =
+    pkg.pricePerHour ?? (pkg.hours > 0 ? Math.round((pkg.price / pkg.hours) * 100) / 100 : pkg.price);
+  const note = pkg.footerNote ?? `£${pkg.price} total`;
+  const popular = pkg.isPopular;
+  const ribbon = pkg.badge ?? "Most Popular";
 
   return (
     <motion.div
@@ -186,7 +126,7 @@ function LessonCard({
     >
       {popular && (
         <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-red text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wide whitespace-nowrap">
-          Most Popular
+          {ribbon}
         </span>
       )}
       <p
@@ -195,7 +135,7 @@ function LessonCard({
           dark ? "text-brand-orange" : "text-brand-red"
         )}
       >
-        {label}
+        {pkg.name}
       </p>
       <div className="flex items-end gap-2 mb-1">
         <span
@@ -208,9 +148,9 @@ function LessonCard({
           / hour
         </span>
       </div>
-      {savings && (
+      {pkg.savings != null && pkg.savings > 0 && (
         <span className="inline-block mb-2 text-xs font-bold text-brand-orange bg-orange-50 border border-orange-100 px-2.5 py-0.5 rounded-full w-fit">
-          Save £{savings}
+          Save £{pkg.savings}
         </span>
       )}
       <p className={cn("text-sm mt-auto pt-2", dark ? "text-white/50" : "text-brand-muted")}>
@@ -362,13 +302,15 @@ function AlertBanner() {
 
 function LessonTypeSection({
   title,
-  lessons,
+  packages,
   bg = "white",
 }: {
   title: string;
-  lessons: typeof manualLessons;
+  packages: PublicPricingPackage[];
   bg?: "white" | "surface";
 }) {
+  if (packages.length === 0) return null;
+
   return (
     <section
       className={cn(
@@ -379,8 +321,8 @@ function LessonTypeSection({
       <div className="max-w-4xl mx-auto">
         <SectionTitle>{title}</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {lessons.map((l, i) => (
-            <LessonCard key={l.label} {...l} delay={i * 0.08} />
+          {packages.map((p, i) => (
+            <LessonCard key={p.id} pkg={p} delay={i * 0.08} />
           ))}
         </div>
         <div className="mt-8 text-center">
@@ -396,9 +338,11 @@ function LessonTypeSection({
   );
 }
 
-function IntensiveSection() {
+function IntensiveSection({ packages }: { packages: PublicPricingPackage[] }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
+
+  if (packages.length === 0) return null;
 
   return (
     <section className="py-16 lg:py-24 px-4 bg-brand-black">
@@ -407,33 +351,33 @@ function IntensiveSection() {
           Intensive Lesson Packages
         </SectionTitle>
         <div ref={ref} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {intensivePackages.map((pkg, i) => (
+          {packages.map((pkg, i) => (
             <motion.div
-              key={pkg.label ?? `${pkg.hours}hr`}
+              key={pkg.id}
               initial={{ opacity: 0, y: 28 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.4, delay: i * 0.07 }}
               className={cn(
                 "relative rounded-2xl p-6 flex flex-col gap-2",
-                pkg.highlight
+                pkg.isPopular
                   ? "border-2 border-brand-red bg-brand-dark-surface shadow-lg shadow-red-950/40 scale-[1.02]"
                   : "bg-brand-dark-surface border border-white/10"
               )}
             >
-              {pkg.highlight && (
+              {pkg.isPopular && (
                 <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-red text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wide whitespace-nowrap">
-                  Best Value
+                  {pkg.badge ?? "Best Value"}
                 </span>
               )}
               <p className="text-brand-orange text-xs font-bold uppercase tracking-widest">
-                {pkg.label ?? `${pkg.hours} Hours`}
+                {pkg.name}
               </p>
               <div className="flex items-end gap-1">
                 <span className="text-5xl font-extrabold text-white" style={HEADING}>
                   £{pkg.price.toLocaleString()}
                 </span>
               </div>
-              <p className="text-white/50 text-sm">{pkg.desc}</p>
+              <p className="text-white/50 text-sm">{pkg.footerNote ?? ""}</p>
               <Link
                 href="/booking"
                 className="mt-4 block text-center py-2.5 border border-white/20 text-white text-sm font-semibold rounded-xl hover:border-brand-red hover:bg-brand-red/10 transition-colors duration-200"
@@ -495,44 +439,6 @@ function TestDayFeesSection() {
   );
 }
 
-function OtherLessonsSection() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-
-  return (
-    <section className="py-16 lg:py-20 px-4 bg-brand-surface">
-      <div className="max-w-4xl mx-auto">
-        <SectionTitle>Other Available Lessons</SectionTitle>
-        <div ref={ref} className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {otherLessons.map((l, i) => (
-            <motion.div
-              key={l.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.4, delay: i * 0.09 }}
-              className="bg-white rounded-2xl p-6 border border-brand-border shadow-sm flex flex-col gap-2"
-            >
-              <p className="text-sm font-semibold text-brand-black">{l.name}</p>
-              <div>
-                <span className="text-4xl font-extrabold text-brand-black" style={HEADING}>
-                  £{l.price}
-                </span>
-              </div>
-              <p className="text-xs text-brand-muted uppercase tracking-wide">{l.unit}</p>
-              <Link
-                href="/booking"
-                className="mt-3 block text-center py-2 bg-brand-black text-white text-sm font-semibold rounded-xl hover:bg-brand-red transition-colors duration-200"
-              >
-                Book
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function AboutSection() {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -578,9 +484,20 @@ function AboutSection() {
   );
 }
 
-function BlockBookingBanner() {
+function BlockBookingBanner({
+  manualPph,
+  autoPph,
+  savingPerHour,
+}: {
+  manualPph: number | null;
+  autoPph: number | null;
+  savingPerHour: number | null;
+}) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
+  const m = manualPph ?? 38;
+  const a = autoPph ?? 40;
+  const s = savingPerHour ?? 2;
 
   return (
     <section className="py-16 lg:py-20 px-4 bg-brand-black">
@@ -601,7 +518,7 @@ function BlockBookingBanner() {
             </p>
             <div className="flex items-end gap-1 mb-3">
               <span className="text-4xl font-extrabold text-white" style={HEADING}>
-                £38
+                £{m}
               </span>
               <span className="text-sm text-white/40 mb-1">/ hour</span>
             </div>
@@ -633,7 +550,7 @@ function BlockBookingBanner() {
             </p>
             <div className="flex items-end gap-1 mb-3">
               <span className="text-4xl font-extrabold text-white" style={HEADING}>
-                £40
+                £{a}
               </span>
               <span className="text-sm text-white/40 mb-1">/ hour</span>
             </div>
@@ -665,9 +582,9 @@ function BlockBookingBanner() {
               Reduce with Block Bookings
             </p>
             <div className="text-6xl font-extrabold text-white mb-1" style={HEADING}>
-              £2
+              £{s}
             </div>
-            <p className="text-white/80 text-sm">off per hour</p>
+            <p className="text-white/80 text-sm">off per hour (typical block)</p>
             <Link
               href="/booking"
               className="mt-5 inline-block px-6 py-2.5 bg-white text-brand-red rounded-full font-bold text-sm hover:bg-gray-100 transition-colors duration-200"
@@ -729,22 +646,73 @@ function ContactCTA() {
 
 /* ─── Page ──────────────────────────────────────────────── */
 
+function pkgBySlug(cats: PublicPricingCategory[], lt: LessonType, slug: string) {
+  return cats.find((c) => c.lessonType === lt)?.packages.find((p) => p.slug === slug) ?? null;
+}
+
 export default function PricesPageClient() {
+  const [cats, setCats] = useState<PublicPricingCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/pricing/categories", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { success?: boolean; data?: PublicPricingCategory[] }) => {
+        if (d.success && Array.isArray(d.data)) setCats(d.data);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const byLt = (lt: LessonType) => cats.find((c) => c.lessonType === lt)?.packages ?? [];
+
+  const manual = byLt("MANUAL");
+  const automatic = byLt("AUTOMATIC");
+  const intensive = byLt("INTENSIVE");
+
+  const singleManual = pkgBySlug(cats, "MANUAL", "single");
+
+  const b10m = pkgBySlug(cats, "MANUAL", "block10");
+  const b10a = pkgBySlug(cats, "AUTOMATIC", "block10");
+  const manualPph = b10m?.pricePerHour ?? null;
+  const autoPph = b10a?.pricePerHour ?? null;
+  const savingPerHour =
+    singleManual &&
+    b10m &&
+    singleManual.pricePerHour != null &&
+    b10m.pricePerHour != null
+      ? Math.round((singleManual.pricePerHour - b10m.pricePerHour) * 100) / 100
+      : null;
+
   return (
     <>
       <HeroSection />
       <AlertBanner />
-      <LessonTypeSection title="Manual Driving Lessons" lessons={manualLessons} bg="white" />
-      <LessonTypeSection
-        title="Automatic Driving Lessons"
-        lessons={automaticLessons}
-        bg="surface"
-      />
-      <IntensiveSection />
+      {loading ? (
+        <div className="flex justify-center py-20 bg-white">
+          <Loader2 className="w-10 h-10 animate-spin text-brand-red" />
+        </div>
+      ) : (
+        <>
+          <LessonTypeSection
+            title="Manual Driving Lessons"
+            packages={manual}
+            bg="white"
+          />
+          <LessonTypeSection
+            title="Automatic Driving Lessons"
+            packages={automatic}
+            bg="surface"
+          />
+          <IntensiveSection packages={intensive} />
+        </>
+      )}
       <TestDayFeesSection />
-      <OtherLessonsSection />
       <AboutSection />
-      <BlockBookingBanner />
+      <BlockBookingBanner
+        manualPph={manualPph}
+        autoPph={autoPph}
+        savingPerHour={savingPerHour}
+      />
       <ContactCTA />
     </>
   );

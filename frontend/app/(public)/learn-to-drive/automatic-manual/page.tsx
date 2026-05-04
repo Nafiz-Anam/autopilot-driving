@@ -13,6 +13,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
+import { PublicCategoryPricingCards } from "@/components/pricing/PublicCategoryPricingCards";
 import { cn } from "@/lib/utils";
 
 const comparisonRows = [
@@ -474,6 +475,25 @@ export default function AutomaticManualPage() {
                 </motion.div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 lg:py-20 bg-white px-4">
+        <div className="max-w-4xl mx-auto">
+          <h2
+            className="text-3xl font-bold text-brand-black mb-2 text-center"
+            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          >
+            Current lesson prices
+          </h2>
+          <p className="text-center text-brand-muted text-sm mb-10 max-w-xl mx-auto">
+            All amounts below are managed in one place — when we update admin pricing, this page and
+            the booking checkout stay in sync.
+          </p>
+          <div className="space-y-14">
+            <PublicCategoryPricingCards lessonType="MANUAL" sectionTitle="Manual driving lessons" />
+            <PublicCategoryPricingCards lessonType="AUTOMATIC" sectionTitle="Automatic driving lessons" />
           </div>
         </div>
       </section>

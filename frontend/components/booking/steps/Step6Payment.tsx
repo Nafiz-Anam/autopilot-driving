@@ -26,6 +26,7 @@ function PaymentForm({
 }) {
   const stripe = useStripe();
   const elements = useElements();
+  const paymentIntentIdFromStore = useBookingStore((s) => s.paymentIntentId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,7 +36,7 @@ function PaymentForm({
     setLoading(true);
     setError("");
 
-    const { error: submitError } = await stripe.confirmPayment({
+    const { error: submitError, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/booking?step=7`,
@@ -46,9 +47,23 @@ function PaymentForm({
     if (submitError) {
       setError(submitError.message ?? "Payment failed. Please try again.");
       setLoading(false);
-    } else {
-      onSuccess();
+      return;
     }
+
+    const piId = paymentIntent?.id ?? paymentIntentIdFromStore;
+    if (!piId) {
+      setError("Could not confirm payment. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await axios.post("/api/payments/confirm", { paymentIntentId: piId });
+    } catch {
+      /* webhook or retry may still complete the booking */
+    }
+
+    onSuccess();
   }
 
   return (
@@ -103,8 +118,10 @@ function PromoInput() {
   const {
     selectedPackage,
     promoCode,
+    promoKind,
     promoDiscount,
     setPromoCode,
+    setPromoKind,
     setPromoDiscount,
   } = useBookingStore();
   const [input, setInput] = useState(promoCode ?? "");
@@ -117,21 +134,29 @@ function PromoInput() {
     setApplying(true);
     setMsg("");
     try {
-      const { data } = await axios.post("/api/gift-vouchers/validate", {
+      const { data } = await axios.post("/api/promotions/validate", {
         code: input.trim(),
         amount: selectedPackage?.price,
       });
       if (data.success && data.data.valid) {
-        setPromoCode(input.trim());
+        const kind = data.data.kind;
+        setPromoCode(input.trim().toUpperCase());
+        setPromoKind(kind);
         setPromoDiscount(data.data.discount);
-        setMsg(`Voucher applied — saving £${data.data.discount}!`);
+        setMsg(
+          kind === "coupon"
+            ? `Coupon applied — saving £${data.data.discount}!`
+            : `Gift voucher applied — saving £${data.data.discount}!`
+        );
         setValid(true);
       } else {
-        setMsg(data.data?.reason ?? "Invalid or expired voucher code.");
+        setPromoKind(null);
+        setMsg(data.data?.reason ?? "Invalid or expired code.");
         setValid(false);
       }
     } catch {
-      setMsg("Could not validate voucher. Please try again.");
+      setPromoKind(null);
+      setMsg("Could not validate code. Please try again.");
       setValid(false);
     } finally {
       setApplying(false);
@@ -140,6 +165,7 @@ function PromoInput() {
 
   function remove() {
     setPromoCode("");
+    setPromoKind(null);
     setPromoDiscount(0);
     setInput("");
     setMsg("");
@@ -150,7 +176,7 @@ function PromoInput() {
     <div className="mb-6">
       <label className="flex items-center gap-1.5 text-sm font-medium text-brand-black mb-2">
         <Tag className="w-4 h-4 text-brand-muted" />
-        Gift Voucher / Promo Code
+        Gift voucher, coupon, or promo code
       </label>
 
       {valid ? (
@@ -179,7 +205,7 @@ function PromoInput() {
               onKeyDown={(e) => e.key === "Enter" && apply()}
               className="flex-1 px-4 py-2.5 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm uppercase tracking-widest"
               placeholder="Enter code…"
-              maxLength={12}
+              maxLength={32}
             />
             <button
               type="button"
@@ -219,8 +245,11 @@ export function Step6Payment() {
     lessonType,
     transmission,
     promoCode,
+    promoKind,
     promoDiscount,
     setPaymentIntentId,
+    setBookingId,
+    setBookingReference,
     nextStep,
     prevStep,
   } = useBookingStore();
@@ -229,6 +258,7 @@ export function Step6Payment() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadingIntent, setLoadingIntent] = useState(false);
   const [initError, setInitError] = useState("");
+  const [paymentStarted, setPaymentStarted] = useState(false);
 
   const total = Math.max(0, (selectedPackage?.price ?? 0) - promoDiscount);
 
@@ -244,13 +274,6 @@ export function Step6Payment() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (selectedPackage && selectedInstructor && selectedDate && selectedSlot && lessonType) {
-      initPayment();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   async function initPayment() {
     setLoadingIntent(true);
     setInitError("");
@@ -259,39 +282,59 @@ export function Step6Payment() {
       const [h, m] = selectedSlot!.split(":").map(Number);
       scheduledAt.setHours(h, m, 0, 0);
 
+      const tx =
+        lessonType === "AUTOMATIC"
+          ? "automatic"
+          : lessonType === "MANUAL"
+            ? "manual"
+            : transmission ?? "manual";
+
       const bookingRes = await axios.post("/api/bookings", {
         lessonType,
-        transmission: transmission ?? "manual",
+        transmission: tx,
         instructorId: selectedInstructor!.id,
         packageId: selectedPackage!.id,
         scheduledAt: scheduledAt.toISOString(),
         durationMins: 60,
-        totalAmount: selectedPackage!.price,
-        voucherCode: promoCode ?? undefined,
+        ...(promoKind === "gift_voucher" && promoCode
+          ? { voucherCode: promoCode }
+          : {}),
+        ...(promoKind === "coupon" && promoCode ? { couponCode: promoCode } : {}),
       });
 
       if (!bookingRes.data.success) {
         setInitError("Could not create booking. Please go back and try again.");
+        setPaymentStarted(false);
         return;
       }
 
       const bId: string = bookingRes.data.data.id;
+      const ref: string = bookingRes.data.data.reference;
+      setBookingId(bId);
+      setBookingReference(ref);
 
       const piRes = await axios.post("/api/payments", {
         bookingId: bId,
-        voucherCode: promoCode,
+        ...(promoKind === "gift_voucher" && promoCode
+          ? { voucherCode: promoCode }
+          : {}),
+        ...(promoKind === "coupon" && promoCode ? { couponCode: promoCode } : {}),
       });
 
       if (piRes.data.success && piRes.data.data.clientSecret) {
         setClientSecret(piRes.data.data.clientSecret);
-        setPaymentIntentId(piRes.data.data.clientSecret);
+        if (piRes.data.data.paymentIntentId) {
+          setPaymentIntentId(piRes.data.data.paymentIntentId);
+        }
       } else if (piRes.data.data?.fullyDiscounted) {
         nextStep();
       } else if (!piRes.data.success) {
         setInitError(piRes.data.error ?? "Payment setup failed. Please try again.");
+        setPaymentStarted(false);
       }
     } catch {
       setInitError("Something went wrong. Please go back and try again.");
+      setPaymentStarted(false);
     } finally {
       setLoadingIntent(false);
     }
@@ -316,8 +359,31 @@ export function Step6Payment() {
         <div>
           <PromoInput />
 
+          {!paymentStarted && (
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentStarted(true);
+                  void initPayment();
+                }}
+                className="w-full py-4 bg-brand-black text-white rounded-full font-bold text-base hover:bg-brand-red active:scale-[0.99] transition-all duration-200 shadow-md flex items-center justify-center gap-2"
+              >
+                Continue to payment
+              </button>
+              <p className="text-center text-xs text-brand-muted mt-2">
+                Apply a code above first if you have one — your discount is locked in when you continue.
+              </p>
+            </div>
+          )}
+
           <div className="bg-white border border-brand-border rounded-2xl p-6 shadow-sm">
-            {!stripePromise && !loadingIntent ? (
+            {!paymentStarted ? (
+              <p className="text-sm text-brand-muted text-center py-8">
+                When you&apos;re ready, use <span className="font-semibold text-brand-black">Continue to payment</span>{" "}
+                above to set the amount and open the card form.
+              </p>
+            ) : !stripePromise && !loadingIntent ? (
               <div className="flex flex-col items-center justify-center gap-3 py-10">
                 <AlertCircle className="w-8 h-8 text-yellow-500" />
                 <p className="text-sm text-brand-muted text-center">

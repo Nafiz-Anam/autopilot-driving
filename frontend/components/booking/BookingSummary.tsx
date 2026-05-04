@@ -28,6 +28,7 @@ export function BookingSummary() {
     selectedDate,
     selectedSlot,
     promoDiscount,
+    promoKind,
   } = useBookingStore();
 
   const subtotal = selectedPackage?.price ?? 0;
@@ -154,7 +155,7 @@ export function BookingSummary() {
             {promoDiscount > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-green-600 font-medium flex items-center gap-1">
-                  Voucher discount
+                  {promoKind === "coupon" ? "Coupon" : "Gift voucher"} discount
                 </span>
                 <span className="text-green-600 font-semibold">−£{promoDiscount}</span>
               </div>

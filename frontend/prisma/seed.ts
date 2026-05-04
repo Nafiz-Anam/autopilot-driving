@@ -1,9 +1,389 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import type { LessonType } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { addYears } from "date-fns";
+import { prisma } from "../lib/prisma";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" });
-const prisma = new PrismaClient({ adapter });
+type PkgSeed = {
+  slug: string;
+  name: string;
+  hours: number;
+  lessons: number;
+  price: number;
+  pricePerHour: number | null;
+  savings: number | null;
+  footerNote: string | null;
+  badge: string | null;
+  isPopular: boolean;
+  sortOrder: number;
+};
+
+async function seedLessonPricing() {
+  const categories: {
+    lessonType: LessonType;
+    slug: string;
+    displayName: string;
+    description: string | null;
+    sortOrder: number;
+    packages: PkgSeed[];
+  }[] = [
+    {
+      lessonType: "MANUAL",
+      slug: "manual",
+      displayName: "Manual Driving Lessons",
+      description: null,
+      sortOrder: 0,
+      packages: [
+        {
+          slug: "single",
+          name: "1 Hour",
+          hours: 1,
+          lessons: 1,
+          price: 42,
+          pricePerHour: 42,
+          savings: null,
+          footerNote: "Pay per lesson",
+          badge: null,
+          isPopular: false,
+          sortOrder: 0,
+        },
+        {
+          slug: "block5",
+          name: "5 Hours",
+          hours: 5,
+          lessons: 5,
+          price: 195,
+          pricePerHour: 39,
+          savings: 15,
+          footerNote: "£195 block booked",
+          badge: "Most Popular",
+          isPopular: true,
+          sortOrder: 1,
+        },
+        {
+          slug: "block10",
+          name: "10 Hours",
+          hours: 10,
+          lessons: 10,
+          price: 380,
+          pricePerHour: 38,
+          savings: 40,
+          footerNote: "£380 block booked",
+          badge: null,
+          isPopular: false,
+          sortOrder: 2,
+        },
+        {
+          slug: "block20",
+          name: "20 Hours",
+          hours: 20,
+          lessons: 20,
+          price: 720,
+          pricePerHour: 36,
+          savings: 120,
+          footerNote: "£720 block booked",
+          badge: null,
+          isPopular: false,
+          sortOrder: 3,
+        },
+      ],
+    },
+    {
+      lessonType: "AUTOMATIC",
+      slug: "automatic",
+      displayName: "Automatic Driving Lessons",
+      description: null,
+      sortOrder: 1,
+      packages: [
+        {
+          slug: "single",
+          name: "1 Hour",
+          hours: 1,
+          lessons: 1,
+          price: 44,
+          pricePerHour: 44,
+          savings: null,
+          footerNote: "Pay per lesson",
+          badge: null,
+          isPopular: false,
+          sortOrder: 0,
+        },
+        {
+          slug: "block5",
+          name: "5 Hours",
+          hours: 5,
+          lessons: 5,
+          price: 205,
+          pricePerHour: 41,
+          savings: 15,
+          footerNote: "£205 block booked",
+          badge: null,
+          isPopular: false,
+          sortOrder: 1,
+        },
+        {
+          slug: "block10",
+          name: "10 Hours",
+          hours: 10,
+          lessons: 10,
+          price: 400,
+          pricePerHour: 40,
+          savings: 40,
+          footerNote: "£400 block booked",
+          badge: "Most Popular",
+          isPopular: true,
+          sortOrder: 2,
+        },
+        {
+          slug: "block20",
+          name: "20 Hours",
+          hours: 20,
+          lessons: 20,
+          price: 800,
+          pricePerHour: 40,
+          savings: 80,
+          footerNote: "£800 block booked",
+          badge: null,
+          isPopular: false,
+          sortOrder: 3,
+        },
+      ],
+    },
+    {
+      lessonType: "INTENSIVE",
+      slug: "intensive",
+      displayName: "Intensive Lesson Packages",
+      description: null,
+      sortOrder: 2,
+      packages: [
+        {
+          slug: "hours-10",
+          name: "10 Hours",
+          hours: 10,
+          lessons: 10,
+          price: 380,
+          pricePerHour: 38,
+          savings: null,
+          footerNote: "Ideal for experienced drivers",
+          badge: null,
+          isPopular: false,
+          sortOrder: 0,
+        },
+        {
+          slug: "hours-20",
+          name: "20 Hours",
+          hours: 20,
+          lessons: 20,
+          price: 720,
+          pricePerHour: 36,
+          savings: null,
+          footerNote: "Ideal for intermediate drivers",
+          badge: "Best Value",
+          isPopular: true,
+          sortOrder: 1,
+        },
+        {
+          slug: "hours-30",
+          name: "30 Hours",
+          hours: 30,
+          lessons: 30,
+          price: 1050,
+          pricePerHour: 35,
+          savings: null,
+          footerNote: "Ideal for beginner drivers",
+          badge: null,
+          isPopular: false,
+          sortOrder: 2,
+        },
+        {
+          slug: "hours-40",
+          name: "40 Hours",
+          hours: 40,
+          lessons: 40,
+          price: 1380,
+          pricePerHour: 34.5,
+          savings: null,
+          footerNote: "Ideal for beginner drivers",
+          badge: null,
+          isPopular: false,
+          sortOrder: 3,
+        },
+        {
+          slug: "hours-50",
+          name: "50 Hours",
+          hours: 50,
+          lessons: 50,
+          price: 1700,
+          pricePerHour: 34,
+          savings: null,
+          footerNote: "Ideal for new drivers",
+          badge: null,
+          isPopular: false,
+          sortOrder: 4,
+        },
+        {
+          slug: "retest",
+          name: "Retest Course",
+          hours: 6,
+          lessons: 6,
+          price: 180,
+          pricePerHour: 30,
+          savings: null,
+          footerNote: "For experienced drivers wanting to pass fast",
+          badge: null,
+          isPopular: false,
+          sortOrder: 5,
+        },
+      ],
+    },
+    {
+      lessonType: "REFRESHER",
+      slug: "refresher",
+      displayName: "Refresher Lessons",
+      description: null,
+      sortOrder: 3,
+      packages: [
+        {
+          slug: "single",
+          name: "1 Hour",
+          hours: 1,
+          lessons: 1,
+          price: 42,
+          pricePerHour: 42,
+          savings: null,
+          footerNote: "Pay per lesson",
+          badge: null,
+          isPopular: false,
+          sortOrder: 0,
+        },
+        {
+          slug: "block5",
+          name: "5 Hours",
+          hours: 5,
+          lessons: 5,
+          price: 195,
+          pricePerHour: 39,
+          savings: 15,
+          footerNote: "£195 block booked",
+          badge: null,
+          isPopular: true,
+          sortOrder: 1,
+        },
+        {
+          slug: "block10",
+          name: "10 Hours",
+          hours: 10,
+          lessons: 10,
+          price: 380,
+          pricePerHour: 38,
+          savings: 40,
+          footerNote: "£380 block booked",
+          badge: null,
+          isPopular: false,
+          sortOrder: 2,
+        },
+      ],
+    },
+    {
+      lessonType: "PASS_PLUS",
+      slug: "pass-plus",
+      displayName: "Pass Plus",
+      description: null,
+      sortOrder: 4,
+      packages: [
+        {
+          slug: "full-course",
+          name: "Pass Plus Course",
+          hours: 6,
+          lessons: 6,
+          price: 260,
+          pricePerHour: null,
+          savings: null,
+          footerNote: "6 modules — full programme",
+          badge: null,
+          isPopular: true,
+          sortOrder: 0,
+        },
+      ],
+    },
+    {
+      lessonType: "THEORY",
+      slug: "theory",
+      displayName: "Theory Training",
+      description: null,
+      sortOrder: 5,
+      packages: [
+        {
+          slug: "portal-access",
+          name: "Theory portal access",
+          hours: 1,
+          lessons: 1,
+          price: 29,
+          pricePerHour: null,
+          savings: null,
+          footerNote: "Full question bank and mock tests — adjust price in admin if included free",
+          badge: null,
+          isPopular: true,
+          sortOrder: 0,
+        },
+      ],
+    },
+  ];
+
+  for (const def of categories) {
+    const cat = await prisma.lessonPricingCategory.upsert({
+      where: { lessonType: def.lessonType },
+      create: {
+        lessonType: def.lessonType,
+        slug: def.slug,
+        displayName: def.displayName,
+        description: def.description,
+        sortOrder: def.sortOrder,
+        isActive: true,
+      },
+      update: {
+        slug: def.slug,
+        displayName: def.displayName,
+        description: def.description,
+        sortOrder: def.sortOrder,
+        isActive: true,
+      },
+    });
+
+    for (const p of def.packages) {
+      await prisma.lessonPricingPackage.upsert({
+        where: { categoryId_slug: { categoryId: cat.id, slug: p.slug } },
+        create: {
+          categoryId: cat.id,
+          slug: p.slug,
+          name: p.name,
+          hours: p.hours,
+          lessons: p.lessons,
+          price: p.price,
+          pricePerHour: p.pricePerHour ?? undefined,
+          savings: p.savings ?? undefined,
+          footerNote: p.footerNote ?? undefined,
+          badge: p.badge ?? undefined,
+          isPopular: p.isPopular,
+          sortOrder: p.sortOrder,
+          isActive: true,
+        },
+        update: {
+          name: p.name,
+          hours: p.hours,
+          lessons: p.lessons,
+          price: p.price,
+          pricePerHour: p.pricePerHour ?? null,
+          savings: p.savings ?? null,
+          footerNote: p.footerNote ?? null,
+          badge: p.badge ?? null,
+          isPopular: p.isPopular,
+          sortOrder: p.sortOrder,
+          isActive: true,
+        },
+      });
+    }
+  }
+}
 
 async function main() {
   console.log("Seeding database...");
@@ -245,11 +625,49 @@ async function main() {
     await prisma.theoryQuestion.create({ data: q });
   }
 
+  const couponEnd = addYears(new Date(), 1);
+  await seedLessonPricing();
+
+  await prisma.coupon.upsert({
+    where: { code: "WELCOME10" },
+    update: { isActive: true },
+    create: {
+      code: "WELCOME10",
+      name: "Welcome — 10% off (max £40)",
+      type: "PERCENT",
+      value: 10,
+      maxDiscountAmount: 40,
+      minOrderAmount: null,
+      startsAt: null,
+      endsAt: couponEnd,
+      maxRedemptions: null,
+      isActive: true,
+    },
+  });
+  await prisma.coupon.upsert({
+    where: { code: "SAVE15" },
+    update: { isActive: true },
+    create: {
+      code: "SAVE15",
+      name: "£15 off (min order £35)",
+      type: "FIXED",
+      value: 15,
+      maxDiscountAmount: null,
+      minOrderAmount: 35,
+      startsAt: null,
+      endsAt: couponEnd,
+      maxRedemptions: 200,
+      isActive: true,
+    },
+  });
+
   console.log("\nSeed complete!");
   console.log(`  ${instructors.length} instructors created`);
   console.log(`  ${areaData.length} areas created`);
   console.log("  3 sample bookings created");
   console.log(`  ${theoryQuestions.length} theory questions created (60 across 5 categories)`);
+  console.log("  sample coupons: WELCOME10 (10% off), SAVE15 (£15 off min £35)");
+  console.log("  lesson pricing categories + packages (admin-managed)");
   console.log("\nTest accounts:");
   console.log("  student@test.com     / password123");
   console.log("  instructor@test.com  / password123");

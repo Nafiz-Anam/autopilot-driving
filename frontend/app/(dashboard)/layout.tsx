@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
 
 interface NavItem {
   href: string;
@@ -50,39 +51,6 @@ const pageTitles: Record<string, string> = {
   "/instructor/students": "My Students",
 };
 
-function AutopilotLogo() {
-  return (
-    <Link href="/" className="flex items-center gap-2.5 group">
-      <svg
-        width="34"
-        height="34"
-        viewBox="0 0 34 34"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="shrink-0"
-      >
-        <rect width="34" height="34" rx="10" fill="#E8200A" />
-        <path
-          d="M17 7L27 26H7L17 7Z"
-          fill="none"
-          stroke="white"
-          strokeWidth="2.2"
-          strokeLinejoin="round"
-        />
-        <circle cx="17" cy="20" r="2.5" fill="white" />
-      </svg>
-      <div className="flex flex-col leading-none">
-        <span className="text-white font-black text-sm tracking-widest uppercase">
-          AutoPilot
-        </span>
-        <span className="text-white/40 text-[9px] tracking-[0.2em] uppercase">
-          Driving School
-        </span>
-      </div>
-    </Link>
-  );
-}
-
 function SidebarContent({
   navLinks,
   session,
@@ -107,7 +75,7 @@ function SidebarContent({
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/8">
-        <AutopilotLogo />
+        <AutopilotLogo size="compact" />
       </div>
 
       {/* Nav */}

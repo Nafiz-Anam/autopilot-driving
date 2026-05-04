@@ -11,7 +11,6 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
-import { generateBookingReference } from "@/lib/utils";
 
 /* ── Confetti piece ─────────────────────────────────────────── */
 const CONFETTI_COLORS = [
@@ -134,7 +133,6 @@ function buildGcUrl(
 export function Step7Confirmation() {
   const {
     bookingReference,
-    setBookingReference,
     selectedPackage,
     selectedInstructor,
     selectedDate,
@@ -147,13 +145,10 @@ export function Step7Confirmation() {
   const confettiShown = useRef(false);
 
   useEffect(() => {
-    if (!bookingReference) {
-      setBookingReference(generateBookingReference());
-    }
     confettiShown.current = true;
-  }, [bookingReference, setBookingReference]);
+  }, []);
 
-  const ref = bookingReference ?? "APS-??????";
+  const ref = bookingReference ?? "—";
   const instructorName = selectedInstructor?.user.name ?? "Your Instructor";
   const total = Math.max(0, (selectedPackage?.price ?? 0) - promoDiscount);
 

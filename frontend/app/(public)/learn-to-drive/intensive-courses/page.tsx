@@ -1,18 +1,16 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
+import { PublicCategoryPricingCards } from "@/components/pricing/PublicCategoryPricingCards";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { cn } from "@/lib/utils";
-
 const articleSections = [
   {
     id: "pace",
@@ -115,40 +113,6 @@ const steps = [
   },
 ];
 
-const packages = [
-  {
-    id: "1week",
-    name: "1-Week Intensive",
-    hours: "20 hours",
-    price: 680,
-    perHour: "£34/hr",
-    savings: "Save £160",
-    popular: false,
-    notes: "Best for those with some previous experience",
-  },
-  {
-    id: "2week",
-    name: "2-Week Intensive",
-    hours: "30 hours",
-    price: 900,
-    perHour: "£30/hr",
-    savings: "Save £360",
-    popular: true,
-    badge: "Best Value",
-    notes: "Our most popular intensive option",
-  },
-  {
-    id: "custom",
-    name: "Bespoke Course",
-    hours: "Custom",
-    price: null,
-    perHour: null,
-    savings: null,
-    popular: false,
-    notes: "Tailored to your exact needs and availability",
-  },
-];
-
 const prerequisites = [
   {
     value: "age",
@@ -194,9 +158,6 @@ const testimonials = [
 ];
 
 export default function IntensiveCoursesPage() {
-  const packagesRef = useRef(null);
-  const packagesInView = useInView(packagesRef, { once: true, margin: "-80px" });
-
   return (
     <>
       <PageHero
@@ -320,7 +281,7 @@ export default function IntensiveCoursesPage() {
         </div>
       </section>
 
-      {/* Packages */}
+      {/* Packages — live from admin pricing (INTENSIVE) */}
       <section className="py-16 bg-brand-surface px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
@@ -330,48 +291,22 @@ export default function IntensiveCoursesPage() {
             >
               Course Packages
             </h2>
+            <p className="text-sm text-brand-muted max-w-lg mx-auto">
+              Hour bundles and course totals update everywhere when your team edits them in Admin → Lesson pricing.
+            </p>
           </div>
-          <div ref={packagesRef} className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {packages.map((pkg, i) => (
-              <motion.div
-                key={pkg.id}
-                initial={{ opacity: 0, y: 24 }}
-                animate={packagesInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-                className={cn(
-                  "bg-white rounded-2xl p-6 flex flex-col shadow-sm",
-                  pkg.popular ? "border-2 border-brand-red" : "border border-brand-border"
-                )}
-              >
-                {pkg.popular && (
-                  <span className="self-start bg-brand-red text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
-                    {pkg.badge}
-                  </span>
-                )}
-                <h3 className="text-xl font-bold text-brand-black mb-1" style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}>
-                  {pkg.name}
-                </h3>
-                <p className="text-sm text-brand-muted mb-4">{pkg.hours}</p>
-                {pkg.price ? (
-                  <>
-                    <div className="text-4xl font-extrabold text-brand-black mb-1">£{pkg.price}</div>
-                    <div className="text-sm text-brand-muted mb-1">{pkg.perHour}</div>
-                    {pkg.savings && (
-                      <span className="text-xs font-semibold text-brand-orange">{pkg.savings}</span>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-2xl font-bold text-brand-black mb-1">Contact us</div>
-                )}
-                <p className="text-sm text-brand-muted mt-3 flex-1">{pkg.notes}</p>
-                <Link
-                  href="/booking"
-                  className="mt-6 block text-center px-6 py-2.5 bg-brand-red text-white rounded-full hover:bg-brand-orange transition-colors duration-200 font-semibold text-sm"
-                >
-                  Book This Course
-                </Link>
-              </motion.div>
-            ))}
+          <PublicCategoryPricingCards lessonType="INTENSIVE" />
+          <div className="mt-10 max-w-md mx-auto bg-white rounded-2xl p-6 border border-brand-border text-center shadow-sm">
+            <h3 className="text-lg font-bold text-brand-black mb-2">Bespoke course</h3>
+            <p className="text-sm text-brand-muted mb-4">
+              Need something tailored? Contact us and we&apos;ll build a plan around your diary.
+            </p>
+            <Link
+              href="/contact"
+              className="inline-block px-6 py-2.5 border border-brand-border rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors"
+            >
+              Enquire
+            </Link>
           </div>
         </div>
       </section>

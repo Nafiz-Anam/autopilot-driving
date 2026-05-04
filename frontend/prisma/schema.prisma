@@ -104,11 +104,70 @@ model Booking {
   paymentStatus   PaymentStatus @default(UNPAID)
   stripePaymentId String?
   totalAmount     Decimal       @db.Decimal(10, 2)
+  pricingPackageId String?
+  pricingPackage   LessonPricingPackage? @relation(fields: [pricingPackageId], references: [id], onDelete: SetNull)
   voucherCode     String?
+  couponCode      String?
   discountAmount  Decimal?      @db.Decimal(10, 2)
   notes           String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+}
+
+/// One row per `LessonType` — admin-editable labels and marketing copy for pricing surfaces.
+model LessonPricingCategory {
+  id          String                 @id @default(cuid())
+  lessonType  LessonType             @unique
+  slug        String
+  displayName String
+  description String?
+  sortOrder   Int                    @default(0)
+  isActive    Boolean                @default(true)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  packages    LessonPricingPackage[]
+}
+
+/// Bookable packages shown on /prices, lesson pages, and booking step 3.
+model LessonPricingPackage {
+  id           String                 @id @default(cuid())
+  categoryId   String
+  category     LessonPricingCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  slug         String
+  name         String
+  hours        Int
+  lessons      Int                    @default(1)
+  price        Decimal                @db.Decimal(10, 2)
+  pricePerHour Decimal?               @db.Decimal(10, 2)
+  savings      Decimal?               @db.Decimal(10, 2)
+  footerNote   String?
+  badge        String?
+  isPopular    Boolean                @default(false)
+  sortOrder    Int                    @default(0)
+  isActive     Boolean                @default(true)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  bookings     Booking[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId, isActive, sortOrder])
+}
+
+model Coupon {
+  id                String    @id @default(cuid())
+  code              String    @unique
+  name              String?
+  type              CouponType
+  value             Decimal   @db.Decimal(10, 2)
+  maxDiscountAmount Decimal?  @db.Decimal(10, 2)
+  minOrderAmount    Decimal?  @db.Decimal(10, 2)
+  startsAt          DateTime?
+  endsAt            DateTime?
+  maxRedemptions    Int?
+  redemptionCount   Int       @default(0)
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model GiftVoucher {
@@ -216,4 +275,9 @@ enum PaymentStatus {
   PAID
   REFUNDED
   PARTIAL_REFUND
+}
+
+enum CouponType {
+  PERCENT
+  FIXED
 }

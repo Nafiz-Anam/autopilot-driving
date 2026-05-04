@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { bookingSchema } from "@/lib/validations/booking.schema";
 import { generateBookingReference } from "@/lib/utils";
+import { resolvePackageForBooking } from "@/lib/lesson-pricing";
 
 export async function GET() {
   try {
@@ -68,14 +69,30 @@ export async function POST(request: Request) {
 
     const {
       lessonType,
-      transmission,
+      transmission: bodyTransmission,
       instructorId,
       scheduledAt,
       durationMins,
-      totalAmount,
+      packageId,
       voucherCode,
+      couponCode,
       notes,
     } = parsed.data;
+
+    const resolved = await resolvePackageForBooking(lessonType, packageId);
+    if (!resolved) {
+      return NextResponse.json(
+        { success: false, error: "Invalid or inactive package for this lesson type" },
+        { status: 400 }
+      );
+    }
+
+    const transmission =
+      lessonType === "MANUAL"
+        ? "manual"
+        : lessonType === "AUTOMATIC"
+          ? "automatic"
+          : bodyTransmission;
 
     const reference = generateBookingReference();
 
@@ -90,8 +107,10 @@ export async function POST(request: Request) {
         durationMins,
         status: "PENDING",
         paymentStatus: "UNPAID",
-        totalAmount,
+        totalAmount: resolved.totalAmount,
+        pricingPackageId: resolved.package.id,
         voucherCode,
+        couponCode,
         notes,
       },
     });

@@ -14,8 +14,10 @@ interface BookingStore {
   selectedSlot: string | null;
   studentDetails: StudentDetails | null;
   promoCode: string | null;
+  promoKind: "gift_voucher" | "coupon" | null;
   promoDiscount: number;
   paymentIntentId: string | null;
+  bookingId: string | null;
   bookingReference: string | null;
 
   setStep: (step: number) => void;
@@ -24,13 +26,15 @@ interface BookingStore {
   setLessonType: (type: LessonType) => void;
   setTransmission: (t: "manual" | "automatic") => void;
   setInstructor: (instructor: InstructorPublic) => void;
-  setPackage: (pkg: Package) => void;
+  setPackage: (pkg: Package | null) => void;
   setDate: (date: Date) => void;
   setSlot: (slot: string) => void;
   setStudentDetails: (details: StudentDetails) => void;
   setPromoCode: (code: string) => void;
+  setPromoKind: (kind: "gift_voucher" | "coupon" | null) => void;
   setPromoDiscount: (discount: number) => void;
   setPaymentIntentId: (id: string) => void;
+  setBookingId: (id: string | null) => void;
   setBookingReference: (ref: string) => void;
   reset: () => void;
 }
@@ -45,8 +49,10 @@ const initialState = {
   selectedSlot: null,
   studentDetails: null,
   promoCode: null,
+  promoKind: null,
   promoDiscount: 0,
   paymentIntentId: null,
+  bookingId: null,
   bookingReference: null,
 };
 
@@ -65,13 +71,15 @@ export const useBookingStore = create<BookingStore>()(
       setSlot: (selectedSlot) => set({ selectedSlot }),
       setStudentDetails: (studentDetails) => set({ studentDetails }),
       setPromoCode: (promoCode) => set({ promoCode }),
+      setPromoKind: (promoKind) => set({ promoKind }),
       setPromoDiscount: (promoDiscount) => set({ promoDiscount }),
       setPaymentIntentId: (paymentIntentId) => set({ paymentIntentId }),
+      setBookingId: (bookingId) => set({ bookingId }),
       setBookingReference: (bookingReference) => set({ bookingReference }),
       reset: () => set(initialState),
     }),
     {
-      name: "autopilot-booking",
+      name: "autopilot-booking-v2",
       partialize: (state) => ({
         currentStep: state.currentStep,
         lessonType: state.lessonType,
@@ -81,7 +89,11 @@ export const useBookingStore = create<BookingStore>()(
         selectedDate: state.selectedDate,
         selectedSlot: state.selectedSlot,
         promoCode: state.promoCode,
+        promoKind: state.promoKind,
         promoDiscount: state.promoDiscount,
+        paymentIntentId: state.paymentIntentId,
+        bookingId: state.bookingId,
+        bookingReference: state.bookingReference,
       }),
     }
   )

@@ -1,16 +1,24 @@
 import { z } from "zod";
 
-export const bookingSchema = z.object({
-  lessonType: z.enum(["MANUAL", "AUTOMATIC", "INTENSIVE", "REFRESHER", "PASS_PLUS", "THEORY"]),
-  transmission: z.enum(["manual", "automatic"]),
-  instructorId: z.string().cuid(),
-  packageId: z.string(),
-  scheduledAt: z.string().datetime(),
-  durationMins: z.number().int().min(60).default(60),
-  totalAmount: z.number().positive(),
-  voucherCode: z.string().optional(),
-  notes: z.string().optional(),
-});
+export const bookingSchema = z
+  .object({
+    lessonType: z.enum(["MANUAL", "AUTOMATIC", "INTENSIVE", "REFRESHER", "PASS_PLUS", "THEORY"]),
+    transmission: z.enum(["manual", "automatic"]),
+    instructorId: z.string().cuid(),
+    /** DB `LessonPricingPackage.id` — total is resolved server-side from this package. */
+    packageId: z.string().cuid(),
+    scheduledAt: z.string().datetime(),
+    durationMins: z.number().int().min(60).default(60),
+    /** Ignored if present; amount always comes from the pricing package record. */
+    totalAmount: z.number().nonnegative().optional(),
+    voucherCode: z.string().optional(),
+    couponCode: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  .refine((d) => !(d.voucherCode && d.couponCode), {
+    message: "Use either a gift voucher or a coupon, not both",
+    path: ["couponCode"],
+  });
 
 export const studentDetailsSchema = z.object({
   firstName: z.string().min(2, "First name required"),

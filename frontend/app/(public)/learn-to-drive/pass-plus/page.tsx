@@ -5,6 +5,7 @@ import { motion, useInView } from "framer-motion";
 import Link from "next/link";
 import { CheckCircle } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
+import { LivePassPlusPrice } from "@/components/pricing/LivePassPlusPrice";
 import {
   Accordion,
   AccordionContent,
@@ -90,7 +91,8 @@ export default function PassPlusPage() {
             </p>
             <p className="mt-4">
               There is <strong className="text-brand-black">no test at the end</strong> — you pass by completing
-              all 6 modules to the required standard. The whole course takes approximately 6 hours and costs just £150.
+              all 6 modules to the required standard. The whole course takes approximately 6 hours; see live pricing
+              below (managed in admin).
             </p>
           </div>
         </div>
@@ -161,7 +163,9 @@ export default function PassPlusPage() {
               className="bg-brand-surface rounded-2xl p-8 border border-brand-border text-center"
             >
               <p className="text-sm text-brand-muted uppercase tracking-wider mb-2">Course Price</p>
-              <div className="text-6xl font-extrabold text-brand-red mb-2">£150</div>
+              <div className="text-6xl font-extrabold text-brand-red mb-2">
+                <LivePassPlusPrice fallback={260} />
+              </div>
               <ul className="text-sm text-brand-muted space-y-2 text-left mt-6">
                 {[
                   "6 comprehensive modules",
@@ -200,7 +204,10 @@ export default function PassPlusPage() {
           href="/booking"
           className="inline-block px-8 py-3 bg-brand-red text-white rounded-full font-bold hover:bg-brand-orange transition-colors duration-200"
         >
-          Book Pass Plus — £150
+          Book Pass Plus —{" "}
+          <span className="whitespace-nowrap">
+            <LivePassPlusPrice fallback={260} />
+          </span>
         </Link>
       </section>
     </>

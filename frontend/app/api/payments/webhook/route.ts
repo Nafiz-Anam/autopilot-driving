@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStripeSecretKey, getStripeWebhookSecret } from "@/lib/settings";
+import { finalizeBookingFromSucceededPayment } from "@/lib/booking-payment";
+import { finalizeGiftVoucherPurchaseFromPayment } from "@/lib/gift-voucher-payment";
 
 export const dynamic = "force-dynamic";
 
@@ -39,33 +41,11 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const { bookingId, voucherCode, discountAmount } = paymentIntent.metadata;
-
-        if (bookingId) {
-          await prisma.booking.update({
-            where: { id: bookingId },
-            data: {
-              paymentStatus: "PAID",
-              status: "CONFIRMED",
-              stripePaymentId: paymentIntent.id,
-              ...(voucherCode ? { voucherCode } : {}),
-              ...(discountAmount ? { discountAmount: parseFloat(discountAmount) } : {}),
-            },
-          });
-
-          if (voucherCode && discountAmount && parseFloat(discountAmount) > 0) {
-            const voucher = await prisma.giftVoucher.findUnique({ where: { code: voucherCode } });
-            if (voucher) {
-              const newBalance = Math.max(0, Number(voucher.balance) - parseFloat(discountAmount));
-              await prisma.giftVoucher.update({
-                where: { code: voucherCode },
-                data: {
-                  balance: newBalance,
-                  isRedeemed: newBalance === 0,
-                },
-              });
-            }
-          }
+        const md = paymentIntent.metadata;
+        if (md.type === "gift_voucher") {
+          await finalizeGiftVoucherPurchaseFromPayment(paymentIntent);
+        } else if (md.bookingId) {
+          await finalizeBookingFromSucceededPayment(paymentIntent);
         }
         break;
       }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Users, Award, ChevronDown } from "lucide-react";
 import { PostcodeSearch } from "@/components/shared/PostcodeSearch";
+import { LiveManualHourPrice } from "@/components/pricing/LiveManualHourPrice";
 import { DrivingScene } from "./DrivingScene";
 
 const rotatingWords = ["Confidence.", "Freedom.", "Autopilot."];
@@ -248,7 +249,7 @@ export function HeroSection() {
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-[#F0F0F0] flex items-center justify-between">
-                    <span className="text-sm font-bold text-[#0D0D0D]">£42 / hour</span>
+                    <LiveManualHourPrice className="text-sm font-bold text-[#0D0D0D]" />
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.96 }}

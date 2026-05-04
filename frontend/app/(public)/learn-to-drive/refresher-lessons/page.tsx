@@ -14,6 +14,7 @@ import {
   Award,
 } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
+import { PublicCategoryPricingCards } from "@/components/pricing/PublicCategoryPricingCards";
 
 const audiences = [
   {
@@ -319,30 +320,19 @@ export default function RefresherLessonsPage() {
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* Pricing — admin-managed REFRESHER packages */}
       <section className="py-16 bg-brand-surface px-4">
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto text-center">
           <h2
-            className="text-3xl font-bold text-brand-black mb-8"
+            className="text-3xl font-bold text-brand-black mb-3"
             style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
           >
             Simple Pricing
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl mx-auto">
-            <div className="bg-white rounded-2xl p-6 border border-brand-border text-center">
-              <p className="text-sm text-brand-muted mb-2">Single Refresher Lesson</p>
-              <div className="text-4xl font-extrabold text-brand-black mb-1">£42</div>
-              <p className="text-xs text-brand-muted">1 hour with a qualified instructor</p>
-            </div>
-            <div className="bg-white rounded-2xl p-6 border-2 border-brand-red text-center relative">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-red text-white text-xs font-bold px-3 py-1 rounded-full">
-                Save £15
-              </span>
-              <p className="text-sm text-brand-muted mb-2">Block of 5 Lessons</p>
-              <div className="text-4xl font-extrabold text-brand-black mb-1">£195</div>
-              <p className="text-xs text-brand-muted">£39/hr — best for rebuilding fully</p>
-            </div>
-          </div>
+          <p className="text-sm text-brand-muted mb-8 max-w-lg mx-auto">
+            Live pricing — same bundles power this page and checkout.
+          </p>
+          <PublicCategoryPricingCards lessonType="REFRESHER" />
         </div>
       </section>
 

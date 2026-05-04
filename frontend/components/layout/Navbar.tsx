@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { ChevronDown, Menu, X, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
 
 const learnLinks = [
   { label: "Automatic & Manual", href: "/learn-to-drive/automatic-manual" },
@@ -55,9 +56,7 @@ export function Navbar() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-              <AutopilotLogo />
-            </Link>
+            <AutopilotLogo />
 
             {/* Desktop nav */}
             <div className="hidden lg:flex items-center gap-8">
@@ -254,44 +253,5 @@ function MobileNavItem({ href, label }: { href: string; label: string }) {
         {label}
       </Link>
     </motion.div>
-  );
-}
-
-function AutopilotLogo() {
-  return (
-    <div className="flex items-center gap-2">
-      {/* A chevron icon */}
-      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#E8200A" />
-            <stop offset="100%" stopColor="#FF5500" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M18 4L32 28H22L18 20L14 28H4L18 4Z"
-          fill="url(#logo-gradient)"
-        />
-        <path
-          d="M18 12L26 28H22L18 20L14 28H10L18 12Z"
-          fill="white"
-          opacity="0.3"
-        />
-      </svg>
-      <div className="flex flex-col leading-none">
-        <span
-          className="text-xl font-bold tracking-tight text-[#E8200A]"
-          style={{ fontFamily: "'Moderniz', 'Barlow', sans-serif", letterSpacing: "-0.02em" }}
-        >
-          AUTOPILOT
-        </span>
-        <span
-          className="text-xs font-medium text-[#FF5500] tracking-widest"
-          style={{ fontFamily: "'Metropolis', 'DM Sans', sans-serif" }}
-        >
-          DRIVING SCHOOL
-        </span>
-      </div>
-    </div>
   );
 }

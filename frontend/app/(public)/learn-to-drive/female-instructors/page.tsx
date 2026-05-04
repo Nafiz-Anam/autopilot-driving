@@ -9,6 +9,7 @@ import { z } from "zod";
 import axios from "axios";
 import { Star, Shield, Award, ThumbsUp, ArrowRight } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
+import { PublicCategoryPricingCards } from "@/components/pricing/PublicCategoryPricingCards";
 import { cn } from "@/lib/utils";
 
 const articleIntro = [
@@ -305,6 +306,24 @@ export default function FemaleInstructorsPage() {
               Request a female instructor <ArrowRight className="w-4 h-4" />
             </Link>
           </article>
+        </div>
+      </section>
+
+      <section className="py-16 bg-white px-4 border-y border-brand-border">
+        <div className="max-w-4xl mx-auto">
+          <h2
+            className="text-2xl font-bold text-brand-black text-center mb-2"
+            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          >
+            Lesson prices
+          </h2>
+          <p className="text-center text-sm text-brand-muted mb-10 max-w-lg mx-auto">
+            Female instructors use the same published rates as all AutoPilot lessons — updated from admin in one place.
+          </p>
+          <div className="space-y-12">
+            <PublicCategoryPricingCards lessonType="MANUAL" sectionTitle="Manual lessons" />
+            <PublicCategoryPricingCards lessonType="AUTOMATIC" sectionTitle="Automatic lessons" />
+          </div>
         </div>
       </section>
 

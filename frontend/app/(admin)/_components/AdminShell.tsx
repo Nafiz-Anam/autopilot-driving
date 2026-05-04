@@ -15,6 +15,8 @@ import {
   FileText,
   MessageSquare,
   CreditCard,
+  Tag,
+  PoundSterling,
   ChevronRight,
   ChevronDown,
   Bell,
@@ -23,6 +25,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
 
 interface NavItem {
   href: string;
@@ -36,6 +39,8 @@ const adminNav: NavItem[] = [
   { href: "/admin/instructors", label: "Instructors", icon: GraduationCap },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarDays },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
+  { href: "/admin/coupons", label: "Coupons", icon: Tag },
+  { href: "/admin/pricing", label: "Lesson pricing", icon: PoundSterling },
   { href: "/admin/theory", label: "Theory Bank", icon: BookOpen },
   { href: "/admin/areas", label: "Service Areas", icon: MapPin },
   { href: "/admin/applications", label: "Applications", icon: FileText },
@@ -48,65 +53,22 @@ const pageTitles: Record<string, string> = {
   "/admin/instructors": "Instructors",
   "/admin/bookings": "Bookings",
   "/admin/payments": "Payment Settings",
+  "/admin/coupons": "Coupons",
+  "/admin/pricing": "Lesson pricing",
   "/admin/theory": "Theory Bank",
   "/admin/areas": "Service Areas",
   "/admin/applications": "Applications",
   "/admin/contact": "Contact",
 };
 
-function AutopilotLogo() {
-  return (
-    <Link href="/" className="flex items-center gap-2.5 group">
-      <svg
-        width="34"
-        height="34"
-        viewBox="0 0 34 34"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="shrink-0"
-      >
-        <rect width="34" height="34" rx="10" fill="#E8200A" />
-        <path
-          d="M17 7L27 26H7L17 7Z"
-          fill="none"
-          stroke="white"
-          strokeWidth="2.2"
-          strokeLinejoin="round"
-        />
-        <circle cx="17" cy="20" r="2.5" fill="white" />
-      </svg>
-      <div className="flex flex-col leading-none">
-        <span className="text-white font-black text-sm tracking-widest uppercase">
-          AutoPilot
-        </span>
-        <span className="text-white/40 text-[9px] tracking-[0.2em] uppercase">
-          Driving School
-        </span>
-      </div>
-    </Link>
-  );
-}
-
-function SidebarContent({
-  user,
-  onLinkClick,
-}: {
-  user: { name: string; email: string };
-  onLinkClick?: () => void;
-}) {
+function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
-  const initials = user.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/8">
-        <AutopilotLogo />
+        <AutopilotLogo size="compact" />
       </div>
 
       {/* Nav */}
@@ -142,26 +104,10 @@ function SidebarContent({
         })}
       </nav>
 
-      {/* Bottom: user info + sign out */}
-      <div className="px-3 py-4 border-t border-white/8">
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 mb-2">
-          <div className="w-8 h-8 rounded-full bg-brand-red flex items-center justify-center text-white text-xs font-bold shrink-0">
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white truncate">{user.name}</p>
-            <span className="text-[9px] font-bold tracking-widest uppercase text-brand-orange">
-              ADMIN
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={() => signOut({ callbackUrl: "/" })}
-          className="flex items-center gap-3 w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-white/55 hover:text-white hover:bg-white/8 transition-all duration-200"
-        >
-          <LogOut className="w-4 h-4 shrink-0" />
-          Sign Out
-        </button>
+      <div className="px-4 py-4 border-t border-white/8">
+        <p className="text-[11px] leading-relaxed text-white/35 text-center">
+          © {new Date().getFullYear()} Autopilot Driving School
+        </p>
       </div>
     </div>
   );
@@ -170,11 +116,9 @@ function SidebarContent({
 function MobileSidebar({
   open,
   onClose,
-  user,
 }: {
   open: boolean;
   onClose: () => void;
-  user: { name: string; email: string };
 }) {
   return (
     <AnimatePresence>
@@ -204,7 +148,7 @@ function MobileSidebar({
             >
               <X className="w-5 h-5" />
             </button>
-            <SidebarContent user={user} onLinkClick={onClose} />
+            <SidebarContent onLinkClick={onClose} />
           </motion.aside>
         </>
       )}
@@ -329,15 +273,11 @@ export default function AdminShell({
     <div className="min-h-screen bg-brand-surface">
       {/* Desktop Sidebar */}
       <aside className="fixed top-0 left-0 h-full w-60 bg-brand-black z-30 hidden lg:block">
-        <SidebarContent user={user} />
+        <SidebarContent />
       </aside>
 
       {/* Mobile Sidebar Drawer */}
-      <MobileSidebar
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        user={user}
-      />
+      <MobileSidebar open={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       {/* Main content */}
       <div className="lg:ml-60 min-h-screen flex flex-col">

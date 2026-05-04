@@ -21,8 +21,9 @@ export async function POST(request: Request) {
 
     const { code, amount } = parsed.data;
 
+    const norm = code.trim().toUpperCase();
     const voucher = await prisma.giftVoucher.findUnique({
-      where: { code: code.toUpperCase() },
+      where: { code: norm },
     });
 
     if (!voucher) {

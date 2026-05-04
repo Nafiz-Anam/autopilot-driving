@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Lock, BookOpen } from "lucide-react";
+import { LiveTheoryAccessPrice } from "@/components/pricing/LiveTheoryAccessPrice";
 
 export const metadata = {
   title: "Theory Training | AutoPilot Driving School",
@@ -57,7 +58,8 @@ export default async function TheoryTrainingPage() {
           </h1>
           <p className="text-brand-muted text-sm mb-6 leading-relaxed">
             Access hundreds of theory questions, mock tests, and hazard perception videos.
-            Log in to track your progress and prepare for your DVSA theory test.
+            Log in to track your progress and prepare for your DVSA theory test. Admin-listed theory access:{" "}
+            <LiveTheoryAccessPrice fallback={29} />.
           </p>
           <div className="space-y-3">
             <Link

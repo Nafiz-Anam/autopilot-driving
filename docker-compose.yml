@@ -123,7 +123,8 @@ services:
     container_name: autopilot_migrate
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-autopilot}:${POSTGRES_PASSWORD:-autopilot_secret}@db:5432/${POSTGRES_DB:-autopilot}
-    command: sh -c "pnpm dlx prisma db push --schema=prisma/schema.prisma && pnpm db:seed"
+    # SQL file seeds lesson rows (Prisma 7 + adapter: JS seed upserts for pricing are unreliable in Node).
+    command: sh -c "pnpm exec prisma migrate deploy && pnpm exec prisma db execute --file prisma/sql/seed-lesson-pricing.sql && pnpm db:seed"
     depends_on:
       db:
         condition: service_healthy
