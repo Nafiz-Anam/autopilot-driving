@@ -14,5 +14,5 @@ fi
 export DOCKERHUB_USERNAME
 export IMAGE_TAG
 
-docker compose -f docker-compose.staging.yml pull
-docker compose -f docker-compose.staging.yml up -d --remove-orphans
+docker compose --env-file .env.staging -f docker-compose.staging.yml pull
+docker compose --env-file .env.staging -f docker-compose.staging.yml up -d --remove-orphans
