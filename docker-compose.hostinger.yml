@@ -109,37 +109,6 @@ services:
       retries: 3
       start_period: 15s
 
-  migrate-frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: builder
-    profiles: ["migrate"]
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-    command: >
-      sh -c "pnpm exec prisma migrate deploy &&
-             pnpm exec prisma db execute --file prisma/sql/seed-lesson-pricing.sql &&
-             pnpm db:seed"
-    depends_on:
-      db:
-        condition: service_healthy
-
-  migrate-backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: builder
-    profiles: ["migrate"]
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      NODE_ENV: production
-      JWT_SECRET: ${JWT_SECRET}
-    command: sh -c "pnpm dlx prisma migrate deploy"
-    depends_on:
-      db:
-        condition: service_healthy
-
 volumes:
   postgres_data:
   redis_data:

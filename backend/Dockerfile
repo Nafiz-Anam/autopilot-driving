@@ -47,4 +47,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:8000/v1/health/live || exit 1
 
 # pm2-runtime keeps the process in the foreground (Docker-safe PM2)
-CMD ["node_modules/.bin/pm2-runtime", "start", "ecosystem.config.json"]
+CMD ["sh", "-c", "pnpm exec prisma generate && pnpm exec prisma migrate deploy && node_modules/.bin/pm2-runtime start ecosystem.config.json"]

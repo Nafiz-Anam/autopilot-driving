@@ -47,8 +47,9 @@ GitHub Secrets are only available inside GitHub Actions workflows.
 This repo now includes `.github/workflows/hostinger-deploy.yml`.
 On push to `main`, it deploys `docker-compose.hostinger.yml` using `hostinger/deploy-on-vps@v2`
 and injects environment variables from GitHub Secrets/Variables.
-By default, CI deploys only long-running services (`nginx`, `frontend`, `backend`, `db`, `redis`).
-Migration services are available for manual runs when needed.
+Prisma generate/migrate and demo seed run in app startup commands (inside Docker image CMD),
+so no separate migration containers are used.
+Long-running services are `nginx`, `frontend`, `backend`, `db`, `redis`.
 
 Set these in GitHub -> Settings -> Secrets and variables -> Actions:
 
