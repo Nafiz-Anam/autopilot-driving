@@ -6,7 +6,7 @@
 - Next.js 16 (App Router), React 19, TypeScript 5
 - Tailwind CSS v4, shadcn/ui, Framer Motion v12
 - Prisma ORM v7, PostgreSQL
-- NextAuth.js v5 (Credentials + Google)
+- NextAuth.js v5 (Credentials)
 - Stripe v22 (PaymentIntents + Webhooks)
 - Nodemailer + React Email
 - Zustand v5, React Hook Form v7, Zod v3

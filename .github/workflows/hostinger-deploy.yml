@@ -1,0 +1,50 @@
+name: Hostinger Deploy
+
+on:
+  push:
+    branches:
+      - staging
+    paths:
+      - ".github/workflows/hostinger-deploy.yml"
+      - "docker-compose.hostinger.yml"
+      - "deploy/nginx/**"
+      - "backend/**"
+      - "frontend/**"
+  workflow_dispatch:
+
+concurrency:
+  group: hostinger-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Deploy to Hostinger VPS Docker Manager
+        uses: hostinger/deploy-on-vps@v2
+        with:
+          api-key: ${{ secrets.HOSTINGER_API_KEY }}
+          virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
+          project-name: autopilot-driving
+          docker-compose-path: docker-compose.hostinger.yml
+          environment-variables: |
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            REDIS_DB=${{ vars.REDIS_DB }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_ACCESS_EXPIRATION_MINUTES=${{ vars.JWT_ACCESS_EXPIRATION_MINUTES }}
+            JWT_REFRESH_EXPIRATION_DAYS=${{ vars.JWT_REFRESH_EXPIRATION_DAYS }}
+            JWT_RESET_PASSWORD_EXPIRATION_MINUTES=${{ vars.JWT_RESET_PASSWORD_EXPIRATION_MINUTES }}
+            JWT_VERIFY_EMAIL_EXPIRATION_MINUTES=${{ vars.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES }}
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+            NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}
+            NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+            COMPOSE_PROFILES=migrate
+            FRONTEND_PORT=${{ vars.FRONTEND_PORT }}
