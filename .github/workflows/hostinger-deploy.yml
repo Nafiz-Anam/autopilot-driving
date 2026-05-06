@@ -3,7 +3,7 @@ name: Hostinger Deploy
 on:
   push:
     branches:
-      - staging
+      - main
     paths:
       - ".github/workflows/hostinger-deploy.yml"
       - "docker-compose.hostinger.yml"
