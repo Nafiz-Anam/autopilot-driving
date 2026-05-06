@@ -46,5 +46,4 @@ jobs:
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
             NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}
             NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-            COMPOSE_PROFILES=migrate
             FRONTEND_PORT=${{ vars.FRONTEND_PORT }}

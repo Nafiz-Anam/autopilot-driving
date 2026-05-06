@@ -45,9 +45,10 @@ GitHub Secrets are only available inside GitHub Actions workflows.
 ## 4) Deploy via GitHub Actions (recommended)
 
 This repo now includes `.github/workflows/hostinger-deploy.yml`.
-On push to `staging`, it deploys `docker-compose.hostinger.yml` using `hostinger/deploy-on-vps@v2`
+On push to `main`, it deploys `docker-compose.hostinger.yml` using `hostinger/deploy-on-vps@v2`
 and injects environment variables from GitHub Secrets/Variables.
-`COMPOSE_PROFILES=migrate` is set in the workflow, so migrations run automatically on each deployment.
+By default, CI deploys only long-running services (`nginx`, `frontend`, `backend`, `db`, `redis`).
+Migration services are available for manual runs when needed.
 
 Set these in GitHub -> Settings -> Secrets and variables -> Actions:
 
