@@ -48,7 +48,7 @@ RUN pnpm build
 # Stage 3: runner — minimal production image
 # ──────────────────────────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN npm install -g pnpm@10.33.2
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -79,4 +79,4 @@ EXPOSE 3008
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3008/ || exit 1
 
-CMD ["sh", "-c", "pnpm exec prisma generate && pnpm exec prisma migrate deploy && pnpm exec prisma db execute --file prisma/sql/seed-lesson-pricing.sql && pnpm db:seed && node server.js"]
+CMD ["sh", "-c", "pnpm exec prisma generate && pnpm exec prisma migrate deploy && pnpm exec prisma db execute --file prisma/sql/seed-lesson-pricing.sql && pnpm exec tsx prisma/seed.ts && node server.js"]
