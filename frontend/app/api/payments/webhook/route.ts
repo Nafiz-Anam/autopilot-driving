@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStripeSecretKey, getStripeWebhookSecret } from "@/lib/settings";
+import { createStripeClient } from "@/lib/stripe-server";
 import { finalizeBookingFromSucceededPayment } from "@/lib/booking-payment";
 import { finalizeGiftVoucherPurchaseFromPayment } from "@/lib/gift-voucher-payment";
 
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Payment gateway not configured" }, { status: 503 });
     }
 
-    const stripe = new Stripe(secretKey);
+    const stripe = createStripeClient(secretKey);
 
     let event: Stripe.Event;
     try {

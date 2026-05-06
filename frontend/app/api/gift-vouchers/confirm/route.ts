@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { getStripeSecretKey } from "@/lib/settings";
+import { createStripeClient } from "@/lib/stripe-server";
 import { finalizeGiftVoucherPurchaseFromPayment } from "@/lib/gift-voucher-payment";
 
 /**
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const stripe = new Stripe(secretKey);
+    const stripe = createStripeClient(secretKey);
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.metadata.type !== "gift_voucher") {

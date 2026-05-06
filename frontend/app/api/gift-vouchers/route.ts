@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { giftVoucherSchema } from "@/lib/validations/giftVoucher.schema";
 import { generateVoucherCode } from "@/lib/utils";
 import { getStripeSecretKey } from "@/lib/settings";
+import { createStripeClient } from "@/lib/stripe-server";
 
 const META_MAX = 450;
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const stripe = new Stripe(secretKey);
+    const stripe = createStripeClient(secretKey);
     const msg = (message ?? "").slice(0, META_MAX);
 
     const paymentIntent = await stripe.paymentIntents.create({
