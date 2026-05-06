@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import axios from "axios";
+import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
 import { registerSchema, type RegisterInput, type RegisterFormInput } from "@/lib/validations/auth.schema";
 
 export default function RegisterPage() {
@@ -48,15 +49,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="18" cy="18" r="18" fill="#E8200A" />
-              <path d="M10 24L18 12L26 24" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="18" cy="21" r="3" fill="white" />
-            </svg>
-            <span className="text-xl font-extrabold text-brand-black" style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}>
-              AutoPilot
-            </span>
+          <div className="inline-flex mb-4">
+            <AutopilotLogo />
           </div>
           <h1 className="text-2xl font-bold text-brand-black">Create your account</h1>
           <p className="text-brand-muted text-sm mt-1">Join thousands of AutoPilot students</p>

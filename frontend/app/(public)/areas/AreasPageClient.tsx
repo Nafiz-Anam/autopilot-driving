@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import axios from "axios";
 import { PageHero } from "@/components/shared/PageHero";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,10 @@ const AREAS = [
     districts: "Hounslow, Isleworth, Heston, Heathrow",
   },
 ];
+
+const CoverageLeafletMap = dynamic(() => import("./CoverageLeafletMap"), {
+  ssr: false,
+});
 
 interface CoverageResult {
   covered: boolean;
@@ -247,16 +252,23 @@ export default function AreasPageClient() {
             >
               Find Us on the Map
             </h2>
+            <p className="text-brand-muted mt-3">
+              Each pin marks one of our active lesson coverage locations.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2 mb-5">
+            {AREAS.map((area) => (
+              <span
+                key={`map-pin-${area.postcode}`}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-brand-border text-sm text-brand-black"
+              >
+                <span className="text-brand-red">●</span>
+                {area.name}
+              </span>
+            ))}
           </div>
           <div className="rounded-2xl overflow-hidden shadow-lg border border-brand-border">
-            <iframe
-              src="https://maps.google.com/maps?q=Slough+SL1&output=embed"
-              width="100%"
-              height="400"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-            />
+            <CoverageLeafletMap />
           </div>
         </div>
       </section>
