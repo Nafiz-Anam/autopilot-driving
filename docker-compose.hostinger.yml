@@ -91,15 +91,15 @@ services:
       start_period: 40s
 
   nginx:
-    image: nginx:1.27-alpine
+    build:
+      context: ./deploy/nginx
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       frontend:
         condition: service_healthy
       backend:
         condition: service_healthy
-    volumes:
-      - ./deploy/nginx/hostinger.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "${FRONTEND_PORT:-80}:80"
     healthcheck:
