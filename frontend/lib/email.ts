@@ -1,17 +1,7 @@
 import nodemailer from "nodemailer";
 import { render } from "@react-email/components";
-import { env } from "@/env";
 import type { ReactElement } from "react";
-
-const transporter = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  secure: env.SMTP_PORT === 465,
-  auth: {
-    user: env.SMTP_USER,
-    pass: env.SMTP_PASS,
-  },
-});
+import { getSmtpSettings } from "@/lib/settings";
 
 interface SendEmailOptions {
   to: string;
@@ -20,9 +10,24 @@ interface SendEmailOptions {
 }
 
 export async function sendEmail({ to, subject, react }: SendEmailOptions): Promise<void> {
+  const smtp = await getSmtpSettings();
+  if (!smtp.smtp_host || !smtp.smtp_user || !smtp.smtp_pass || !smtp.email_from) {
+    throw new Error("SMTP settings are not configured in admin panel");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtp.smtp_host,
+    port: smtp.smtp_port,
+    secure: smtp.smtp_port === 465,
+    auth: {
+      user: smtp.smtp_user,
+      pass: smtp.smtp_pass,
+    },
+  });
+
   const html = await render(react);
   await transporter.sendMail({
-    from: env.EMAIL_FROM,
+    from: smtp.email_from,
     to,
     subject,
     html,
@@ -30,9 +35,24 @@ export async function sendEmail({ to, subject, react }: SendEmailOptions): Promi
 }
 
 export async function sendAdminNotification(subject: string, text: string): Promise<void> {
+  const smtp = await getSmtpSettings();
+  if (!smtp.smtp_host || !smtp.smtp_user || !smtp.smtp_pass || !smtp.email_from || !smtp.email_admin) {
+    throw new Error("SMTP settings are not configured in admin panel");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: smtp.smtp_host,
+    port: smtp.smtp_port,
+    secure: smtp.smtp_port === 465,
+    auth: {
+      user: smtp.smtp_user,
+      pass: smtp.smtp_pass,
+    },
+  });
+
   await transporter.sendMail({
-    from: env.EMAIL_FROM,
-    to: env.EMAIL_ADMIN,
+    from: smtp.email_from,
+    to: smtp.email_admin,
     subject,
     text,
   });

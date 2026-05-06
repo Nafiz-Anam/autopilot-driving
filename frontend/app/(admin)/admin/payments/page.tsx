@@ -14,6 +14,8 @@ import {
   Shield,
   Webhook,
   Key,
+  Mail,
+  Server,
   AlertTriangle,
   ExternalLink,
 } from "lucide-react";
@@ -27,6 +29,14 @@ interface StripeSettings {
   has_webhook_secret: boolean;
   has_publishable_key: boolean;
   mode: "live" | "test";
+  smtp_host: string;
+  smtp_port: number;
+  smtp_user: string;
+  smtp_pass_masked: string;
+  email_from: string;
+  email_admin: string;
+  has_smtp_pass: boolean;
+  has_smtp_config: boolean;
 }
 
 const containerVariants = {
@@ -145,12 +155,27 @@ export default function AdminPaymentsPage() {
   const [publishableKey, setPublishableKey] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState("587");
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPass, setSmtpPass] = useState("");
+  const [emailFrom, setEmailFrom] = useState("");
+  const [emailAdmin, setEmailAdmin] = useState("");
+  const [smtpTesting, setSmtpTesting] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/settings")
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) setSettings(d.data);
+        if (d.success) {
+          setSettings(d.data);
+          setSmtpHost(d.data.smtp_host ?? "");
+          setSmtpPort(String(d.data.smtp_port ?? 587));
+          setSmtpUser(d.data.smtp_user ?? "");
+          setEmailFrom(d.data.email_from ?? "");
+          setEmailAdmin(d.data.email_admin ?? "");
+        }
       })
       .finally(() => setLoading(false));
   }, []);
@@ -163,6 +188,12 @@ export default function AdminPaymentsPage() {
       if (publishableKey.trim()) body.stripe_publishable_key = publishableKey.trim();
       if (secretKey.trim()) body.stripe_secret_key = secretKey.trim();
       if (webhookSecret.trim()) body.stripe_webhook_secret = webhookSecret.trim();
+      if (smtpHost.trim()) body.smtp_host = smtpHost.trim();
+      if (smtpPort.trim()) body.smtp_port = smtpPort.trim();
+      if (smtpUser.trim()) body.smtp_user = smtpUser.trim();
+      if (smtpPass.trim()) body.smtp_pass = smtpPass;
+      if (emailFrom.trim()) body.email_from = emailFrom.trim();
+      if (emailAdmin.trim()) body.email_admin = emailAdmin.trim();
 
       if (Object.keys(body).length === 0) {
         setSaveMsg({ type: "error", text: "No changes to save." });
@@ -177,10 +208,11 @@ export default function AdminPaymentsPage() {
       const data = await res.json();
 
       if (data.success) {
-        setSaveMsg({ type: "success", text: "Stripe credentials saved successfully." });
+        setSaveMsg({ type: "success", text: "Settings saved successfully." });
         setPublishableKey("");
         setSecretKey("");
         setWebhookSecret("");
+        setSmtpPass("");
         // Refresh displayed settings
         const refreshed = await fetch("/api/admin/settings").then((r) => r.json());
         if (refreshed.success) setSettings(refreshed.data);
@@ -217,6 +249,31 @@ export default function AdminPaymentsPage() {
       setTestResult({ type: "error", text: "Network error. Please try again." });
     } finally {
       setTesting(false);
+    }
+  }
+
+  async function handleTestSmtp() {
+    setSmtpTesting(true);
+    setSmtpTestResult(null);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test_smtp" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSmtpTestResult({
+          type: "success",
+          text: `SMTP connected (${data.data.host}:${data.data.port})`,
+        });
+      } else {
+        setSmtpTestResult({ type: "error", text: data.error ?? "SMTP test failed." });
+      }
+    } catch {
+      setSmtpTestResult({ type: "error", text: "Network error. Please try again." });
+    } finally {
+      setSmtpTesting(false);
     }
   }
 
@@ -387,7 +444,21 @@ export default function AdminPaymentsPage() {
           <div className="flex-1" />
           <button
             onClick={handleSave}
-            disabled={saving || loading || (!publishableKey.trim() && !secretKey.trim() && !webhookSecret.trim())}
+            disabled={
+              saving ||
+              loading ||
+              (
+                !publishableKey.trim() &&
+                !secretKey.trim() &&
+                !webhookSecret.trim() &&
+                !smtpHost.trim() &&
+                !smtpPort.trim() &&
+                !smtpUser.trim() &&
+                !smtpPass.trim() &&
+                !emailFrom.trim() &&
+                !emailAdmin.trim()
+              )
+            }
             className="flex items-center gap-2 px-6 py-2.5 bg-brand-red text-white rounded-xl text-sm font-semibold hover:bg-brand-orange transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
@@ -443,6 +514,96 @@ export default function AdminPaymentsPage() {
             Open Stripe Webhooks Dashboard
             <ExternalLink className="w-3 h-3" />
           </a>
+        </div>
+      </motion.div>
+
+      {/* SMTP Settings */}
+      <motion.div
+        variants={itemVariants}
+        className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden mb-6"
+      >
+        <div className="px-6 py-4 border-b border-brand-border flex items-center gap-2">
+          <Mail className="w-4 h-4 text-brand-red" />
+          <h3 className="font-bold text-brand-black text-sm">SMTP Credentials</h3>
+        </div>
+        <div className="p-6 space-y-6">
+          <PlainInput
+            label="SMTP Host"
+            value={smtpHost}
+            onChange={setSmtpHost}
+            placeholder="smtp.mailprovider.com"
+            icon={Server}
+            description="Mail server hostname."
+          />
+          <PlainInput
+            label="SMTP Port"
+            value={smtpPort}
+            onChange={setSmtpPort}
+            placeholder="587"
+            icon={Key}
+            description="Usually 587 (TLS) or 465 (SSL)."
+          />
+          <PlainInput
+            label="SMTP User"
+            value={smtpUser}
+            onChange={setSmtpUser}
+            placeholder="no-reply@driving.agiloit.store"
+            icon={Mail}
+            description="SMTP account username."
+          />
+          <MaskedInput
+            label="SMTP Password"
+            value={smtpPass}
+            onChange={setSmtpPass}
+            placeholder="App password or SMTP password"
+            icon={Shield}
+            description="Stored securely. Leave blank to keep current password."
+            currentMasked={settings?.smtp_pass_masked}
+            hasValue={settings?.has_smtp_pass}
+          />
+          <PlainInput
+            label="Email From"
+            value={emailFrom}
+            onChange={setEmailFrom}
+            placeholder="no-reply@driving.agiloit.store"
+            icon={Mail}
+            description="Sender address used by app emails."
+          />
+          <PlainInput
+            label="Admin Notification Email"
+            value={emailAdmin}
+            onChange={setEmailAdmin}
+            placeholder="admin@driving.agiloit.store"
+            icon={Mail}
+            description="Receives contact and instructor notifications."
+          />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleTestSmtp}
+              disabled={smtpTesting}
+              className="flex items-center gap-2 px-4 py-2 border border-brand-border rounded-xl text-sm font-semibold hover:bg-brand-surface disabled:opacity-60"
+            >
+              {smtpTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Test SMTP
+            </button>
+            {settings?.has_smtp_config ? (
+              <span className="text-xs text-green-700">SMTP configured</span>
+            ) : (
+              <span className="text-xs text-yellow-700">SMTP not fully configured</span>
+            )}
+          </div>
+          {smtpTestResult && (
+            <div
+              className={cn(
+                "px-3 py-2 rounded-xl text-sm border",
+                smtpTestResult.type === "success"
+                  ? "bg-green-50 border-green-200 text-green-700"
+                  : "bg-red-50 border-red-200 text-red-700"
+              )}
+            >
+              {smtpTestResult.text}
+            </div>
+          )}
         </div>
       </motion.div>
 

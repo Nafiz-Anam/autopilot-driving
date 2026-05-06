@@ -74,24 +74,16 @@ Create `.env.local` from the example file. Required variables:
 | `DATABASE_URL` | PostgreSQL connection string, e.g. `postgresql://user:pass@localhost:5432/autopilot` |
 | `NEXTAUTH_SECRET` | Random secret for NextAuth — generate with `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | Full URL of your app, e.g. `http://localhost:3000` |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID (from Google Cloud Console) |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `STRIPE_SECRET_KEY` | Stripe secret key (`sk_test_...` for dev) |
-| `STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (`pk_test_...`) |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_...`) |
-| `SMTP_HOST` | SMTP server hostname |
-| `SMTP_PORT` | SMTP port (usually 587 or 465) |
-| `SMTP_USER` | SMTP username / email address |
-| `SMTP_PASS` | SMTP password |
-| `EMAIL_FROM` | From address for outgoing emails |
 | `NEXT_PUBLIC_APP_URL` | Public-facing app URL (used client-side) |
+
+SMTP and email notification credentials are configured in the admin dashboard settings panel.
 
 ## Stripe Webhook (local dev)
 ```bash
 stripe listen --forward-to localhost:3000/api/payments/webhook
 ```
 
-Copy the webhook signing secret printed by the CLI and set it as `STRIPE_WEBHOOK_SECRET` in `.env.local`.
+Copy the webhook signing secret and save it from the admin dashboard Stripe settings page.
 
 ## Project Structure
 
@@ -165,7 +157,7 @@ docker run -p 3008:3008 --env-file .env.local autopilot-app
 2. Run `pnpm build` then `pnpm start`
 3. Run database migrations: `pnpm db:migrate`
 4. Configure Stripe webhook endpoint to `https://yourdomain.com/api/payments/webhook`
-5. Add the Stripe webhook signing secret to your production environment as `STRIPE_WEBHOOK_SECRET`
+5. Save Stripe keys and webhook secret in the Admin Dashboard payment settings
 
 ## Scripts
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripeSecretKey } from "@/lib/settings";
+import { createStripeClient } from "@/lib/stripe-server";
 import { normalizePromoCode, validateCouponForOrder } from "@/lib/promotions";
 
 export async function POST(request: Request) {
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const stripe = new Stripe(secretKey);
+    const stripe = createStripeClient(secretKey);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountPence,

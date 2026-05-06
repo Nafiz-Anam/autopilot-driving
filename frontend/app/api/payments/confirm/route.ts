@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripeSecretKey } from "@/lib/settings";
+import { createStripeClient } from "@/lib/stripe-server";
 import { finalizeBookingFromSucceededPayment } from "@/lib/booking-payment";
 
 /**
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const stripe = new Stripe(secretKey);
+    const stripe = createStripeClient(secretKey);
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.metadata.userId !== session.user.id) {
