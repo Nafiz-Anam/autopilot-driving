@@ -359,7 +359,6 @@ router.get('/captcha/generate', generateCaptcha);
 router.post(
   '/app-login',
   ipSecurityMiddleware,
-  progressiveAuthLimiter,
   validate(drivingAuthValidation.appLogin),
   drivingAuthController.appLogin
 );

@@ -9,24 +9,22 @@ const BRIDGE_TYP = 'nextauth_bridge';
 
 const loginWithEmailPassword = async (email: string, password: string) => {
   const normalized = email.trim().toLowerCase();
-  const rows = await prisma.$queryRawUnsafe<
-    Array<{
-      id: string;
-      email: string;
-      name: string | null;
-      passwordHash: string | null;
-      role: string;
-    }>
-  >(
-    `SELECT id, email, name, "passwordHash", role::text AS role FROM "User" WHERE LOWER(email) = $1 LIMIT 1`,
-    normalized
-  );
-  const user = rows[0];
-  if (!user?.passwordHash) {
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: normalized, mode: 'insensitive' } },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      password: true,
+      role: true,
+    },
+  });
+
+  if (!user?.password) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
   }
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
+  const ok = await bcrypt.compare(password, user.password);
   if (!ok) {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
   }
