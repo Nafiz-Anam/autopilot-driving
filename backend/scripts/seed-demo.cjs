@@ -1,12 +1,18 @@
 /* eslint-disable no-console */
 const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error('DATABASE_URL is required for seed-demo');
+}
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
 async function tableExists(tableName) {
-  const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass($1) AS reg`, `"${tableName}"`);
+  const rows = await prisma.$queryRawUnsafe(`SELECT to_regclass($1)::text AS reg`, `"${tableName}"`);
   return !!rows?.[0]?.reg;
 }
 
@@ -299,7 +305,8 @@ async function seedDrivingSchoolTables() {
       VALUES
         ('seed-cat-manual', 'MANUAL', 'manual', 'Manual Driving Lessons', 'Learn with manual transmission', 1, true, NOW(), NOW()),
         ('seed-cat-auto', 'AUTOMATIC', 'automatic', 'Automatic Driving Lessons', 'Learn with automatic transmission', 2, true, NOW(), NOW()),
-        ('seed-cat-theory', 'THEORY', 'theory', 'Theory Training', 'DVSA theory prep package', 3, true, NOW(), NOW())
+        ('seed-cat-intensive', 'INTENSIVE', 'intensive', 'Intensive Courses', 'Fast-track intensive course options', 3, true, NOW(), NOW()),
+        ('seed-cat-theory', 'THEORY', 'theory', 'Theory Training', 'DVSA theory prep package', 4, true, NOW(), NOW())
       ON CONFLICT ("lessonType") DO UPDATE SET
         slug = EXCLUDED.slug,
         "displayName" = EXCLUDED."displayName",
@@ -315,8 +322,12 @@ async function seedDrivingSchoolTables() {
       INSERT INTO "LessonPricingPackage"
       (id, "categoryId", slug, name, hours, lessons, price, "pricePerHour", savings, "footerNote", badge, "isPopular", "sortOrder", "isActive", "createdAt", "updatedAt")
       VALUES
-        ('seed-pkg-manual-10', 'seed-cat-manual', 'manual-10h', 'Manual 10 Hours', 10, 10, 410.00, 41.00, 10.00, 'Best for new starters', 'Popular', true, 1, true, NOW(), NOW()),
-        ('seed-pkg-auto-10', 'seed-cat-auto', 'auto-10h', 'Automatic 10 Hours', 10, 10, 430.00, 43.00, 5.00, 'Flexible scheduling', NULL, false, 1, true, NOW(), NOW()),
+        ('seed-pkg-manual-single', 'seed-cat-manual', 'single', 'Single Manual Lesson', 1, 1, 45.00, 45.00, NULL, 'Pay as you go', NULL, false, 1, true, NOW(), NOW()),
+        ('seed-pkg-manual-block10', 'seed-cat-manual', 'block10', 'Manual 10 Hours', 10, 10, 410.00, 41.00, 40.00, 'Best for new starters', 'Popular', true, 2, true, NOW(), NOW()),
+        ('seed-pkg-auto-single', 'seed-cat-auto', 'single', 'Single Automatic Lesson', 1, 1, 47.00, 47.00, NULL, 'Pay as you go', NULL, false, 1, true, NOW(), NOW()),
+        ('seed-pkg-auto-block10', 'seed-cat-auto', 'block10', 'Automatic 10 Hours', 10, 10, 430.00, 43.00, 40.00, 'Flexible scheduling', NULL, false, 2, true, NOW(), NOW()),
+        ('seed-pkg-intensive-20', 'seed-cat-intensive', 'intensive-20', 'Intensive 20 Hours', 20, 20, 760.00, 38.00, 140.00, 'Pass faster with focused blocks', 'Best Value', true, 1, true, NOW(), NOW()),
+        ('seed-pkg-intensive-30', 'seed-cat-intensive', 'intensive-30', 'Intensive 30 Hours', 30, 30, 1110.00, 37.00, 240.00, 'Ideal for beginners', NULL, false, 2, true, NOW(), NOW()),
         ('seed-pkg-theory', 'seed-cat-theory', 'theory-access', 'Theory Access', 1, 1, 29.99, 29.99, NULL, 'One-time payment', NULL, false, 1, true, NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
@@ -365,8 +376,8 @@ async function seedDrivingSchoolTables() {
       INSERT INTO "Booking"
       (id, reference, "studentId", "instructorId", "lessonType", transmission, "scheduledAt", "durationMins", status, "paymentStatus", "stripePaymentId", "totalAmount", "pricingPackageId", "voucherCode", "couponCode", "discountAmount", notes, "createdAt", "updatedAt")
       VALUES
-        ('seed-booking-1', 'AP-000001', 'seed-student', 'seed-inst-1', 'MANUAL', 'manual', NOW() + INTERVAL '2 day', 120, 'CONFIRMED', 'PAID', NULL, 82.00, 'seed-pkg-manual-10', NULL, 'WELCOME10', 8.00, 'Seeded confirmed booking', NOW(), NOW()),
-        ('seed-booking-2', 'AP-000002', 'seed-student', 'seed-inst-1', 'AUTOMATIC', 'automatic', NOW() + INTERVAL '7 day', 60, 'PENDING', 'UNPAID', NULL, 43.00, 'seed-pkg-auto-10', NULL, NULL, NULL, 'Seeded pending booking', NOW(), NOW())
+        ('seed-booking-1', 'AP-000001', 'seed-student', 'seed-inst-1', 'MANUAL', 'manual', NOW() + INTERVAL '2 day', 120, 'CONFIRMED', 'PAID', NULL, 82.00, 'seed-pkg-manual-block10', NULL, 'WELCOME10', 8.00, 'Seeded confirmed booking', NOW(), NOW()),
+        ('seed-booking-2', 'AP-000002', 'seed-student', 'seed-inst-1', 'AUTOMATIC', 'automatic', NOW() + INTERVAL '7 day', 60, 'PENDING', 'UNPAID', NULL, 47.00, 'seed-pkg-auto-single', NULL, NULL, NULL, 'Seeded pending booking', NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
         status = EXCLUDED.status,
         "paymentStatus" = EXCLUDED."paymentStatus",

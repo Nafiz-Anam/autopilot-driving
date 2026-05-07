@@ -23,11 +23,48 @@ const listActivePricingCategories = async () => {
      WHERE "isActive" = true
      ORDER BY "sortOrder" ASC, "displayName" ASC`
   );
+  const byCategory = new Map();
+  for (const cat of rows) {
+    byCategory.set(cat.id, { ...cat, packages: [] });
+  }
 
-  return rows.map((row) => ({
-    ...row,
-    packages: [] as unknown[],
-  }));
+  const pkgs = await prisma.$queryRawUnsafe<
+    Array<{
+      id: string;
+      categoryId: string;
+      slug: string;
+      name: string;
+      hours: number;
+      lessons: number;
+      price: string;
+      pricePerHour: string | null;
+      savings: string | null;
+      footerNote: string | null;
+      badge: string | null;
+      isPopular: boolean;
+      sortOrder: number;
+    }>
+  >(
+    `SELECT id, "categoryId", slug, name, hours, lessons, price::text AS price,
+            "pricePerHour"::text AS "pricePerHour", savings::text AS savings,
+            "footerNote", badge, "isPopular", "sortOrder"
+     FROM "LessonPricingPackage"
+     WHERE "isActive" = true
+     ORDER BY "categoryId" ASC, "sortOrder" ASC, name ASC`
+  );
+
+  for (const p of pkgs) {
+    const cat = byCategory.get(p.categoryId);
+    if (!cat) continue;
+    cat.packages.push({
+      ...p,
+      price: Number(p.price),
+      pricePerHour: p.pricePerHour == null ? null : Number(p.pricePerHour),
+      savings: p.savings == null ? null : Number(p.savings),
+    });
+  }
+
+  return Array.from(byCategory.values());
 };
 
 const listPackagesForLessonType = async (lessonType: string) => {
