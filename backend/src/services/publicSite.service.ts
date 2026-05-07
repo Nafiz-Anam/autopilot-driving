@@ -125,13 +125,9 @@ const isContactRateLimited = (ip: string): boolean => {
   return false;
 };
 
-const notifyAdmin = async (subject: string, content: string): Promise<void> => {
+const notifyAdmin = async (subject: string, details: Record<string, string>): Promise<void> => {
   try {
-    const adminEmail = await settingsService.getSetting(SETTING_KEYS.EMAIL_ADMIN);
-    if (!adminEmail) {
-      return;
-    }
-    await emailService.sendEmail(adminEmail, subject, content, `<pre>${content}</pre>`);
+    await emailService.sendAdminNotificationEmail(subject, details);
   } catch (error) {
     // Keep this non-blocking to mirror frontend behavior.
     console.error('[public-site] admin notification error:', error);
@@ -287,11 +283,16 @@ const createInstructorApplication = async (payload: unknown) => {
 
   void notifyAdmin(
     `New Instructor Application — ${fullName}`,
-    `Name: ${fullName}\nEmail: ${email}\nPhone: ${phone}\nPostcode: ${postcode}\nFull Licence: ${
-      hasFullLicence ? 'Yes' : 'No'
-    }\nExperience: ${yearsExperience} years\nTraining Started: ${
-      trainingStarted ? 'Yes' : 'No'
-    }\nMessage: ${message ?? 'none'}`
+    {
+      Name: fullName,
+      Email: email,
+      Phone: phone,
+      Postcode: postcode,
+      'Full Licence': hasFullLicence ? 'Yes' : 'No',
+      Experience: `${yearsExperience} years`,
+      'Training Started': trainingStarted ? 'Yes' : 'No',
+      Message: message ?? 'none',
+    }
   );
 
   return { id: rows[0]?.id };
@@ -323,9 +324,14 @@ const createContactSubmission = async (payload: unknown, ip: string) => {
 
   void notifyAdmin(
     `New Contact Form Submission — ${enquiryType}`,
-    `Name: ${name}\nPhone: ${phone}\nPostcode: ${postcode}\nEnquiry: ${enquiryType}\nBest time: ${
-      callTime ?? 'any'
-    }\nMessage: ${message ?? 'none'}`
+    {
+      Name: name,
+      Phone: phone,
+      Postcode: postcode,
+      Enquiry: enquiryType,
+      'Best time': callTime ?? 'any',
+      Message: message ?? 'none',
+    }
   );
 
   return { id: rows[0]?.id };

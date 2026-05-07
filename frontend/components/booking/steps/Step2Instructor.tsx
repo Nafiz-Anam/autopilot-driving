@@ -64,20 +64,17 @@ export function Step2Instructor() {
   const [postcode, setPostcode] = useState("");
   const [instructors, setInstructors] = useState<InstructorPublic[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
 
-  async function search() {
-    if (!postcode.trim()) return;
+  async function loadInstructors() {
     setLoading(true);
     setError("");
     try {
       const { data } = await axios.get<{ success: boolean; data: InstructorPublic[] }>(
-        backendApiUrl(`/public/instructors?postcode=${encodeURIComponent(postcode.trim())}`)
+        backendApiUrl("/public/instructors")
       );
       if (data.success) {
         setInstructors(data.data);
-        setSearched(true);
       }
     } catch {
       setError("Could not load instructors. Please try again.");
@@ -85,6 +82,18 @@ export function Step2Instructor() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    void loadInstructors();
+  }, []);
+
+  const filteredInstructors = instructors.filter((inst) => {
+    const q = postcode.trim().toLowerCase();
+    if (!q) return true;
+    const name = (inst.user.name ?? "").toLowerCase();
+    const areas = (inst.areas ?? []).join(" ").toLowerCase();
+    return name.includes(q) || areas.includes(q);
+  });
 
   return (
     <div>
@@ -96,31 +105,23 @@ export function Step2Instructor() {
           Choose your instructor
         </h2>
         <p className="text-brand-muted mt-1 text-sm">
-          Enter your postcode to see available instructors near you.
+          All instructors are shown below. Use search to quickly filter by name or area/postcode.
         </p>
       </div>
 
-      {/* Search bar */}
-      <div className="flex gap-3 mb-8">
+      {/* Filter bar */}
+      <div className="mb-8">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted pointer-events-none" />
           <input
             type="text"
             value={postcode}
             onChange={(e) => setPostcode(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === "Enter" && search()}
-            placeholder="Enter postcode e.g. SL1 2AB"
+            placeholder="Filter by instructor name or area/postcode (e.g. SL1, Reading)"
             className="w-full pl-10 pr-4 py-3 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm uppercase tracking-wide"
-            maxLength={8}
+            maxLength={32}
           />
         </div>
-        <button
-          onClick={search}
-          disabled={loading || !postcode.trim()}
-          className="px-6 py-3 bg-brand-red text-white rounded-xl font-semibold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-        >
-          {loading ? "Searching…" : "Search"}
-        </button>
       </div>
 
       {error && (
@@ -138,22 +139,28 @@ export function Step2Instructor() {
         </div>
       )}
 
-      {/* Empty state */}
-      {!loading && searched && instructors.length === 0 && (
+      {/* Empty states */}
+      {!loading && instructors.length === 0 && (
         <div className="text-center py-12 mb-8 bg-brand-surface border border-brand-border rounded-2xl">
-          <p className="font-semibold text-brand-black mb-1">No instructors found near {postcode}</p>
-          <p className="text-sm text-brand-muted">Try a nearby postcode or a broader area.</p>
+          <p className="font-semibold text-brand-black mb-1">No instructors available right now</p>
+          <p className="text-sm text-brand-muted">Please try again shortly.</p>
+        </div>
+      )}
+      {!loading && instructors.length > 0 && filteredInstructors.length === 0 && (
+        <div className="text-center py-12 mb-8 bg-brand-surface border border-brand-border rounded-2xl">
+          <p className="font-semibold text-brand-black mb-1">No instructors match "{postcode}"</p>
+          <p className="text-sm text-brand-muted">Try a broader area or part of the instructor name.</p>
         </div>
       )}
 
       {/* Instructor cards */}
-      {!loading && instructors.length > 0 && (
+      {!loading && filteredInstructors.length > 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8"
         >
-          {instructors.map((inst, i) => {
+          {filteredInstructors.map((inst, i) => {
             const selected = selectedInstructor?.id === inst.id;
             const avail = deriveAvailability(inst.id);
             const isFullyBooked = avail === "full";
