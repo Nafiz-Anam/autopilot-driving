@@ -70,7 +70,7 @@ const config = {
   },
   clientUrl: envVars.CLIENT_URL,
   nextAuthBridge: {
-    secret: envVars.NEXTAUTH_BRIDGE_SECRET ?? '',
+    secret: (envVars.NEXTAUTH_BRIDGE_SECRET && envVars.NEXTAUTH_BRIDGE_SECRET.trim()) || envVars.JWT_SECRET,
   },
 };
 
