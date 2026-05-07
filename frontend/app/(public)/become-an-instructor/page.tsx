@@ -25,6 +25,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { backendApiUrl } from "@/lib/backend-api";
 import { cn } from "@/lib/utils";
 
 const adiSteps = [
@@ -214,7 +215,7 @@ function ApplicationForm() {
 
   async function onSubmit(data: ApplicationInput) {
     try {
-      await axios.post("/api/instructors/apply", data);
+      await axios.post(backendApiUrl("/public/instructors/apply"), data);
       setSubmitted(true);
     } catch {
       // handle error

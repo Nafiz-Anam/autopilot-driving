@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Eye, EyeOff, AlertTriangle, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 
 interface ProfileForm {
   name: string;
@@ -252,11 +254,15 @@ export default function StudentProfilePage() {
   });
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/student/profile").then((r) => r.json()),
-      fetch("/api/student/stats").then((r) => r.json()),
-    ])
-      .then(([profileData, statsData]) => {
+    async function loadProfileAndStats() {
+      try {
+        const headers = await getNextAuthBridgeHeaders();
+        const [profileRes, statsRes] = await Promise.all([
+          fetch(backendApiUrl("/student/profile"), { headers }),
+          fetch(backendApiUrl("/student/stats"), { headers }),
+        ]);
+        const [profileData, statsData] = await Promise.all([profileRes.json(), statsRes.json()]);
+
         if (profileData.data) {
           setProfile({
             name: profileData.data.name ?? "",
@@ -269,9 +275,14 @@ export default function StudentProfilePage() {
           hoursTotal: statsData.hoursTotal ?? 0,
           theoryScore: statsData.theoryScore ?? 0,
         });
-      })
-      .catch(() => {})
-      .finally(() => setProfileLoading(false));
+      } catch {
+        // silently fail
+      } finally {
+        setProfileLoading(false);
+      }
+    }
+
+    loadProfileAndStats();
   }, []);
 
   const initials = profile.name
@@ -290,9 +301,10 @@ export default function StudentProfilePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch("/api/student/profile", {
+      const headers = await getNextAuthBridgeHeaders();
+      const res = await fetch(backendApiUrl("/student/profile"), {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ name: profile.name, phone: profile.phone }),
       });
       if (res.ok) {
@@ -311,9 +323,10 @@ export default function StudentProfilePage() {
     setPasswordError("");
     setSavingPassword(true);
     try {
-      const res = await fetch("/api/student/profile/password", {
+      const headers = await getNextAuthBridgeHeaders();
+      const res = await fetch(backendApiUrl("/student/profile/password"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ current: passwords.current, newPassword: passwords.next }),
       });
       if (res.ok) {

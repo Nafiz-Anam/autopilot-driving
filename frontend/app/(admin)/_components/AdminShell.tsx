@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { useAppAuth } from "@/components/providers/AppAuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -163,6 +163,7 @@ function TopHeader({
   user: { name: string; email: string };
   onMenuClick: () => void;
 }) {
+  const { logout } = useAppAuth();
   const pathname = usePathname();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -243,7 +244,11 @@ function TopHeader({
                   </div>
                   <div className="py-1">
                     <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
+                      type="button"
+                      onClick={() => {
+                        logout();
+                        window.location.href = "/";
+                      }}
                       className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />

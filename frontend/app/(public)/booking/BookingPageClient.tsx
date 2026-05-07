@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 import { AnimatePresence, motion } from "framer-motion";
 import { useBookingStore } from "@/store/bookingStore";
 import { WizardProgress } from "@/components/booking/WizardProgress";
@@ -39,14 +41,16 @@ export default function BookingPageClient() {
     if (!pi || stepParam !== "7") return;
 
     setStep(7);
-    axios
-      .post("/api/payments/confirm", { paymentIntentId: pi })
-      .catch(() => {
+    void (async () => {
+      try {
+        const headers = await getNextAuthBridgeHeaders();
+        await axios.post(backendApiUrl("/payments/confirm"), { paymentIntentId: pi }, { headers });
+      } catch {
         /* webhook may still complete the booking */
-      })
-      .finally(() => {
+      } finally {
         router.replace("/booking?step=7", { scroll: false });
-      });
+      }
+    })();
   }, [searchParams, router, setStep]);
 
   return (

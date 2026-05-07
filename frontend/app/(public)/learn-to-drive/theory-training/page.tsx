@@ -1,25 +1,37 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Lock, BookOpen } from "lucide-react";
 import { LiveTheoryAccessPrice } from "@/components/pricing/LiveTheoryAccessPrice";
+import { useAppSession } from "@/components/providers/AppAuthProvider";
 
-export const metadata = {
-  title: "Theory Training | AutoPilot Driving School",
-  description: "Interactive theory test practice for AutoPilot students.",
-};
+export default function TheoryTrainingPage() {
+  const router = useRouter();
+  const { data: session, status } = useAppSession();
 
-export default async function TheoryTrainingPage() {
-  const session = await auth();
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      router.replace("/student/theory");
+    }
+  }, [status, session, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-brand-surface flex items-center justify-center px-4">
+        <div className="w-10 h-10 border-2 border-brand-red border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (session?.user) {
-    redirect("/student/theory");
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-brand-surface flex items-center justify-center px-4">
       <div className="max-w-lg w-full">
-        {/* Blurred Preview */}
         <div className="relative mb-8">
           <div className="bg-white rounded-2xl border border-brand-border p-6 blur-sm pointer-events-none select-none">
             <h3 className="text-xl font-bold text-brand-black mb-3">Theory Training Portal</h3>
@@ -37,48 +49,38 @@ export default async function TheoryTrainingPage() {
               </div>
             </div>
           </div>
-          {/* Overlay */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 rounded-2xl">
-            <div className="w-14 h-14 bg-brand-red rounded-full flex items-center justify-center mb-3">
-              <Lock className="w-7 h-7 text-white" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/80 backdrop-blur-sm border border-brand-border p-8 text-center">
+            <Lock className="w-12 h-12 text-brand-red mb-4" />
+            <h2 className="text-2xl font-bold text-brand-black mb-2">Theory Training</h2>
+            <p className="text-brand-muted text-sm mb-6 max-w-sm">
+              Full interactive theory practice is included with your AutoPilot account. Sign in to track progress across all DVSA categories.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/login?callbackUrl=/student/theory"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"
+              >
+                <BookOpen className="w-4 h-4" />
+                Sign in to unlock
+              </Link>
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center px-6 py-3 border border-brand-border rounded-full font-semibold text-brand-black hover:bg-brand-surface transition-colors"
+              >
+                Create account
+              </Link>
             </div>
-            <p className="text-lg font-bold text-brand-black">Members Only</p>
-            <p className="text-sm text-brand-muted mt-1">Log in or register to access theory training</p>
+            <div className="mt-8 pt-6 border-t border-brand-border w-full">
+              <p className="text-xs text-brand-muted mb-2">Theory-only access</p>
+              <LiveTheoryAccessPrice />
+            </div>
           </div>
         </div>
-
-        {/* Card */}
-        <div className="bg-white rounded-2xl border border-brand-border p-8 text-center shadow-sm">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)" }}>
-            <BookOpen className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-brand-black mb-2" style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}>
-            Theory Training
-          </h1>
-          <p className="text-brand-muted text-sm mb-6 leading-relaxed">
-            Access hundreds of theory questions, mock tests, and hazard perception videos.
-            Log in to track your progress and prepare for your DVSA theory test. Admin-listed theory access:{" "}
-            <LiveTheoryAccessPrice fallback={29} />.
-          </p>
-          <div className="space-y-3">
-            <Link
-              href="/login?callbackUrl=/student/theory"
-              className="block w-full px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm"
-            >
-              Log In to Access
-            </Link>
-            <Link
-              href="/register"
-              className="block w-full px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold hover:border-brand-red hover:text-brand-red transition-colors duration-200 text-sm"
-            >
-              Create a Free Account
-            </Link>
-          </div>
-          <p className="mt-4 text-xs text-brand-muted">
-            Already a student? Your account includes full access to theory training.
-          </p>
-        </div>
+        <p className="text-center text-sm text-brand-muted">
+          <Link href="/learn-to-drive" className="text-brand-red hover:text-brand-orange font-medium">
+            ← Back to Learn to Drive
+          </Link>
+        </p>
       </div>
     </div>
   );

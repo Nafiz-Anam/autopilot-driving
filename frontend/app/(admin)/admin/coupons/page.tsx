@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { motion } from "framer-motion";
 import { Tag, Loader2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminApiFetch } from "@/lib/admin-api";
 
 interface CouponRow {
   id: string;
@@ -40,7 +40,7 @@ export default function AdminCouponsPage() {
   async function load() {
     setLoading(true);
     try {
-      const { data } = await axios.get<{ data: CouponRow[] }>("/api/admin/coupons");
+      const data = (await adminApiFetch("/coupons").then((r) => r.json())) as { data: CouponRow[] };
       setCoupons(data.data);
     } catch {
       setMsg({ type: "err", text: "Could not load coupons." });
@@ -55,7 +55,11 @@ export default function AdminCouponsPage() {
 
   async function toggleActive(id: string, isActive: boolean) {
     try {
-      await axios.patch(`/api/admin/coupons/${id}`, { isActive: !isActive });
+      await adminApiFetch(`/coupons/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !isActive }),
+      });
       setCoupons((prev) => prev.map((c) => (c.id === id ? { ...c, isActive: !isActive } : c)));
     } catch {
       setMsg({ type: "err", text: "Could not update coupon." });
@@ -72,7 +76,10 @@ export default function AdminCouponsPage() {
         setMsg({ type: "err", text: "Enter a valid value." });
         return;
       }
-      await axios.post("/api/admin/coupons", {
+      await adminApiFetch("/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
         code: form.code.trim(),
         name: form.name.trim() || undefined,
         type: form.type,
@@ -81,6 +88,7 @@ export default function AdminCouponsPage() {
         minOrderAmount: form.minOrderAmount ? parseFloat(form.minOrderAmount) : null,
         maxRedemptions: form.maxRedemptions ? parseInt(form.maxRedemptions, 10) : null,
         isActive: true,
+        }),
       });
       setMsg({ type: "ok", text: "Coupon created." });
       setShowForm(false);

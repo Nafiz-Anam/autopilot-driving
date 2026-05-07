@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useAppAuth, useAppSession } from "@/components/providers/AppAuthProvider";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -57,7 +57,7 @@ function SidebarContent({
   onLinkClick,
 }: {
   navLinks: NavItem[];
-  session: ReturnType<typeof useSession>["data"];
+  session: ReturnType<typeof useAppSession>["data"];
   onLinkClick?: () => void;
 }) {
   const pathname = usePathname();
@@ -125,7 +125,7 @@ function MobileSidebar({
   open: boolean;
   onClose: () => void;
   navLinks: NavItem[];
-  session: ReturnType<typeof useSession>["data"];
+  session: ReturnType<typeof useAppSession>["data"];
 }) {
   return (
     <AnimatePresence>
@@ -169,7 +169,8 @@ function MobileSidebar({
 
 function TopHeader({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { logout } = useAppAuth();
+  const { data: session } = useAppSession();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const title =
     Object.entries(pageTitles).find(([key]) =>
@@ -251,7 +252,11 @@ function TopHeader({ onMenuClick }: { onMenuClick: () => void }) {
                       View Profile
                     </Link>
                     <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
+                      type="button"
+                      onClick={() => {
+                        logout();
+                        window.location.href = "/";
+                      }}
                       className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
@@ -273,7 +278,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useAppSession();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 

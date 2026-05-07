@@ -25,6 +25,8 @@ const envVarsSchema = z.object({
   REDIS_PORT: z.string().transform(Number).pipe(z.number().default(6379)),
   REDIS_PASSWORD: z.string().optional(),
   REDIS_DB: z.string().transform(Number).pipe(z.number().default(0)),
+  /** Shared with Next.js — short-lived JWT for app User ids until full API JWT auth. */
+  NEXTAUTH_BRIDGE_SECRET: z.string().optional(),
 });
 
 let envVars: z.infer<typeof envVarsSchema>;
@@ -67,6 +69,9 @@ const config = {
     db: envVars.REDIS_DB,
   },
   clientUrl: envVars.CLIENT_URL,
+  nextAuthBridge: {
+    secret: envVars.NEXTAUTH_BRIDGE_SECRET ?? '',
+  },
 };
 
 export default config;

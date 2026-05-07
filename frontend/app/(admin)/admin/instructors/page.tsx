@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { adminApiFetch } from "@/lib/admin-api";
 
 interface InstructorRecord {
   id: string;
@@ -236,7 +237,7 @@ export default function AdminInstructorsPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/admin/instructors")
+    adminApiFetch("/instructors")
       .then((r) => r.json())
       .then((d) => setInstructors(d.data ?? []))
       .catch(() => {})
@@ -249,7 +250,7 @@ export default function AdminInstructorsPage() {
       prev.map((ins) => (ins.id === id ? { ...ins, isActive: !current } : ins))
     );
     try {
-      await fetch("/api/admin/instructors", {
+      await adminApiFetch("/instructors", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, isActive: !current }),

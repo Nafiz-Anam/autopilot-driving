@@ -1,4 +1,4 @@
-import type { LessonType } from "@prisma/client";
+import type { LessonType } from "@/types";
 import type { Package } from "@/types";
 
 /** Public API / UI — all money as plain numbers (GBP). Safe for Client Components (no DB imports). */

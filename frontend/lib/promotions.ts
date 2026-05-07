@@ -1,4 +1,4 @@
-import type { Coupon, GiftVoucher } from "@prisma/client";
+import type { CouponTypeEnum } from "@/types";
 
 export function normalizePromoCode(code: string): string {
   return code.trim().toUpperCase();
@@ -21,13 +21,26 @@ export type PromoValidationResult =
     }
   | { valid: false; reason: string };
 
-export function computeCouponDiscount(
-  coupon: Pick<
-    Coupon,
-    "type" | "value" | "maxDiscountAmount" | "minOrderAmount"
-  >,
-  orderTotal: number
-): number {
+/** Coupon fields used by promo helpers (aligned with backend schema). */
+export type CouponForPromo = {
+  type: CouponTypeEnum;
+  value: unknown;
+  maxDiscountAmount: unknown;
+  minOrderAmount: unknown;
+  isActive: boolean;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  maxRedemptions: number | null;
+  redemptionCount: number;
+};
+
+export type GiftVoucherForPromo = {
+  balance: unknown;
+  amount: unknown;
+  recipientName: string;
+};
+
+export function computeCouponDiscount(coupon: CouponForPromo, orderTotal: number): number {
   const total = orderTotal;
   if (coupon.minOrderAmount != null && total < Number(coupon.minOrderAmount)) {
     return 0;
@@ -35,7 +48,7 @@ export function computeCouponDiscount(
 
   if (coupon.type === "PERCENT") {
     const pct = Number(coupon.value);
-    let off = Math.round((total * pct) / 100 * 100) / 100;
+    let off = Math.round(((total * pct) / 100) * 100) / 100;
     if (coupon.maxDiscountAmount != null) {
       off = Math.min(off, Number(coupon.maxDiscountAmount));
     }
@@ -47,7 +60,7 @@ export function computeCouponDiscount(
 }
 
 export function validateCouponForOrder(
-  coupon: Coupon,
+  coupon: CouponForPromo,
   orderTotal: number
 ): { ok: true; discount: number } | { ok: false; reason: string } {
   if (!coupon.isActive) {
@@ -62,10 +75,7 @@ export function validateCouponForOrder(
     return { ok: false, reason: "This coupon has expired" };
   }
 
-  if (
-    coupon.maxRedemptions != null &&
-    coupon.redemptionCount >= coupon.maxRedemptions
-  ) {
+  if (coupon.maxRedemptions != null && coupon.redemptionCount >= coupon.maxRedemptions) {
     return { ok: false, reason: "This coupon has reached its usage limit" };
   }
 
@@ -85,7 +95,7 @@ export function validateCouponForOrder(
 }
 
 export function buildGiftVoucherResult(
-  voucher: GiftVoucher,
+  voucher: GiftVoucherForPromo,
   orderTotal: number
 ): Extract<PromoValidationResult, { kind: "gift_voucher" }> {
   const remainingBalance = Number(voucher.balance);

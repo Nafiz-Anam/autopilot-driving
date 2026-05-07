@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { adminApiFetch } from "@/lib/admin-api";
 
 interface ContactSubmission {
   id: string;
@@ -137,7 +138,7 @@ export default function AdminContactPage() {
   async function fetchSubmissions(p: number) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/contact?page=${p}`);
+      const res = await adminApiFetch(`/contact?page=${p}`);
       if (res.ok) {
         const data = await res.json();
         setSubmissions(data.data ?? []);
@@ -160,7 +161,7 @@ export default function AdminContactPage() {
       "Are you sure you want to delete this submission? This cannot be undone."
     );
     if (!confirmed) return;
-    const res = await fetch(`/api/admin/contact/${id}`, { method: "DELETE" });
+    const res = await adminApiFetch(`/contact/${id}`, { method: "DELETE" });
     if (res.ok) {
       setSubmissions((prev) => prev.filter((s) => s.id !== id));
       setTotal((t) => t - 1);

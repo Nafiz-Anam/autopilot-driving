@@ -12,6 +12,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import type { Stripe } from "@stripe/stripe-js";
 import { giftVoucherSchema, type GiftVoucherInput } from "@/lib/validations/giftVoucher.schema";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
 
 const CONFETTI_COLORS = ["#E8200A", "#FF5500", "#FFB800", "#00C853", "#2979FF", "#AA00FF"];
 
@@ -259,7 +260,9 @@ function GiftPayForm({
     }
     let code = "";
     try {
-      const { data } = await axios.post("/api/gift-vouchers/confirm", { paymentIntentId: piId });
+      const { data } = await axios.post(backendApiUrl("/gift-vouchers/confirm"), {
+        paymentIntentId: piId,
+      });
       if (data.success && data.data?.code) code = data.data.code;
     } catch {
       /* webhook may complete first; parent falls back to payCtx.code */
@@ -343,7 +346,7 @@ export default function GiftVoucherPageClient() {
   const finalAmount = useCustom ? parseFloat(customInput) || 0 : amount;
 
   useEffect(() => {
-    fetch("/api/stripe/config")
+    fetch(backendApiUrl("/site/stripe/config"))
       .then((r) => r.json())
       .then((d) => {
         if (d.publishableKey) setStripePromise(loadStripe(d.publishableKey));
@@ -357,7 +360,9 @@ export default function GiftVoucherPageClient() {
 
     (async () => {
       try {
-        const { data } = await axios.post("/api/gift-vouchers/confirm", { paymentIntentId: pi });
+        const { data } = await axios.post(backendApiUrl("/gift-vouchers/confirm"), {
+          paymentIntentId: pi,
+        });
         if (data.success && data.data?.code) {
           setVoucherCode(data.data.code);
           setPhase("success");
@@ -374,7 +379,7 @@ export default function GiftVoucherPageClient() {
     if (!finalAmount || finalAmount < 10) return;
     setFormError("");
     try {
-      const res = await axios.post("/api/gift-vouchers", {
+      const res = await axios.post(backendApiUrl("/gift-vouchers"), {
         ...data,
         amount: finalAmount,
       });

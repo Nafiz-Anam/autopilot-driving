@@ -10,6 +10,7 @@ import axios from "axios";
 import { Star, Shield, Award, ThumbsUp, ArrowRight } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
 import { PublicCategoryPricingCards } from "@/components/pricing/PublicCategoryPricingCards";
+import { backendApiUrl } from "@/lib/backend-api";
 import { cn } from "@/lib/utils";
 
 const articleIntro = [
@@ -127,7 +128,7 @@ function RequestForm() {
 
   async function onSubmit(data: RequestInput) {
     try {
-      await axios.post("/api/instructors/apply", { ...data, type: "female_request" });
+      await axios.post(backendApiUrl("/public/instructors/apply"), { ...data, type: "female_request" });
       setSuccess(true);
     } catch {
       // silent — show generic error if needed

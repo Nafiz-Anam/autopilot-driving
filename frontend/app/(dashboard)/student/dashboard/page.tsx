@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useAppSession } from "@/components/providers/AppAuthProvider";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -15,6 +15,8 @@ import {
   Car,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BookingStatus = "CONFIRMED" | "COMPLETED" | "CANCELLED" | "PENDING";
@@ -179,7 +181,7 @@ function StatCard({
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function StudentDashboard() {
-  const { data: session } = useSession();
+  const { data: session } = useAppSession();
   const firstName = session?.user?.name?.split(" ")[0] ?? "there";
 
   const [stats, setStats] = useState<ApiStats | null>(null);
@@ -189,9 +191,10 @@ export default function StudentDashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
+        const bookingHeaders = await getNextAuthBridgeHeaders();
         const [statsRes, bookingsRes] = await Promise.all([
-          fetch("/api/student/stats"),
-          fetch("/api/bookings"),
+          fetch(backendApiUrl("/student/stats"), { headers: bookingHeaders }),
+          fetch(backendApiUrl("/bookings"), { headers: bookingHeaders }),
         ]);
         if (statsRes.ok) {
           const data = await statsRes.json();

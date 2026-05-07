@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useSession } from "next-auth/react";
+import { useAppSession } from "@/components/providers/AppAuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -13,6 +13,8 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface LessonRecord {
@@ -286,7 +288,7 @@ function StudentCard({ student }: { student: Student }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function InstructorStudentsPage() {
-  useSession();
+  useAppSession();
   const [query, setQuery] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -294,7 +296,8 @@ export default function InstructorStudentsPage() {
   useEffect(() => {
     async function fetchStudents() {
       try {
-        const res = await fetch("/api/instructor/students");
+        const headers = await getNextAuthBridgeHeaders();
+        const res = await fetch(backendApiUrl("/instructor/students"), { headers });
         if (res.ok) {
           const data = await res.json();
           const raw: ApiStudent[] = Array.isArray(data) ? data : data.data ?? [];

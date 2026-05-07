@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { backendApiUrl } from "@/lib/backend-api";
 
 const schema = z.object({
   name: z.string().min(2, "Please enter your name"),
@@ -44,7 +45,7 @@ export function CallbackForm() {
   async function onSubmit(data: FormValues) {
     setServerError(null);
     try {
-      const res = await fetch("/api/contact", {
+      const res = await fetch(backendApiUrl("/public/contact"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

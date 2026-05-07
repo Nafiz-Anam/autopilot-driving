@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { motion } from "framer-motion";
 import { Loader2, PoundSterling, Plus, Trash2 } from "lucide-react";
-import type { LessonType } from "@prisma/client";
+import type { LessonType } from "@/types";
 import { cn } from "@/lib/utils";
+import { adminApiFetch } from "@/lib/admin-api";
 
 type AdminPkg = {
   id: string;
@@ -36,7 +36,9 @@ type AdminCat = {
 };
 
 async function fetchAdminCategories(): Promise<AdminCat[]> {
-  const { data } = await axios.get<{ data: AdminCat[] }>("/api/admin/pricing/categories");
+  const data = (await adminApiFetch("/pricing/categories").then((r) => r.json())) as {
+    data: AdminCat[];
+  };
   return data.data;
 }
 
@@ -75,7 +77,11 @@ export default function AdminPricingPage() {
 
   async function toggleCategoryActive(id: string, isActive: boolean) {
     try {
-      await axios.patch(`/api/admin/pricing/categories/${id}`, { isActive: !isActive });
+      await adminApiFetch(`/pricing/categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !isActive }),
+      });
       setCategories((prev) =>
         prev.map((c) => (c.id === id ? { ...c, isActive: !isActive } : c))
       );
@@ -87,7 +93,11 @@ export default function AdminPricingPage() {
 
   async function togglePackageActive(pkgId: string, isActive: boolean) {
     try {
-      await axios.patch(`/api/admin/pricing/packages/${pkgId}`, { isActive: !isActive });
+      await adminApiFetch(`/pricing/packages/${pkgId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !isActive }),
+      });
       setCategories((prev) =>
         prev.map((c) => ({
           ...c,
@@ -105,7 +115,10 @@ export default function AdminPricingPage() {
   async function savePackage(pkg: AdminPkg) {
     setMsg(null);
     try {
-      await axios.patch(`/api/admin/pricing/packages/${pkg.id}`, {
+      await adminApiFetch(`/pricing/packages/${pkg.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
         name: pkg.name,
         hours: pkg.hours,
         lessons: pkg.lessons,
@@ -116,6 +129,7 @@ export default function AdminPricingPage() {
         badge: pkg.badge,
         isPopular: pkg.isPopular,
         sortOrder: pkg.sortOrder,
+        }),
       });
       setMsg({ type: "ok", text: "Saved package." });
       await load();
@@ -127,7 +141,10 @@ export default function AdminPricingPage() {
   async function createPackage(categoryId: string, lessonType: LessonType) {
     setMsg(null);
     try {
-      await axios.post("/api/admin/pricing/packages", {
+      await adminApiFetch("/pricing/packages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
         categoryId,
         slug: `custom-${Date.now()}`,
         name: "New package",
@@ -136,6 +153,7 @@ export default function AdminPricingPage() {
         price: 40,
         sortOrder: 99,
         isActive: true,
+        }),
       });
       setMsg({ type: "ok", text: "Package created." });
       await load();
@@ -147,7 +165,7 @@ export default function AdminPricingPage() {
   async function removePackage(pkgId: string) {
     if (!confirm("Deactivate this package?")) return;
     try {
-      await axios.delete(`/api/admin/pricing/packages/${pkgId}`);
+      await adminApiFetch(`/pricing/packages/${pkgId}`, { method: "DELETE" });
       setMsg({ type: "ok", text: "Package deactivated." });
       await load();
     } catch {

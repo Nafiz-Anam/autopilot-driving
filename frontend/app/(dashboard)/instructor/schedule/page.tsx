@@ -1,14 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useAppSession } from "@/components/providers/AppAuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type CellState = "available" | "unavailable" | "booked";
 type AvailabilityGrid = Record<string, CellState>;
+type ApiAvailabilitySlot = {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const DAYS = [
@@ -24,6 +32,26 @@ const DAYS = [
 const HOURS = Array.from({ length: 11 }, (_, i) =>
   String(i + 8).padStart(2, "0") + ":00"
 ); // 08:00 – 18:00
+
+const DAY_TO_INDEX: Record<string, number> = {
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+  Sunday: 0,
+};
+
+const INDEX_TO_DAY: Record<number, string> = {
+  0: "Sunday",
+  1: "Monday",
+  2: "Tuesday",
+  3: "Wednesday",
+  4: "Thursday",
+  5: "Friday",
+  6: "Saturday",
+};
 
 // ─── Build default grid ───────────────────────────────────────────────────────
 function buildDefaultGrid(): AvailabilityGrid {
@@ -86,7 +114,7 @@ function Cell({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function InstructorSchedulePage() {
-  useSession();
+  useAppSession();
   const [grid, setGrid] = useState<AvailabilityGrid>(buildDefaultGrid);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -96,18 +124,20 @@ export default function InstructorSchedulePage() {
   useEffect(() => {
     async function fetchSchedule() {
       try {
-        const res = await fetch("/api/instructor/schedule");
+        const headers = await getNextAuthBridgeHeaders();
+        const res = await fetch(backendApiUrl("/instructor/schedule"), { headers });
         if (res.ok) {
           const data = await res.json();
-          // API returns array of slot objects: { day, hour, state }
-          const slots: { day: string; hour: string; state: CellState }[] =
-            Array.isArray(data) ? data : data.slots ?? [];
+          const slots: ApiAvailabilitySlot[] = Array.isArray(data) ? data : data.data ?? [];
           if (slots.length > 0) {
             const newGrid = buildDefaultGrid();
             for (const slot of slots) {
-              const key = `${slot.day}-${slot.hour}`;
+              const day = INDEX_TO_DAY[slot.dayOfWeek];
+              if (!day) continue;
+              const hour = slot.startTime.slice(0, 5);
+              const key = `${day}-${hour}`;
               if (key in newGrid) {
-                newGrid[key] = slot.state;
+                newGrid[key] = slot.isAvailable ? "available" : "unavailable";
               }
             }
             setGrid(newGrid);
@@ -133,14 +163,21 @@ export default function InstructorSchedulePage() {
   async function handleSave() {
     setSaving(true);
     try {
-      // Convert grid to array of slot objects
+      const headers = await getNextAuthBridgeHeaders();
       const slots = Object.entries(grid).map(([key, state]) => {
         const [day, hour] = key.split(/-(?=\d{2}:)/);
-        return { day, hour, state };
+        const [h] = hour.split(":").map(Number);
+        const endHour = String((h + 1) % 24).padStart(2, "0");
+        return {
+          dayOfWeek: DAY_TO_INDEX[day] ?? 1,
+          startTime: `${hour}:00`,
+          endTime: `${endHour}:00:00`,
+          isAvailable: state === "available",
+        };
       });
-      const res = await fetch("/api/instructor/schedule", {
+      const res = await fetch(backendApiUrl("/instructor/schedule"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ slots }),
       });
       if (res.ok) {

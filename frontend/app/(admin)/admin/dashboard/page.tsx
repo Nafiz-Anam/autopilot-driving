@@ -17,6 +17,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminApiFetch } from "@/lib/admin-api";
 
 interface AdminStats {
   totalUsers: number;
@@ -122,17 +123,17 @@ export default function AdminDashboardPage() {
   const [appActions, setAppActions] = useState<Record<string, "approving" | "rejecting" | null>>({});
 
   useEffect(() => {
-    fetch("/api/admin/stats")
+    adminApiFetch("/stats")
       .then((r) => r.json())
       .then((d) => { setStats(d); setLoading(false); })
       .catch(() => setLoading(false));
 
-    fetch("/api/admin/bookings?page=1")
+    adminApiFetch("/bookings?page=1")
       .then((r) => r.json())
       .then((d) => setRecentBookings((d.data ?? []).slice(0, 5)))
       .catch(() => {});
 
-    fetch("/api/admin/applications?status=pending&page=1")
+    adminApiFetch("/applications?status=pending&page=1")
       .then((r) => r.json())
       .then((d) => setRecentApplications((d.data ?? []).slice(0, 5)))
       .catch(() => {});
@@ -141,7 +142,7 @@ export default function AdminDashboardPage() {
   async function handleApplicationAction(id: string, action: "approved" | "rejected") {
     setAppActions((prev) => ({ ...prev, [id]: action === "approved" ? "approving" : "rejecting" }));
     try {
-      await fetch(`/api/admin/applications/${id}`, {
+      await adminApiFetch(`/applications/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: action }),

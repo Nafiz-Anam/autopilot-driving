@@ -3,7 +3,7 @@
 import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import type { LessonType } from "@prisma/client";
+import type { LessonType } from "@/types";
 import {
   Star,
   MessageCircle,
@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { backendApiUrl } from "@/lib/backend-api";
 
 const testCentres = [
   { name: "Goodmayes", fee: 175 },
@@ -655,7 +656,7 @@ export default function PricesPageClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/pricing/categories", { cache: "no-store" })
+    fetch(backendApiUrl("/pricing/categories"), { cache: "no-store" })
       .then((r) => r.json())
       .then((d: { success?: boolean; data?: PublicPricingCategory[] }) => {
         if (d.success && Array.isArray(d.data)) setCats(d.data);

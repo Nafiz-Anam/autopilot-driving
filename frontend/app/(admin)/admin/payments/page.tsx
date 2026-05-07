@@ -20,6 +20,17 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getBackendApiBase } from "@/lib/backend-api";
+import { adminApiFetch } from "@/lib/admin-api";
+
+function stripeWebhookEndpoint(): string {
+  try {
+    const origin = new URL(getBackendApiBase()).origin;
+    return `${origin}/v1/payments/webhook`;
+  } catch {
+    return "https://api.driving.agiloit.store/v1/payments/webhook";
+  }
+}
 
 interface StripeSettings {
   stripe_publishable_key: string;
@@ -165,7 +176,7 @@ export default function AdminPaymentsPage() {
   const [smtpTestResult, setSmtpTestResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/settings")
+    adminApiFetch("/settings")
       .then((r) => r.json())
       .then((d) => {
         if (d.success) {
@@ -200,7 +211,7 @@ export default function AdminPaymentsPage() {
         return;
       }
 
-      const res = await fetch("/api/admin/settings", {
+      const res = await adminApiFetch("/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -214,7 +225,7 @@ export default function AdminPaymentsPage() {
         setWebhookSecret("");
         setSmtpPass("");
         // Refresh displayed settings
-        const refreshed = await fetch("/api/admin/settings").then((r) => r.json());
+        const refreshed = await adminApiFetch("/settings").then((r) => r.json());
         if (refreshed.success) setSettings(refreshed.data);
       } else {
         setSaveMsg({ type: "error", text: data.error ?? "Failed to save settings." });
@@ -230,7 +241,7 @@ export default function AdminPaymentsPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await fetch("/api/admin/settings", {
+      const res = await adminApiFetch("/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "test_connection" }),
@@ -256,7 +267,7 @@ export default function AdminPaymentsPage() {
     setSmtpTesting(true);
     setSmtpTestResult(null);
     try {
-      const res = await fetch("/api/admin/settings", {
+      const res = await adminApiFetch("/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "test_smtp" }),
@@ -488,9 +499,7 @@ export default function AdminPaymentsPage() {
             <p className="text-xs font-semibold text-brand-muted uppercase tracking-widest mb-2">Webhook Endpoint URL</p>
             <div className="flex items-center gap-2">
               <code className="text-sm font-mono text-brand-black flex-1 break-all">
-                {typeof window !== "undefined"
-                  ? `${window.location.origin}/api/payments/webhook`
-                  : "/api/payments/webhook"}
+                {stripeWebhookEndpoint()}
               </code>
             </div>
           </div>

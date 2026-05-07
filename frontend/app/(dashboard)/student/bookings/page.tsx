@@ -9,6 +9,8 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 
 type BookingStatus = "CONFIRMED" | "COMPLETED" | "CANCELLED" | "PENDING" | "NO_SHOW";
 
@@ -96,7 +98,8 @@ export default function StudentBookingsPage() {
 
   const fetchBookings = useCallback(async () => {
     try {
-      const res = await fetch("/api/bookings");
+      const headers = await getNextAuthBridgeHeaders();
+      const res = await fetch(backendApiUrl("/bookings"), { headers });
       if (res.ok) {
         const data = await res.json();
         setBookings(data.data ?? []);
@@ -120,9 +123,10 @@ export default function StudentBookingsPage() {
   async function handleCancel(id: string) {
     setUpdatingId(id);
     try {
-      const res = await fetch(`/api/bookings/${id}`, {
+      const headers = await getNextAuthBridgeHeaders();
+      const res = await fetch(backendApiUrl(`/bookings/${id}`), {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ action: "cancel" }),
       });
       if (res.ok) handleCancelled(id);

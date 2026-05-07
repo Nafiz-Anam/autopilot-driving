@@ -22,6 +22,8 @@ import { healthController } from './controllers';
 import { errorConverter, errorHandler } from './utils/errorHandler';
 import ApiError from './utils/ApiError';
 import { requestLogger } from './utils/structuredLogger';
+import paymentWebhookController from './controllers/paymentWebhook.controller';
+import instructorAppRoute from './routes/v1/instructorApp.route';
 
 const app = express();
 
@@ -32,6 +34,13 @@ if (config.env !== 'test') {
 
 // set security HTTP headers
 app.use(helmet());
+
+// Stripe webhooks require raw body — must run before express.json()
+app.post(
+  '/v1/payments/webhook',
+  express.raw({ type: 'application/json' }),
+  paymentWebhookController.handleStripe
+);
 
 // parse json request body
 app.use(express.json());
@@ -92,6 +101,7 @@ if (config.env === 'production') {
 }
 
 // v1 api routes
+app.use('/v1/instructor', instructorAppRoute);
 app.use('/v1', routes);
 
 // Welcome endpoint for root URL

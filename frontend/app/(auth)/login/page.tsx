@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
+import { useAppAuth } from "@/components/providers/AppAuthProvider";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth.schema";
 
 export default function LoginPage() {
+  const { login } = useAppAuth();
   const searchParams = useSearchParams();
   const [authError, setAuthError] = useState("");
 
@@ -21,13 +22,9 @@ export default function LoginPage() {
 
   async function onSubmit(data: LoginInput) {
     setAuthError("");
-    const result = await signIn("credentials", {
-      email: data.email,
-      password: data.password,
-      redirect: false,
-    });
-    if (result?.error) {
-      setAuthError("Invalid email or password. Please try again.");
+    const result = await login(data.email, data.password);
+    if (!result.ok) {
+      setAuthError(result.error ?? "Invalid email or password. Please try again.");
     } else {
       const callbackUrl = searchParams.get("callbackUrl") || "/student/dashboard";
       window.location.href = callbackUrl;

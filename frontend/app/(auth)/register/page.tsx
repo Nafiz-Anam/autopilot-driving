@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
+import { useAppAuth } from "@/components/providers/AppAuthProvider";
 import Link from "next/link";
 import axios from "axios";
 import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
+import { backendApiUrl } from "@/lib/backend-api";
 import { registerSchema, type RegisterInput, type RegisterFormInput } from "@/lib/validations/auth.schema";
 
 export default function RegisterPage() {
+  const { login } = useAppAuth();
   const [serverError, setServerError] = useState("");
 
   const {
@@ -21,19 +23,21 @@ export default function RegisterPage() {
   async function onSubmit(data: RegisterInput) {
     setServerError("");
     try {
-      const res = await axios.post("/api/auth/register", {
+      const res = await axios.post(backendApiUrl("/public/register"), {
         name: data.name,
         email: data.email,
         phone: data.phone,
         password: data.password,
+        confirmPassword: data.confirmPassword,
         role: data.role,
       });
       if (res.data.success) {
-        await signIn("credentials", {
-          email: data.email,
-          password: data.password,
-          callbackUrl: "/student/dashboard",
-        });
+        const signedIn = await login(data.email, data.password);
+        if (signedIn.ok) {
+          window.location.href = "/student/dashboard";
+        } else {
+          setServerError(signedIn.error ?? "Account created. Please sign in.");
+        }
       }
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {

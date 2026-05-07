@@ -3,6 +3,8 @@
 import { useState, useCallback } from "react";
 import axios from "axios";
 import type { BookingPublic } from "@/types";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 
 interface UseBookingsResult {
   bookings: BookingPublic[];
@@ -21,11 +23,12 @@ export function useBookings(): UseBookingsResult {
     setError(null);
 
     try {
+      const headers = await getNextAuthBridgeHeaders();
       const { data } = await axios.get<{
         success: boolean;
         data: BookingPublic[];
         error?: string;
-      }>("/api/bookings");
+      }>(backendApiUrl("/bookings"), { headers });
 
       if (data.success) {
         setBookings(data.data);

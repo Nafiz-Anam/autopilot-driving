@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import axios from "axios";
 import type { AvailabilityDay } from "@/types";
+import { backendApiUrl } from "@/lib/backend-api";
 
 interface UseAvailabilityResult {
   availability: AvailabilityDay[];
@@ -27,10 +28,17 @@ export function useAvailability(): UseAvailabilityResult {
           success: boolean;
           data: AvailabilityDay[];
           error?: string;
-        }>(`/api/bookings/availability?${params.toString()}`);
+        }>(backendApiUrl(`/bookings/availability?${params.toString()}`));
 
         if (data.success) {
-          setAvailability(data.data);
+          setAvailability(
+            data.data.map((day) => ({
+              date: day.date,
+              slots: day.slots.map((s) =>
+                typeof s === "string" ? { time: s, available: true } : s
+              ),
+            }))
+          );
         } else {
           setError(data.error ?? "Failed to load availability");
         }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSession, signIn } from "next-auth/react";
+import { useAppAuth, useAppSession } from "@/components/providers/AppAuthProvider";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Eye, EyeOff, UserCheck, LogIn } from "lucide-react";
@@ -45,6 +45,7 @@ const inputClass =
 
 /* ── Sign-in tab form ──────────────────────────────────────── */
 function SignInForm({ onSuccess }: { onSuccess: () => void }) {
+  const { login } = useAppAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -55,14 +56,10 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    const res = await login(email, password);
     setLoading(false);
-    if (res?.error) {
-      setError("Invalid email or password. Please try again.");
+    if (!res.ok) {
+      setError(res.error ?? "Invalid email or password. Please try again.");
     } else {
       onSuccess();
     }
@@ -120,7 +117,7 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 
 /* ── Main component ─────────────────────────────────────────── */
 export function Step5StudentDetails() {
-  const { data: session } = useSession();
+  const { data: session } = useAppSession();
   const { setStudentDetails, nextStep, prevStep } = useBookingStore();
   const [tab, setTab] = useState<"new" | "existing">("new");
   const [showPw, setShowPw] = useState(false);

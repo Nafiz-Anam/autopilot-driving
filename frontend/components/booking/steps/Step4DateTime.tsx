@@ -21,6 +21,7 @@ import axios from "axios";
 import { ChevronLeft, ChevronRight, CalendarDays, Clock } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
 
 const ALL_SLOTS = [
   "08:00", "09:00", "10:00", "11:00",
@@ -72,12 +73,19 @@ export function Step4DateTime() {
         const end = format(addDays(date, 1), "yyyy-MM-dd");
         const { data } = await axios.get<{
           success: boolean;
-          data: { date: string; slots: { time: string; available: boolean }[] }[];
+          data: { date: string; slots: (string | SlotInfo)[] }[];
         }>(
-          `/api/bookings/availability?instructorId=${selectedInstructor.id}&startDate=${start}&endDate=${end}`
+          backendApiUrl(
+            `/bookings/availability?instructorId=${selectedInstructor.id}&startDate=${start}&endDate=${end}`
+          )
         );
         if (data.success && data.data.length > 0 && data.data[0].slots.length > 0) {
-          setSlots(data.data[0].slots);
+          const raw = data.data[0].slots;
+          setSlots(
+            raw.map((s) =>
+              typeof s === "string" ? { time: s, available: true } : s
+            )
+          );
         } else {
           setSlots(ALL_SLOTS.map((t) => ({ time: t, available: true })));
         }

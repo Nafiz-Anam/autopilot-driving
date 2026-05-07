@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FileText, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminApiFetch } from "@/lib/admin-api";
 
 interface InstructorApplication {
   id: string;
@@ -64,7 +65,7 @@ export default function AdminApplicationsPage() {
     try {
       const params = new URLSearchParams({ page: String(page) });
       if (statusFilter) params.set("status", statusFilter);
-      const res = await fetch(`/api/admin/applications?${params}`);
+      const res = await adminApiFetch(`/applications?${params}`);
       if (res.ok) {
         const data = await res.json();
         setApplications(data.data ?? []);
@@ -85,7 +86,7 @@ export default function AdminApplicationsPage() {
   async function handleUpdateStatus(id: string, status: "approved" | "rejected") {
     setUpdatingId(id);
     try {
-      const res = await fetch("/api/admin/applications", {
+      const res = await adminApiFetch("/applications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status }),

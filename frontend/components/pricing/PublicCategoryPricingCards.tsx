@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import type { LessonType } from "@prisma/client";
+import type { LessonType } from "@/types";
 import type { PublicPricingPackage } from "@/lib/lesson-pricing-public";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
 
 const HEADING = { fontFamily: "'Moderniz','Barlow',sans-serif" } as const;
 
@@ -24,7 +25,7 @@ export function PublicCategoryPricingCards({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/pricing/packages?lessonType=${lessonType}`, { cache: "no-store" })
+    fetch(backendApiUrl(`/pricing/packages?lessonType=${lessonType}`), { cache: "no-store" })
       .then((r) => r.json())
       .then((d: { success?: boolean; data?: PublicPricingPackage[] }) => {
         if (!cancelled && d.success && d.data) setPkgs(d.data);

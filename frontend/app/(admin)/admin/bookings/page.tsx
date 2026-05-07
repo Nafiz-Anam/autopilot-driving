@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminApiFetch } from "@/lib/admin-api";
 
 interface BookingRecord {
   id: string;
@@ -107,7 +108,7 @@ export default function AdminBookingsPage() {
     try {
       const params = new URLSearchParams({ page: String(page) });
       if (statusFilter) params.set("status", statusFilter);
-      const res = await fetch(`/api/admin/bookings?${params}`);
+      const res = await adminApiFetch(`/bookings?${params}`);
       if (res.ok) {
         const data = await res.json();
         setBookings(data.data ?? []);
@@ -128,7 +129,7 @@ export default function AdminBookingsPage() {
   async function handleCancelBooking(id: string) {
     setUpdatingId(id);
     try {
-      const res = await fetch("/api/admin/bookings", {
+      const res = await adminApiFetch("/bookings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: "CANCELLED" }),

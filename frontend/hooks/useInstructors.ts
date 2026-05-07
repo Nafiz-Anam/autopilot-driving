@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import axios from "axios";
+import { backendApiUrl } from "@/lib/backend-api";
 import type { InstructorPublic } from "@/types";
 
 interface UseInstructorsOptions {
@@ -33,7 +34,7 @@ export function useInstructors(): UseInstructorsResult {
       if (options.female !== undefined) params.set("female", String(options.female));
 
       const { data } = await axios.get<{ success: boolean; data: InstructorPublic[]; error?: string }>(
-        `/api/instructors?${params.toString()}`
+        backendApiUrl(`/public/instructors?${params.toString()}`)
       );
 
       if (data.success) {

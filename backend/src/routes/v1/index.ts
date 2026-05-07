@@ -13,6 +13,16 @@ import roleRoute from './role.route';
 import passwordPolicyRoute from './passwordPolicy.route';
 import auditLogRoute from './auditLog.route';
 import sessionManagementRoute from './sessionManagement.route';
+import pricingRoute from './pricing.route';
+import promotionRoute from './promotion.route';
+import bookingRoute from './booking.route';
+import siteRoute from './site.route';
+import paymentRoute from './payment.route';
+import giftVoucherRoute from './giftVoucher.route';
+import publicSiteRoute from './publicSite.route';
+import studentAppRoute from './studentApp.route';
+import instructorAppRoute from './instructorApp.route';
+import adminAppRoute from './adminApp.route';
 import config from '../../config/config';
 
 const router = express.Router();
@@ -69,6 +79,46 @@ const defaultRoutes = [
   {
     path: '/sessions',
     route: sessionManagementRoute,
+  },
+  {
+    path: '/pricing',
+    route: pricingRoute,
+  },
+  {
+    path: '/promotions',
+    route: promotionRoute,
+  },
+  {
+    path: '/bookings',
+    route: bookingRoute,
+  },
+  {
+    path: '/site',
+    route: siteRoute,
+  },
+  {
+    path: '/payments',
+    route: paymentRoute,
+  },
+  {
+    path: '/gift-vouchers',
+    route: giftVoucherRoute,
+  },
+  {
+    path: '/public',
+    route: publicSiteRoute,
+  },
+  {
+    path: '/student',
+    route: studentAppRoute,
+  },
+  {
+    path: '/instructor',
+    route: instructorAppRoute,
+  },
+  {
+    path: '/admin',
+    route: adminAppRoute,
   },
 ];
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import axios from "axios";
 import { PageHero } from "@/components/shared/PageHero";
+import { backendApiUrl } from "@/lib/backend-api";
 import { cn } from "@/lib/utils";
 
 const AREAS = [
@@ -97,7 +98,7 @@ function PostcodeChecker() {
     setResult(null);
     try {
       const { data } = await axios.get<{ success: boolean; data: CoverageResult }>(
-        `/api/areas?postcode=${encodeURIComponent(postcode.trim())}`
+        backendApiUrl(`/public/areas?postcode=${encodeURIComponent(postcode.trim())}`)
       );
       if (data.success) {
         setResult(data.data);

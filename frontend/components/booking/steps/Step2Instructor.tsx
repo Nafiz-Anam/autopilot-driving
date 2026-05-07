@@ -6,6 +6,7 @@ import axios from "axios";
 import { Star, Check, MapPin, Clock, Search } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import type { InstructorPublic } from "@/types";
+import { backendApiUrl } from "@/lib/backend-api";
 import { cn, getInitials } from "@/lib/utils";
 
 /* ── Skeleton card ──────────────────────────────────────────── */
@@ -72,7 +73,7 @@ export function Step2Instructor() {
     setError("");
     try {
       const { data } = await axios.get<{ success: boolean; data: InstructorPublic[] }>(
-        `/api/instructors?postcode=${encodeURIComponent(postcode.trim())}`
+        backendApiUrl(`/public/instructors?postcode=${encodeURIComponent(postcode.trim())}`)
       );
       if (data.success) {
         setInstructors(data.data);

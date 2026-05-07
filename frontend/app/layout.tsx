@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
-import { SessionProvider } from "@/components/providers/SessionProvider";
+import { AppAuthProvider } from "@/components/providers/AppAuthProvider";
 
 export const metadata: Metadata = {
   title: {
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full flex flex-col font-sans">
-        <SessionProvider>
+        <AppAuthProvider>
           {children}
           <Toaster
             position="top-right"
@@ -42,7 +42,7 @@ export default function RootLayout({
               },
             }}
           />
-        </SessionProvider>
+        </AppAuthProvider>
       </body>
     </html>
   );

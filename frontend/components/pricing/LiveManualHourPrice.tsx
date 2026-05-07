@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { backendApiUrl } from "@/lib/backend-api";
 
 /** Shows live £/hr for manual “single” lesson from admin pricing (MANUAL / slug single). */
 export function LiveManualHourPrice({ className }: { className?: string }) {
   const [v, setV] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("/api/pricing/packages?lessonType=MANUAL", { cache: "no-store" })
+    fetch(backendApiUrl("/pricing/packages?lessonType=MANUAL"), { cache: "no-store" })
       .then((r) => r.json())
       .then(
         (d: {

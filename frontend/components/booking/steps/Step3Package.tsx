@@ -8,6 +8,7 @@ import { useBookingStore } from "@/store/bookingStore";
 import { publicPackageToBookingPackage, type PublicPricingPackage } from "@/lib/lesson-pricing-public";
 import type { Package } from "@/types";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
 
 const container = {
   hidden: {},
@@ -38,7 +39,7 @@ export function Step3Package() {
 
     axios
       .get<{ success: boolean; data?: PublicPricingPackage[] }>(
-        `/api/pricing/packages?lessonType=${lessonType}`,
+        backendApiUrl(`/pricing/packages?lessonType=${lessonType}`),
         { headers: { "Cache-Control": "no-store" } }
       )
       .then(({ data }) => {

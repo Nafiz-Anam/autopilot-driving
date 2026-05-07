@@ -1,6 +1,12 @@
-import type { LessonType, BookingStatus, PaymentStatus, Role } from "@prisma/client";
+export type Role = "STUDENT" | "INSTRUCTOR" | "ADMIN";
 
-export type { LessonType, BookingStatus, PaymentStatus, Role };
+export type LessonType = "MANUAL" | "AUTOMATIC" | "INTENSIVE" | "REFRESHER" | "PASS_PLUS" | "THEORY";
+
+export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
+
+export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED" | "PARTIAL_REFUND";
+
+export type CouponTypeEnum = "PERCENT" | "FIXED";
 
 export interface InstructorPublic {
   id: string;
@@ -91,4 +97,3 @@ export interface BookingPublic {
     areas: string[];
   };
 }
-

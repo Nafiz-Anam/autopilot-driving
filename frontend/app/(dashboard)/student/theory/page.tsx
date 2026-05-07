@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useAppSession } from "@/components/providers/AppAuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen,
@@ -16,6 +16,8 @@ import {
   Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Category {
@@ -37,9 +39,12 @@ interface Question {
 }
 
 interface ApiProgressEntry {
-  categoryId: string;
-  progress: number;
-  answered: number;
+  category?: string;
+  categoryId?: string;
+  score?: number;
+  progress?: number;
+  correct?: number;
+  answered?: number;
   total: number;
 }
 
@@ -57,6 +62,10 @@ const DEFAULT_CATEGORIES: Category[] = BASE_CATEGORIES.map((c) => ({
   progress: 0,
   answered: 0,
 }));
+
+function normalizeCategoryId(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, "-");
+}
 
 const mockQuestions: Question[] = [
   {
@@ -247,9 +256,10 @@ function MockTest({
 
     // POST progress for this answer (use index as dummy questionId)
     try {
-      await fetch("/api/student/theory/progress", {
+      const headers = await getNextAuthBridgeHeaders();
+      await fetch(backendApiUrl("/student/theory/progress"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({
           questionId: `mock-${current}`,
           isCorrect: idx === q.correct,
@@ -493,25 +503,35 @@ function MockTest({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function StudentTheoryPage() {
-  useSession();
+  useAppSession();
   const [testOpen, setTestOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
 
   const fetchProgress = useCallback(async () => {
     try {
-      const res = await fetch("/api/student/theory/progress");
+      const headers = await getNextAuthBridgeHeaders();
+      const res = await fetch(backendApiUrl("/student/theory/progress"), { headers });
       if (res.ok) {
         const data: ApiProgressEntry[] | { data: ApiProgressEntry[] } = await res.json();
         const entries: ApiProgressEntry[] = Array.isArray(data) ? data : (data as { data: ApiProgressEntry[] }).data ?? [];
         if (entries.length > 0) {
           setCategories(
             BASE_CATEGORIES.map((base) => {
-              const match = entries.find((e) => e.categoryId === base.id);
+              const match = entries.find((e) => {
+                const idFromCategory = e.category ? normalizeCategoryId(e.category) : undefined;
+                return e.categoryId === base.id || idFromCategory === base.id;
+              });
+              const total = match?.total ?? base.total;
+              const correct = match?.correct ?? 0;
+              const progress =
+                match?.progress ??
+                match?.score ??
+                (total > 0 ? Math.round((correct / total) * 100) : 0);
               return {
                 ...base,
-                progress: match?.progress ?? 0,
-                answered: match?.answered ?? 0,
-                total: match?.total ?? base.total,
+                progress,
+                answered: match?.answered ?? total,
+                total,
               };
             })
           );

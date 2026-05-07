@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminApiFetch } from "@/lib/admin-api";
 
 interface TheoryQuestion {
   id: string;
@@ -300,7 +301,7 @@ export default function AdminTheoryPage() {
     try {
       const params = new URLSearchParams({ page: String(page) });
       if (categoryFilter) params.set("category", categoryFilter);
-      const res = await fetch(`/api/admin/theory?${params}`);
+      const res = await adminApiFetch(`/theory?${params}`);
       if (res.ok) {
         const data = await res.json();
         setQuestions(data.data ?? []);
@@ -320,7 +321,7 @@ export default function AdminTheoryPage() {
 
   async function handleSubmitQuestion(data: QuestionFormData) {
     if (editingQuestion) {
-      const res = await fetch(`/api/admin/theory/${editingQuestion.id}`, {
+      const res = await adminApiFetch(`/theory/${editingQuestion.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -331,7 +332,7 @@ export default function AdminTheoryPage() {
         fetchQuestions();
       }
     } else {
-      const res = await fetch("/api/admin/theory", {
+      const res = await adminApiFetch("/theory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -344,7 +345,7 @@ export default function AdminTheoryPage() {
   }
 
   async function handleDelete(id: string) {
-    const res = await fetch(`/api/admin/theory/${id}`, { method: "DELETE" });
+    const res = await adminApiFetch(`/theory/${id}`, { method: "DELETE" });
     if (res.ok) {
       setQuestions((prev) => prev.filter((q) => q.id !== id));
       setTotal((t) => t - 1);

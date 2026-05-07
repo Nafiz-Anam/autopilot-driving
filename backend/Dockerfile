@@ -37,6 +37,7 @@ COPY --from=builder --chown=nodejs:nodejs /app/package.json      ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/prisma            ./prisma
 COPY --from=builder --chown=nodejs:nodejs /app/prisma.config.ts  ./prisma.config.ts
 COPY --from=builder --chown=nodejs:nodejs /app/ecosystem.config.json ./ecosystem.config.json
+COPY --from=builder --chown=nodejs:nodejs /app/scripts           ./scripts
 
 # Pre-create writable directories the app creates at runtime
 RUN mkdir -p uploads logs && chown -R nodejs:nodejs uploads logs
@@ -48,5 +49,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:8000/v1/health/live || exit 1
 
-# pm2-runtime keeps the process in the foreground (Docker-safe PM2)
-CMD ["pnpm", "exec", "pm2-runtime", "start", "ecosystem.config.json"]
+# Run Prisma generate + migrate + demo seed at startup, then launch API.
+CMD ["sh", "-c", "pnpm dlx prisma generate && pnpm dlx prisma migrate deploy && pnpm run db:seed && pnpm exec pm2-runtime start ecosystem.config.json"]

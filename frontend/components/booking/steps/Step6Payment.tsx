@@ -15,6 +15,8 @@ import { Tag, Lock, CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-r
 import { useBookingStore } from "@/store/bookingStore";
 import { BookingSummary } from "@/components/booking/BookingSummary";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 
 /* ── Inner payment form (inside <Elements>) ─────────────────── */
 function PaymentForm({
@@ -58,7 +60,10 @@ function PaymentForm({
     }
 
     try {
-      await axios.post("/api/payments/confirm", { paymentIntentId: piId });
+      const confirmHeaders = await getNextAuthBridgeHeaders();
+      await axios.post(backendApiUrl("/payments/confirm"), { paymentIntentId: piId }, {
+        headers: confirmHeaders,
+      });
     } catch {
       /* webhook or retry may still complete the booking */
     }
@@ -134,7 +139,7 @@ function PromoInput() {
     setApplying(true);
     setMsg("");
     try {
-      const { data } = await axios.post("/api/promotions/validate", {
+      const { data } = await axios.post(backendApiUrl("/promotions/validate"), {
         code: input.trim(),
         amount: selectedPackage?.price,
       });
@@ -264,7 +269,7 @@ export function Step6Payment() {
 
   // Load Stripe publishable key from server (admin can change it via DB)
   useEffect(() => {
-    fetch("/api/stripe/config")
+    fetch(backendApiUrl("/site/stripe/config"))
       .then((r) => r.json())
       .then((d) => {
         if (d.publishableKey) {
@@ -289,18 +294,23 @@ export function Step6Payment() {
             ? "manual"
             : transmission ?? "manual";
 
-      const bookingRes = await axios.post("/api/bookings", {
-        lessonType,
-        transmission: tx,
-        instructorId: selectedInstructor!.id,
-        packageId: selectedPackage!.id,
-        scheduledAt: scheduledAt.toISOString(),
-        durationMins: 60,
-        ...(promoKind === "gift_voucher" && promoCode
-          ? { voucherCode: promoCode }
-          : {}),
-        ...(promoKind === "coupon" && promoCode ? { couponCode: promoCode } : {}),
-      });
+      const bookingHeaders = await getNextAuthBridgeHeaders();
+      const bookingRes = await axios.post(
+        backendApiUrl("/bookings"),
+        {
+          lessonType,
+          transmission: tx,
+          instructorId: selectedInstructor!.id,
+          packageId: selectedPackage!.id,
+          scheduledAt: scheduledAt.toISOString(),
+          durationMins: 60,
+          ...(promoKind === "gift_voucher" && promoCode
+            ? { voucherCode: promoCode }
+            : {}),
+          ...(promoKind === "coupon" && promoCode ? { couponCode: promoCode } : {}),
+        },
+        { headers: bookingHeaders }
+      );
 
       if (!bookingRes.data.success) {
         setInitError("Could not create booking. Please go back and try again.");
@@ -313,13 +323,17 @@ export function Step6Payment() {
       setBookingId(bId);
       setBookingReference(ref);
 
-      const piRes = await axios.post("/api/payments", {
-        bookingId: bId,
-        ...(promoKind === "gift_voucher" && promoCode
-          ? { voucherCode: promoCode }
-          : {}),
-        ...(promoKind === "coupon" && promoCode ? { couponCode: promoCode } : {}),
-      });
+      const piRes = await axios.post(
+        backendApiUrl("/payments"),
+        {
+          bookingId: bId,
+          ...(promoKind === "gift_voucher" && promoCode
+            ? { voucherCode: promoCode }
+            : {}),
+          ...(promoKind === "coupon" && promoCode ? { couponCode: promoCode } : {}),
+        },
+        { headers: bookingHeaders }
+      );
 
       if (piRes.data.success && piRes.data.data.clientSecret) {
         setClientSecret(piRes.data.data.clientSecret);

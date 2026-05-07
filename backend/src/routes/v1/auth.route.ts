@@ -14,6 +14,10 @@ import {
 import { ipSecurityMiddleware, adminIPSecurity } from '../../middlewares/ipSecurity';
 import { requireCaptcha, generateCaptcha } from '../../middlewares/captcha';
 import logger from '../../config/logger';
+import drivingAuthController from '../../controllers/drivingAuth.controller';
+import drivingAuthValidation from '../../validations/drivingAuth.validation';
+import nextAuthBridge from '../../middlewares/nextAuthBridge';
+import { loadDrivingSchoolUser } from '../../middlewares/drivingSchoolUser';
 
 const router = express.Router();
 
@@ -346,6 +350,31 @@ router.post('/admin/captcha-config', auth('manageUsers'), async (req, res) => {
  * @access Public
  */
 router.get('/captcha/generate', generateCaptcha);
+
+/**
+ * @route POST /v1/auth/app-login
+ * @desc Login driving-school app user (JWT compatible with nextAuthBridge middleware)
+ * @access Public
+ */
+router.post(
+  '/app-login',
+  ipSecurityMiddleware,
+  progressiveAuthLimiter,
+  validate(drivingAuthValidation.appLogin),
+  drivingAuthController.appLogin
+);
+
+/**
+ * @route GET /v1/auth/app-session
+ * @desc Current driving-school user from Bearer token
+ * @access Private (bridge JWT)
+ */
+router.get(
+  '/app-session',
+  nextAuthBridge(),
+  loadDrivingSchoolUser(),
+  drivingAuthController.appSession
+);
 
 export default router;
 

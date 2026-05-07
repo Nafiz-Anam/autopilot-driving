@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Users, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminApiFetch } from "@/lib/admin-api";
 
 interface UserRecord {
   id: string;
@@ -58,7 +59,7 @@ export default function AdminUsersPage() {
       if (search) params.set("search", search);
       if (roleFilter) params.set("role", roleFilter);
 
-      fetch(`/api/admin/users?${params}`)
+      adminApiFetch(`/users?${params}`)
         .then((r) => r.json())
         .then((d) => {
           setUsers(d.data ?? []);
@@ -76,7 +77,7 @@ export default function AdminUsersPage() {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
     setRoleDropdownId(null);
     try {
-      await fetch("/api/admin/users", {
+      await adminApiFetch("/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, role }),
@@ -90,7 +91,7 @@ export default function AdminUsersPage() {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      const res = await adminApiFetch(`/users/${id}`, { method: "DELETE" });
       if (res.ok) {
         setUsers((prev) => prev.filter((u) => u.id !== id));
         setTotal((t) => t - 1);

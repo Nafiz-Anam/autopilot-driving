@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useAppSession } from "@/components/providers/AppAuthProvider";
 import { motion } from "framer-motion";
 import {
   CalendarDays,
@@ -13,6 +13,8 @@ import {
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { backendApiUrl } from "@/lib/backend-api";
+import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ApiTodayLesson {
@@ -233,7 +235,7 @@ function StarRow({ count }: { count: number }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function InstructorDashboard() {
-  const { data: session } = useSession();
+  const { data: session } = useAppSession();
   const firstName = session?.user?.name?.split(" ")[0] ?? "there";
 
   const [apiStats, setApiStats] = useState<ApiStats | null>(null);
@@ -242,7 +244,8 @@ export default function InstructorDashboard() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await fetch("/api/instructor/stats");
+        const headers = await getNextAuthBridgeHeaders();
+        const res = await fetch(backendApiUrl("/instructor/stats"), { headers });
         if (res.ok) {
           const data = await res.json();
           setApiStats(data);

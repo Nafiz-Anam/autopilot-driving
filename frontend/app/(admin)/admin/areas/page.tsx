@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Plus, Pencil, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { adminApiFetch } from "@/lib/admin-api";
 
 interface Area {
   id: string;
@@ -203,7 +204,7 @@ export default function AdminAreasPage() {
   async function fetchAreas() {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/areas");
+      const res = await adminApiFetch("/areas");
       if (res.ok) {
         const data = await res.json();
         setAreas(data.data ?? []);
@@ -220,7 +221,7 @@ export default function AdminAreasPage() {
   }, []);
 
   async function handleAddArea(data: AreaFormData) {
-    const res = await fetch("/api/admin/areas", {
+    const res = await adminApiFetch("/areas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -233,7 +234,7 @@ export default function AdminAreasPage() {
 
   async function handleEditArea(data: AreaFormData) {
     if (!editingArea) return;
-    const res = await fetch(`/api/admin/areas/${editingArea.id}`, {
+    const res = await adminApiFetch(`/areas/${editingArea.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -246,7 +247,7 @@ export default function AdminAreasPage() {
   }
 
   async function handleToggleActive(area: Area) {
-    const res = await fetch(`/api/admin/areas/${area.id}`, {
+    const res = await adminApiFetch(`/areas/${area.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !area.isActive }),
@@ -259,7 +260,7 @@ export default function AdminAreasPage() {
   }
 
   async function handleDelete(id: string) {
-    const res = await fetch(`/api/admin/areas/${id}`, { method: "DELETE" });
+    const res = await adminApiFetch(`/areas/${id}`, { method: "DELETE" });
     if (res.ok) {
       setAreas((prev) => prev.filter((a) => a.id !== id));
       setDeleteConfirmId(null);
