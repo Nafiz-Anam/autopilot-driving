@@ -10,9 +10,9 @@ The API documentation is automatically generated using [Swagger/OpenAPI 3.0](htt
 
 ### Development
 
-- **Swagger UI**: http://localhost:8000/v1/docs
-- **OpenAPI JSON**: http://localhost:8000/v1/docs/json
-- **OpenAPI YAML**: http://localhost:8000/v1/docs/yaml
+- **Swagger UI**: http://localhost:8008/v1/docs
+- **OpenAPI JSON**: http://localhost:8008/v1/docs/json
+- **OpenAPI YAML**: http://localhost:8008/v1/docs/yaml
 
 ### Production
 
@@ -179,7 +179,7 @@ AuthTokens:
 ### Manual Testing
 
 1. Start the development server: `pnpm dev`
-2. Navigate to http://localhost:8000/v1/docs
+2. Navigate to http://localhost:8008/v1/docs
 3. Test endpoints using the "Try it out" feature
 4. Verify request/response schemas
 

@@ -54,32 +54,32 @@ Long-running services are `nginx`, `frontend`, `backend`, `db`, `redis`.
 Set these in GitHub -> Settings -> Secrets and variables -> Actions:
 
 - **Secrets**
-  - `HOSTINGER_API_KEY`
-  - `POSTGRES_USER`
-  - `POSTGRES_PASSWORD`
-  - `POSTGRES_DB`
-  - `REDIS_PASSWORD`
-  - `JWT_SECRET`
-  - `NEXTAUTH_SECRET`
+    - `HOSTINGER_API_KEY`
+    - `POSTGRES_USER`
+    - `POSTGRES_PASSWORD`
+    - `POSTGRES_DB`
+    - `REDIS_PASSWORD`
+    - `JWT_SECRET`
+    - `NEXTAUTH_SECRET`
 - **Variables**
-  - `HOSTINGER_VM_ID`
-  - `REDIS_DB` (for example `0`)
-  - `JWT_ACCESS_EXPIRATION_MINUTES` (for example `15`)
-  - `JWT_REFRESH_EXPIRATION_DAYS` (for example `7`)
-  - `JWT_RESET_PASSWORD_EXPIRATION_MINUTES` (for example `10`)
-  - `JWT_VERIFY_EMAIL_EXPIRATION_MINUTES` (for example `10`)
-  - `NEXT_PUBLIC_APP_URL` (for example `https://your-domain.com`)
-  - `NEXTAUTH_URL` (for example `https://your-domain.com`)
-  - `FRONTEND_PORT` (for example `80`)
-  
+    - `HOSTINGER_VM_ID`
+    - `REDIS_DB` (for example `0`)
+    - `JWT_ACCESS_EXPIRATION_MINUTES` (for example `15`)
+    - `JWT_REFRESH_EXPIRATION_DAYS` (for example `7`)
+    - `JWT_RESET_PASSWORD_EXPIRATION_MINUTES` (for example `10`)
+    - `JWT_VERIFY_EMAIL_EXPIRATION_MINUTES` (for example `10`)
+    - `NEXT_PUBLIC_APP_URL` (for example `https://your-domain.com`)
+    - `NEXTAUTH_URL` (for example `https://your-domain.com`)
+    - `FRONTEND_PORT` (for example `80`)
+
 ## 5) Recommended domain and SSL setup
 
 - Point your domain/subdomain A record to the VPS IP.
 - Add A record `driving.agiloit.store` -> VPS IP.
 - Add A record `api.driving.agiloit.store` -> VPS IP.
 - Nginx in this stack routes:
-  - `driving.agiloit.store` -> `frontend:3008`
-  - `api.driving.agiloit.store` -> `backend:8000`
+    - `driving.agiloit.store` -> `frontend:3008`
+    - `api.driving.agiloit.store` -> `backend:8008`
 - Enable SSL in Cloudflare for these domains (recommended: Full/Strict with origin cert setup).
 
 ## 6) Production safety checks
@@ -88,5 +88,5 @@ Set these in GitHub -> Settings -> Secrets and variables -> Actions:
 - Rotate default secrets before first launch.
 - Keep Docker volumes for data persistence (`postgres_data`, `redis_data`).
 - Verify health:
-  - frontend: `/`
-  - backend: `/v1/health/live`
+    - frontend: `/`
+    - backend: `/v1/health/live`

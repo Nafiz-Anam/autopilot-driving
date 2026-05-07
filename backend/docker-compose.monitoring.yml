@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8008:8008"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/api_template
@@ -19,7 +19,7 @@ services:
       - monitoring
     labels:
       - "prometheus.scrape=true"
-      - "prometheus.port=8000"
+      - "prometheus.port=8008"
       - "prometheus.path=/metrics"
 
   # Database
@@ -103,7 +103,8 @@ services:
       - "--path.procfs=/host/proc"
       - "--path.rootfs=/rootfs"
       - "--path.sysfs=/host/sys"
-      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)(\
+        $$|/)"
     networks:
       - monitoring
 
@@ -113,7 +114,8 @@ services:
     ports:
       - "9187:9187"
     environment:
-      DATA_SOURCE_NAME: "postgresql://postgres:password@postgres:5432/api_template?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://postgres:password@postgres:5432/api_template?ss\
+        lmode=disable"
     depends_on:
       - postgres
     networks:

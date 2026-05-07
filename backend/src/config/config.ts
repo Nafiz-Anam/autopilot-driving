@@ -9,8 +9,8 @@ dotenv.config({
 
 const envVarsSchema = z.object({
   NODE_ENV: z.enum(['production', 'development', 'test']),
-  PORT: z.string().transform(Number).pipe(z.number().default(8000)),
-  CLIENT_URL: z.string().default('http://localhost:8000'),
+  PORT: z.string().transform(Number).pipe(z.number().default(8008)),
+  CLIENT_URL: z.string().default('http://localhost:8008'),
   JWT_SECRET: z.string(),
   JWT_ACCESS_EXPIRATION_MINUTES: z.string().transform(Number).pipe(z.number().default(30)),
   JWT_REFRESH_EXPIRATION_DAYS: z.string().transform(Number).pipe(z.number().default(30)),

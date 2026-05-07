@@ -15,7 +15,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8000/v1",
+      "url": "http://localhost:8008/v1",
       "description": "Development server"
     },
     {
@@ -73,7 +73,10 @@
           },
           "role": {
             "type": "string",
-            "enum": ["USER", "ADMIN"],
+            "enum": [
+              "USER",
+              "ADMIN"
+            ],
             "example": "USER"
           },
           "isEmailVerified": {
@@ -91,7 +94,14 @@
             "example": "2023-01-01T00:00:00.000Z"
           }
         },
-        "required": ["id", "email", "role", "isEmailVerified", "createdAt", "updatedAt"]
+        "required": [
+          "id",
+          "email",
+          "role",
+          "isEmailVerified",
+          "createdAt",
+          "updatedAt"
+        ]
       },
       "UserCreate": {
         "type": "object",
@@ -113,12 +123,18 @@
           },
           "role": {
             "type": "string",
-            "enum": ["USER", "ADMIN"],
+            "enum": [
+              "USER",
+              "ADMIN"
+            ],
             "default": "USER",
             "example": "USER"
           }
         },
-        "required": ["email", "password"]
+        "required": [
+          "email",
+          "password"
+        ]
       },
       "UserUpdate": {
         "type": "object",
@@ -134,7 +150,10 @@
           },
           "role": {
             "type": "string",
-            "enum": ["USER", "ADMIN"],
+            "enum": [
+              "USER",
+              "ADMIN"
+            ],
             "example": "USER"
           }
         }
@@ -152,7 +171,10 @@
             "example": "2023-01-01T00:30:00.000Z"
           }
         },
-        "required": ["token", "expires"]
+        "required": [
+          "token",
+          "expires"
+        ]
       },
       "AuthTokens": {
         "type": "object",
@@ -164,7 +186,10 @@
             "$ref": "#/components/schemas/Token"
           }
         },
-        "required": ["access", "refresh"]
+        "required": [
+          "access",
+          "refresh"
+        ]
       },
       "LoginRequest": {
         "type": "object",
@@ -180,7 +205,10 @@
             "example": "password123"
           }
         },
-        "required": ["email", "password"]
+        "required": [
+          "email",
+          "password"
+        ]
       },
       "RegisterRequest": {
         "type": "object",
@@ -201,7 +229,11 @@
             "example": "password123"
           }
         },
-        "required": ["email", "name", "password"]
+        "required": [
+          "email",
+          "name",
+          "password"
+        ]
       },
       "RefreshTokenRequest": {
         "type": "object",
@@ -211,7 +243,9 @@
             "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
           }
         },
-        "required": ["refreshToken"]
+        "required": [
+          "refreshToken"
+        ]
       },
       "ForgotPasswordRequest": {
         "type": "object",
@@ -222,7 +256,9 @@
             "example": "user@example.com"
           }
         },
-        "required": ["email"]
+        "required": [
+          "email"
+        ]
       },
       "ResetPasswordRequest": {
         "type": "object",
@@ -238,7 +274,10 @@
             "example": "newpassword123"
           }
         },
-        "required": ["token", "password"]
+        "required": [
+          "token",
+          "password"
+        ]
       },
       "VerifyEmailRequest": {
         "type": "object",
@@ -248,7 +287,9 @@
             "example": "verification-token-here"
           }
         },
-        "required": ["token"]
+        "required": [
+          "token"
+        ]
       },
       "VerifyEmailOtpRequest": {
         "type": "object",
@@ -262,7 +303,10 @@
             "example": "123456"
           }
         },
-        "required": ["userId", "otp"]
+        "required": [
+          "userId",
+          "otp"
+        ]
       },
       "VerifyEmailOtpResponse": {
         "type": "object",
@@ -272,7 +316,9 @@
             "example": "Email verified successfully"
           }
         },
-        "required": ["message"]
+        "required": [
+          "message"
+        ]
       },
       "HealthCheck": {
         "type": "object",
@@ -303,7 +349,12 @@
             "example": "development"
           }
         },
-        "required": ["status", "timestamp", "uptime", "database"]
+        "required": [
+          "status",
+          "timestamp",
+          "uptime",
+          "database"
+        ]
       },
       "Error": {
         "type": "object",
@@ -322,7 +373,10 @@
             "example": "Error: Bad Request\n    at ..."
           }
         },
-        "required": ["code", "message"]
+        "required": [
+          "code",
+          "message"
+        ]
       },
       "Pagination": {
         "type": "object",
@@ -545,7 +599,9 @@
   "paths": {
     "/auth/verify-email-otp": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Verify email using OTP",
         "description": "Verify a user's email address using a 6-digit OTP sent to their email after registration.",
         "requestBody": {
@@ -579,7 +635,9 @@
       "post": {
         "summary": "Register a new user",
         "description": "Create a new user account with email, name, and password. The user will be created with USER role by default.",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -631,7 +689,9 @@
       "post": {
         "summary": "Login user",
         "description": "Authenticate user with email and password to receive access and refresh tokens.",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -693,7 +753,9 @@
       "post": {
         "summary": "Logout user",
         "description": "Invalidate the refresh token to log out the user.",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -724,7 +786,9 @@
       "post": {
         "summary": "Refresh authentication tokens",
         "description": "Get new access and refresh tokens using a valid refresh token.",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -762,7 +826,9 @@
       "post": {
         "summary": "Request password reset",
         "description": "Send a password reset email to the user's email address.",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -806,7 +872,9 @@
       "post": {
         "summary": "Reset password",
         "description": "Reset user password using the token received via email.",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -851,7 +919,9 @@
       "post": {
         "summary": "Send email verification",
         "description": "Send a verification email to the authenticated user's email address.",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -898,7 +968,9 @@
       "post": {
         "summary": "Verify email address",
         "description": "Verify user's email address using the token received via email.",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -942,7 +1014,9 @@
       "get": {
         "summary": "Get user's active devices",
         "description": "Retrieve all active device sessions for the authenticated user",
-        "tags": ["Device Management"],
+        "tags": [
+          "Device Management"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1019,7 +1093,9 @@
       "delete": {
         "summary": "Logout from all other devices",
         "description": "Revoke access for all devices except the current one",
-        "tags": ["Device Management"],
+        "tags": [
+          "Device Management"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1031,7 +1107,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["currentDeviceId"],
+                "required": [
+                  "currentDeviceId"
+                ],
                 "properties": {
                   "currentDeviceId": {
                     "type": "string",
@@ -1074,7 +1152,9 @@
       "get": {
         "summary": "Get device sessions",
         "description": "Retrieve all active device sessions for the authenticated user",
-        "tags": ["Device Management"],
+        "tags": [
+          "Device Management"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1131,7 +1211,9 @@
       "get": {
         "summary": "Check device limit",
         "description": "Check if user has reached the device limit",
-        "tags": ["Device Management"],
+        "tags": [
+          "Device Management"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1176,7 +1258,9 @@
       "delete": {
         "summary": "Remove specific device",
         "description": "Revoke access for a specific device session",
-        "tags": ["Device Management"],
+        "tags": [
+          "Device Management"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1211,7 +1295,9 @@
       "post": {
         "summary": "Trust device",
         "description": "Mark a device as trusted",
-        "tags": ["Device Management"],
+        "tags": [
+          "Device Management"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1264,7 +1350,9 @@
       "post": {
         "summary": "Setup 2FA",
         "description": "Generate a new TOTP secret and QR code for 2FA setup",
-        "tags": ["Two-Factor Authentication"],
+        "tags": [
+          "Two-Factor Authentication"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1324,7 +1412,9 @@
       "post": {
         "summary": "Enable 2FA",
         "description": "Enable 2FA for the authenticated user",
-        "tags": ["Two-Factor Authentication"],
+        "tags": [
+          "Two-Factor Authentication"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1336,7 +1426,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["token"],
+                "required": [
+                  "token"
+                ],
                 "properties": {
                   "token": {
                     "type": "string",
@@ -1365,7 +1457,9 @@
       "post": {
         "summary": "Disable 2FA",
         "description": "Disable 2FA for the authenticated user",
-        "tags": ["Two-Factor Authentication"],
+        "tags": [
+          "Two-Factor Authentication"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1377,7 +1471,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["token"],
+                "required": [
+                  "token"
+                ],
                 "properties": {
                   "token": {
                     "type": "string",
@@ -1406,7 +1502,9 @@
       "post": {
         "summary": "Regenerate backup codes",
         "description": "Generate new backup codes for account recovery",
-        "tags": ["Two-Factor Authentication"],
+        "tags": [
+          "Two-Factor Authentication"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1418,7 +1516,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["token"],
+                "required": [
+                  "token"
+                ],
                 "properties": {
                   "token": {
                     "type": "string",
@@ -1476,7 +1576,9 @@
       "get": {
         "summary": "Get 2FA status",
         "description": "Get the current 2FA status for the authenticated user",
-        "tags": ["Two-Factor Authentication"],
+        "tags": [
+          "Two-Factor Authentication"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1530,7 +1632,9 @@
       "post": {
         "summary": "Create a new user",
         "description": "Only administrators can create new users. This endpoint creates a user with the specified role and details.",
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1589,7 +1693,9 @@
       "get": {
         "summary": "Get all users with pagination",
         "description": "Retrieve a paginated list of users. Only administrators can access this endpoint.",
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1619,7 +1725,10 @@
             "name": "role",
             "schema": {
               "type": "string",
-              "enum": ["USER", "ADMIN"]
+              "enum": [
+                "USER",
+                "ADMIN"
+              ]
             },
             "description": "Filter users by role",
             "example": "USER"
@@ -1681,7 +1790,9 @@
       "get": {
         "summary": "Get a specific user by ID",
         "description": "Retrieve user details by ID. Users can only access their own information unless they are administrators.",
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1724,7 +1835,9 @@
       "patch": {
         "summary": "Update a user",
         "description": "Update user information. Users can only update their own information unless they are administrators.",
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1788,7 +1901,9 @@
       "delete": {
         "summary": "Delete a user",
         "description": "Permanently delete a user. Only administrators can delete users.",
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "security": [
           {
             "bearerAuth": []

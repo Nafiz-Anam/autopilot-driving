@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8001:8000"
+      - "8001:8008"
     volumes:
       - .:/usr/src/node-app
       - /usr/src/node-app/node_modules
@@ -28,7 +28,7 @@ services:
     networks:
       - node-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 3

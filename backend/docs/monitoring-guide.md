@@ -407,7 +407,7 @@ services:
 curl http://localhost:9090/api/v1/targets
 
 # Check metrics endpoint
-curl http://localhost:8000/metrics
+curl http://localhost:8008/metrics
 ```
 
 #### **Grafana No Data**

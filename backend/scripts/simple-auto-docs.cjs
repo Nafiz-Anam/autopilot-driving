@@ -21,7 +21,7 @@ async function generateSimpleOpenAPISpec() {
     },
     servers: [
       {
-        url: 'http://localhost:8000/v1',
+        url: 'http://localhost:8008/v1',
         description: 'Development server',
       },
     ],

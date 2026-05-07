@@ -26,10 +26,10 @@ RUN npm install -g pnpm@10.33.2
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=8000
+ENV PORT=8008
 
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser  --system --uid 1001 nodejs
+  adduser  --system --uid 1001 nodejs
 
 COPY --from=builder --chown=nodejs:nodejs /app/build             ./build
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules      ./node_modules
@@ -44,10 +44,10 @@ RUN mkdir -p uploads logs && chown -R nodejs:nodejs uploads logs
 
 USER nodejs
 
-EXPOSE 8000
+EXPOSE 8008
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget -qO- http://localhost:8000/v1/health/live || exit 1
+  CMD wget -qO- http://localhost:8008/v1/health/live || exit 1
 
 # Run Prisma generate + schema sync + demo seed at startup, then launch API.
 # Use local Prisma CLI (not dlx) to avoid runtime package download delays.

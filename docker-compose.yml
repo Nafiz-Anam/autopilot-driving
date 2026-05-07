@@ -2,7 +2,7 @@
 #
 # Port map (offset +8 from defaults to avoid collisions with local dev):
 #   Frontend  (Next.js)  : 3008  (default 3000)
-#   Backend   (Express)  : 8008  (default 8000)
+#   Backend   (Express)  : 8008  (default 8008)
 #   PostgreSQL           : 5440  (default 5432)
 #   Redis                : 6387  (default 6379)
 #   Nginx proxy          : 8088  (default; set NGINX_PORT to override)
@@ -21,15 +21,15 @@ services:
     container_name: autopilot_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER:     ${POSTGRES_USER:-autopilot}
+      POSTGRES_USER: ${POSTGRES_USER:-autopilot}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-autopilot_secret}
-      POSTGRES_DB:       ${POSTGRES_DB:-autopilot}
+      POSTGRES_DB: ${POSTGRES_DB:-autopilot}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5440:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autopilot}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autopilot}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,7 +46,7 @@ services:
       - ./backend/docker/redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -62,18 +62,18 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      NODE_ENV:    production
-      PORT:        8000
+      NODE_ENV: production
+      PORT: 8008
       DATABASE_URL: postgresql://${POSTGRES_USER:-autopilot}:${POSTGRES_PASSWORD:-autopilot_secret}@db:5432/${POSTGRES_DB:-autopilot}
-      REDIS_HOST:  redis
-      REDIS_PORT:  6379
-      CLIENT_URL:  ${NEXT_PUBLIC_APP_URL:-http://localhost:3008}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CLIENT_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3008}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       JWT_SECRET: ${JWT_SECRET:-change-me-jwt-secret}
       NEXTAUTH_BRIDGE_SECRET: ${NEXTAUTH_BRIDGE_SECRET:-change-this-bridge-secret-to-at-least-32-chars}
     ports:
-      - "8008:8000"
+      - "8008:8008"
     depends_on:
       db:
         condition: service_healthy
@@ -127,7 +127,7 @@ services:
     profiles:
       - tools
     environment:
-      PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_EMAIL:-admin@autopilot.local}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@autopilot.local}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
       - "5058:80"

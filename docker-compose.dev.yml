@@ -19,15 +19,15 @@ services:
     container_name: autopilot_db_dev
     restart: unless-stopped
     environment:
-      POSTGRES_USER:     ${POSTGRES_USER:-autopilot}
+      POSTGRES_USER: ${POSTGRES_USER:-autopilot}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-autopilot_secret}
-      POSTGRES_DB:       ${POSTGRES_DB:-autopilot}
+      POSTGRES_DB: ${POSTGRES_DB:-autopilot}
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
     ports:
       - "5440:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autopilot}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autopilot}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,7 +44,7 @@ services:
       - ./backend/docker/redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -59,17 +59,17 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      NODE_ENV:     development
-      PORT:         8000
+      NODE_ENV: development
+      PORT: 8008
       DATABASE_URL: postgresql://${POSTGRES_USER:-autopilot}:${POSTGRES_PASSWORD:-autopilot_secret}@db:5432/${POSTGRES_DB:-autopilot}
-      REDIS_HOST:   redis
-      REDIS_PORT:   6379
-      CLIENT_URL:   ${NEXT_PUBLIC_APP_URL:-http://localhost:3008}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CLIENT_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3008}
       SMTP_USERNAME: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASS:-}
-      JWT_SECRET:   ${JWT_SECRET:-change-me-jwt-secret}
+      JWT_SECRET: ${JWT_SECRET:-change-me-jwt-secret}
     ports:
-      - "8008:8000"
+      - "8008:8008"
     volumes:
       - ./backend:/app
       - backend_nm:/app/node_modules
@@ -102,7 +102,7 @@ services:
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3008}
       NEXT_PUBLIC_BACKEND_API_BASE_URL: ${NEXT_PUBLIC_BACKEND_API_BASE_URL:-http://localhost:8008/v1}
       NODE_ENV: development
-      PORT:     3000
+      PORT: 3000
       HOSTNAME: 0.0.0.0
       AUTH_TRUST_HOST: "true"
       WATCHPACK_POLLING: "true"
@@ -151,7 +151,7 @@ services:
     profiles:
       - tools
     environment:
-      PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_EMAIL:-admin@autopilot.local}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@autopilot.local}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
       - "5058:80"

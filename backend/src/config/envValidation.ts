@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const envVarsSchema = z.object({
   NODE_ENV: z.enum(['production', 'development', 'test']),
-  PORT: z.number().default(8000),
+  PORT: z.number().default(8008),
   DATABASE_URL: z.string(),
   JWT_SECRET: z.string(),
   JWT_ACCESS_EXPIRATION_MINUTES: z.number().default(30),
@@ -50,7 +50,7 @@ const config = {
     from: envVars.EMAIL_FROM,
   },
   cors: {
-    origins: envVars.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8000'],
+    origins: envVars.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8008'],
   },
 };
 

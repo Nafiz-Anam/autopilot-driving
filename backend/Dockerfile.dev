@@ -15,6 +15,6 @@ RUN pnpm dlx prisma generate
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8008
 
 CMD ["pnpm", "dev"]

@@ -11,7 +11,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8000/v1",
+      "url": "http://localhost:8008/v1",
       "description": "Development server"
     }
   ],
@@ -34,7 +34,9 @@
       "get": {
         "summary": "GET user",
         "description": "Auto-generated endpoint for user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -82,7 +84,9 @@
       "patch": {
         "summary": "PATCH user",
         "description": "Auto-generated endpoint for user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -130,7 +134,9 @@
       "patch": {
         "summary": "PATCH user",
         "description": "Auto-generated endpoint for user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -178,7 +184,9 @@
       "delete": {
         "summary": "DELETE user",
         "description": "Auto-generated endpoint for user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -226,7 +234,9 @@
       "get": {
         "summary": "GET user",
         "description": "Auto-generated endpoint for user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -274,7 +284,9 @@
       "get": {
         "summary": "GET user",
         "description": "Auto-generated endpoint for user",
-        "tags": ["User"],
+        "tags": [
+          "User"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -322,7 +334,9 @@
       "post": {
         "summary": "POST twoFactor",
         "description": "Auto-generated endpoint for twoFactor",
-        "tags": ["TwoFactor"],
+        "tags": [
+          "TwoFactor"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -370,7 +384,9 @@
       "get": {
         "summary": "GET twoFactor",
         "description": "Auto-generated endpoint for twoFactor",
-        "tags": ["TwoFactor"],
+        "tags": [
+          "TwoFactor"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -418,7 +434,9 @@
       "post": {
         "summary": "POST twoFactor",
         "description": "Auto-generated endpoint for twoFactor",
-        "tags": ["TwoFactor"],
+        "tags": [
+          "TwoFactor"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -466,7 +484,9 @@
       "get": {
         "summary": "GET socialAuth",
         "description": "Auto-generated endpoint for socialAuth",
-        "tags": ["SocialAuth"],
+        "tags": [
+          "SocialAuth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -514,7 +534,9 @@
       "get": {
         "summary": "GET socialAuth",
         "description": "Auto-generated endpoint for socialAuth",
-        "tags": ["SocialAuth"],
+        "tags": [
+          "SocialAuth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -562,7 +584,9 @@
       "get": {
         "summary": "GET socialAuth",
         "description": "Auto-generated endpoint for socialAuth",
-        "tags": ["SocialAuth"],
+        "tags": [
+          "SocialAuth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -610,7 +634,9 @@
       "get": {
         "summary": "GET socialAuth",
         "description": "Auto-generated endpoint for socialAuth",
-        "tags": ["SocialAuth"],
+        "tags": [
+          "SocialAuth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -658,7 +684,9 @@
       "post": {
         "summary": "POST socialAuth",
         "description": "Auto-generated endpoint for socialAuth",
-        "tags": ["SocialAuth"],
+        "tags": [
+          "SocialAuth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -706,7 +734,9 @@
       "delete": {
         "summary": "DELETE socialAuth",
         "description": "Auto-generated endpoint for socialAuth",
-        "tags": ["SocialAuth"],
+        "tags": [
+          "SocialAuth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -754,7 +784,9 @@
       "get": {
         "summary": "GET socialAuth",
         "description": "Auto-generated endpoint for socialAuth",
-        "tags": ["SocialAuth"],
+        "tags": [
+          "SocialAuth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -802,7 +834,9 @@
       "put": {
         "summary": "PUT socialAuth",
         "description": "Auto-generated endpoint for socialAuth",
-        "tags": ["SocialAuth"],
+        "tags": [
+          "SocialAuth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -850,7 +884,9 @@
       "get": {
         "summary": "GET socialAuth",
         "description": "Auto-generated endpoint for socialAuth",
-        "tags": ["SocialAuth"],
+        "tags": [
+          "SocialAuth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -898,7 +934,9 @@
       "get": {
         "summary": "GET sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -946,7 +984,9 @@
       "delete": {
         "summary": "DELETE sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -994,7 +1034,9 @@
       "delete": {
         "summary": "DELETE sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1042,7 +1084,9 @@
       "delete": {
         "summary": "DELETE sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1090,7 +1134,9 @@
       "get": {
         "summary": "GET sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1138,7 +1184,9 @@
       "get": {
         "summary": "GET sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1186,7 +1234,9 @@
       "get": {
         "summary": "GET sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1234,7 +1284,9 @@
       "put": {
         "summary": "PUT sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1282,7 +1334,9 @@
       "get": {
         "summary": "GET sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1330,7 +1384,9 @@
       "get": {
         "summary": "GET sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1378,7 +1434,9 @@
       "delete": {
         "summary": "DELETE sessionManagement",
         "description": "Auto-generated endpoint for sessionManagement",
-        "tags": ["SessionManagement"],
+        "tags": [
+          "SessionManagement"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1426,7 +1484,9 @@
       "get": {
         "summary": "GET role",
         "description": "Auto-generated endpoint for role",
-        "tags": ["Role"],
+        "tags": [
+          "Role"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1474,7 +1534,9 @@
       "delete": {
         "summary": "DELETE role",
         "description": "Auto-generated endpoint for role",
-        "tags": ["Role"],
+        "tags": [
+          "Role"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1522,7 +1584,9 @@
       "delete": {
         "summary": "DELETE role",
         "description": "Auto-generated endpoint for role",
-        "tags": ["Role"],
+        "tags": [
+          "Role"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1570,7 +1634,9 @@
       "delete": {
         "summary": "DELETE role",
         "description": "Auto-generated endpoint for role",
-        "tags": ["Role"],
+        "tags": [
+          "Role"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1618,7 +1684,9 @@
       "get": {
         "summary": "GET role",
         "description": "Auto-generated endpoint for role",
-        "tags": ["Role"],
+        "tags": [
+          "Role"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1666,7 +1734,9 @@
       "get": {
         "summary": "GET role",
         "description": "Auto-generated endpoint for role",
-        "tags": ["Role"],
+        "tags": [
+          "Role"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1714,7 +1784,9 @@
       "get": {
         "summary": "GET role",
         "description": "Auto-generated endpoint for role",
-        "tags": ["Role"],
+        "tags": [
+          "Role"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1762,7 +1834,9 @@
       "get": {
         "summary": "GET pushNotification",
         "description": "Auto-generated endpoint for pushNotification",
-        "tags": ["PushNotification"],
+        "tags": [
+          "PushNotification"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1810,7 +1884,9 @@
       "patch": {
         "summary": "PATCH profile",
         "description": "Auto-generated endpoint for profile",
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1858,7 +1934,9 @@
       "get": {
         "summary": "GET profile",
         "description": "Auto-generated endpoint for profile",
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1906,7 +1984,9 @@
       "get": {
         "summary": "GET profile",
         "description": "Auto-generated endpoint for profile",
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -1954,7 +2034,9 @@
       "get": {
         "summary": "GET profile",
         "description": "Auto-generated endpoint for profile",
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2002,7 +2084,9 @@
       "get": {
         "summary": "GET profile",
         "description": "Auto-generated endpoint for profile",
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2050,7 +2134,9 @@
       "get": {
         "summary": "GET profile",
         "description": "Auto-generated endpoint for profile",
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2098,7 +2184,9 @@
       "delete": {
         "summary": "DELETE profile",
         "description": "Auto-generated endpoint for profile",
-        "tags": ["Profile"],
+        "tags": [
+          "Profile"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2146,7 +2234,9 @@
       "get": {
         "summary": "GET passwordPolicy",
         "description": "Auto-generated endpoint for passwordPolicy",
-        "tags": ["PasswordPolicy"],
+        "tags": [
+          "PasswordPolicy"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2194,7 +2284,9 @@
       "get": {
         "summary": "GET passwordPolicy",
         "description": "Auto-generated endpoint for passwordPolicy",
-        "tags": ["PasswordPolicy"],
+        "tags": [
+          "PasswordPolicy"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2242,7 +2334,9 @@
       "delete": {
         "summary": "DELETE passwordPolicy",
         "description": "Auto-generated endpoint for passwordPolicy",
-        "tags": ["PasswordPolicy"],
+        "tags": [
+          "PasswordPolicy"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2290,7 +2384,9 @@
       "post": {
         "summary": "POST passwordPolicy",
         "description": "Auto-generated endpoint for passwordPolicy",
-        "tags": ["PasswordPolicy"],
+        "tags": [
+          "PasswordPolicy"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2338,7 +2434,9 @@
       "get": {
         "summary": "GET passwordPolicy",
         "description": "Auto-generated endpoint for passwordPolicy",
-        "tags": ["PasswordPolicy"],
+        "tags": [
+          "PasswordPolicy"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2386,7 +2484,9 @@
       "get": {
         "summary": "GET passwordPolicy",
         "description": "Auto-generated endpoint for passwordPolicy",
-        "tags": ["PasswordPolicy"],
+        "tags": [
+          "PasswordPolicy"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2434,7 +2534,9 @@
       "post": {
         "summary": "POST passwordPolicy",
         "description": "Auto-generated endpoint for passwordPolicy",
-        "tags": ["PasswordPolicy"],
+        "tags": [
+          "PasswordPolicy"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2482,7 +2584,9 @@
       "get": {
         "summary": "GET ipSecurity",
         "description": "Auto-generated endpoint for ipSecurity",
-        "tags": ["IpSecurity"],
+        "tags": [
+          "IpSecurity"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2530,7 +2634,9 @@
       "delete": {
         "summary": "DELETE ipSecurity",
         "description": "Auto-generated endpoint for ipSecurity",
-        "tags": ["IpSecurity"],
+        "tags": [
+          "IpSecurity"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2578,7 +2684,9 @@
       "get": {
         "summary": "GET ipSecurity",
         "description": "Auto-generated endpoint for ipSecurity",
-        "tags": ["IpSecurity"],
+        "tags": [
+          "IpSecurity"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2626,7 +2734,9 @@
       "post": {
         "summary": "POST ipSecurity",
         "description": "Auto-generated endpoint for ipSecurity",
-        "tags": ["IpSecurity"],
+        "tags": [
+          "IpSecurity"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2674,7 +2784,9 @@
       "get": {
         "summary": "GET docs",
         "description": "Auto-generated endpoint for docs",
-        "tags": ["Docs"],
+        "tags": [
+          "Docs"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2722,7 +2834,9 @@
       "get": {
         "summary": "GET docs",
         "description": "Auto-generated endpoint for docs",
-        "tags": ["Docs"],
+        "tags": [
+          "Docs"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2770,7 +2884,9 @@
       "get": {
         "summary": "GET docs",
         "description": "Auto-generated endpoint for docs",
-        "tags": ["Docs"],
+        "tags": [
+          "Docs"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2818,7 +2934,9 @@
       "get": {
         "summary": "GET device",
         "description": "Auto-generated endpoint for device",
-        "tags": ["Device"],
+        "tags": [
+          "Device"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2866,7 +2984,9 @@
       "get": {
         "summary": "GET device",
         "description": "Auto-generated endpoint for device",
-        "tags": ["Device"],
+        "tags": [
+          "Device"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2914,7 +3034,9 @@
       "delete": {
         "summary": "DELETE device",
         "description": "Auto-generated endpoint for device",
-        "tags": ["Device"],
+        "tags": [
+          "Device"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -2962,7 +3084,9 @@
       "get": {
         "summary": "GET device",
         "description": "Auto-generated endpoint for device",
-        "tags": ["Device"],
+        "tags": [
+          "Device"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3010,7 +3134,9 @@
       "post": {
         "summary": "POST auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3058,7 +3184,9 @@
       "post": {
         "summary": "POST auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3106,7 +3234,9 @@
       "post": {
         "summary": "POST auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3154,7 +3284,9 @@
       "get": {
         "summary": "GET auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3202,7 +3334,9 @@
       "get": {
         "summary": "GET auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3250,7 +3384,9 @@
       "post": {
         "summary": "POST auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3298,7 +3434,9 @@
       "post": {
         "summary": "POST auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3346,7 +3484,9 @@
       "post": {
         "summary": "POST auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3394,7 +3534,9 @@
       "get": {
         "summary": "GET auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3442,7 +3584,9 @@
       "get": {
         "summary": "GET auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3490,7 +3634,9 @@
       "get": {
         "summary": "GET auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3538,7 +3684,9 @@
       "get": {
         "summary": "GET auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3586,7 +3734,9 @@
       "post": {
         "summary": "POST auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3634,7 +3784,9 @@
       "get": {
         "summary": "GET auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3682,7 +3834,9 @@
       "post": {
         "summary": "POST auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3730,7 +3884,9 @@
       "get": {
         "summary": "GET auth",
         "description": "Auto-generated endpoint for auth",
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3778,7 +3934,9 @@
       "get": {
         "summary": "GET auditLog",
         "description": "Auto-generated endpoint for auditLog",
-        "tags": ["AuditLog"],
+        "tags": [
+          "AuditLog"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3826,7 +3984,9 @@
       "get": {
         "summary": "GET auditLog",
         "description": "Auto-generated endpoint for auditLog",
-        "tags": ["AuditLog"],
+        "tags": [
+          "AuditLog"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3874,7 +4034,9 @@
       "get": {
         "summary": "GET auditLog",
         "description": "Auto-generated endpoint for auditLog",
-        "tags": ["AuditLog"],
+        "tags": [
+          "AuditLog"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3922,7 +4084,9 @@
       "get": {
         "summary": "GET auditLog",
         "description": "Auto-generated endpoint for auditLog",
-        "tags": ["AuditLog"],
+        "tags": [
+          "AuditLog"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3970,7 +4134,9 @@
       "get": {
         "summary": "GET auditLog",
         "description": "Auto-generated endpoint for auditLog",
-        "tags": ["AuditLog"],
+        "tags": [
+          "AuditLog"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -4018,7 +4184,9 @@
       "get": {
         "summary": "GET auditLog",
         "description": "Auto-generated endpoint for auditLog",
-        "tags": ["AuditLog"],
+        "tags": [
+          "AuditLog"
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -4066,7 +4234,9 @@
       "delete": {
         "summary": "DELETE auditLog",
         "description": "Auto-generated endpoint for auditLog",
-        "tags": ["AuditLog"],
+        "tags": [
+          "AuditLog"
+        ],
         "responses": {
           "200": {
             "description": "Success",

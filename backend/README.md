@@ -178,7 +178,7 @@ JWT_ACCESS_EXPIRE="15m"
 JWT_REFRESH_EXPIRE="7d"
 
 # Server
-PORT=8000
+PORT=8008
 NODE_ENV="development"
 
 # API Keys
@@ -720,9 +720,9 @@ pnpm docs:watch
 
 #### **Development Environment**
 
-- **Swagger UI**: http://localhost:8000/v1/docs
-- **OpenAPI JSON**: http://localhost:8000/v1/docs/json
-- **OpenAPI YAML**: http://localhost:8000/v1/docs/yaml
+- **Swagger UI**: http://localhost:8008/v1/docs
+- **OpenAPI JSON**: http://localhost:8008/v1/docs/json
+- **OpenAPI YAML**: http://localhost:8008/v1/docs/yaml
 
 #### **Production Environment**
 
