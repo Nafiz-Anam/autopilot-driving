@@ -37,10 +37,10 @@ const listForStudent = async (studentId: string) => {
     `SELECT b.id, b.reference, b."lessonType", b.transmission, b."scheduledAt", b."durationMins",
             b.status, b."paymentStatus", b."totalAmount"::text AS "totalAmount",
             i.rating AS instructor_rating, i.areas AS instructor_areas,
-            u.name AS instructor_user_name, u.image AS instructor_user_image
+            u.name AS instructor_user_name, u."profilePicture" AS instructor_user_image
      FROM "Booking" b
      INNER JOIN "Instructor" i ON i.id = b."instructorId"
-     INNER JOIN "User" u ON u.id = i."userId"
+     INNER JOIN users u ON u.id = i."userId"
      WHERE b."studentId" = $1
      ORDER BY b."scheduledAt" DESC`,
     studentId

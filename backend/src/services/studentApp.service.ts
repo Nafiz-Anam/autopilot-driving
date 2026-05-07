@@ -19,8 +19,8 @@ const getProfile = async (userId: string) => {
       createdAt: Date;
     }>
   >(
-    `SELECT id, name, email, phone, image, role::text AS role, "createdAt"
-     FROM "User"
+    `SELECT id, name, email, phone, "profilePicture" AS image, role::text AS role, "createdAt"
+     FROM users
      WHERE id = $1
      LIMIT 1`,
     userId
@@ -44,7 +44,7 @@ const updateProfile = async (userId: string, input: ProfileUpdateInput) => {
 
   if (updates.length > 0) {
     await prisma.$executeRawUnsafe(
-      `UPDATE "User"
+      `UPDATE users
        SET ${updates.join(', ')}, "updatedAt" = NOW()
        WHERE id = $1`,
       userId,
@@ -62,7 +62,7 @@ const updateProfile = async (userId: string, input: ProfileUpdateInput) => {
     }>
   >(
     `SELECT id, name, email, phone, role::text AS role
-     FROM "User"
+     FROM users
      WHERE id = $1
      LIMIT 1`,
     userId
@@ -72,24 +72,24 @@ const updateProfile = async (userId: string, input: ProfileUpdateInput) => {
 };
 
 const changePassword = async (userId: string, current: string, newPassword: string) => {
-  const rows = await prisma.$queryRawUnsafe<Array<{ passwordHash: string | null }>>(
-    `SELECT "passwordHash" FROM "User" WHERE id = $1 LIMIT 1`,
+  const rows = await prisma.$queryRawUnsafe<Array<{ password: string | null }>>(
+    `SELECT password FROM users WHERE id = $1 LIMIT 1`,
     userId
   );
   const user = rows[0];
 
-  if (!user?.passwordHash) {
+  if (!user?.password) {
     return { error: 'NO_PASSWORD' as const };
   }
 
-  const valid = await bcrypt.compare(current, user.passwordHash);
+  const valid = await bcrypt.compare(current, user.password);
   if (!valid) {
     return { error: 'INVALID_CURRENT' as const };
   }
 
   const newHash = await bcrypt.hash(newPassword, 12);
   await prisma.$executeRawUnsafe(
-    `UPDATE "User" SET "passwordHash" = $2, "updatedAt" = NOW() WHERE id = $1`,
+    `UPDATE users SET password = $2, "updatedAt" = NOW() WHERE id = $1`,
     userId,
     newHash
   );
@@ -123,7 +123,7 @@ const getStats = async (studentId: string) => {
             u.name AS "instructorName"
      FROM "Booking" b
      INNER JOIN "Instructor" i ON i.id = b."instructorId"
-     INNER JOIN "User" u ON u.id = i."userId"
+     INNER JOIN users u ON u.id = i."userId"
      WHERE b."studentId" = $1
        AND b.status IN ('CONFIRMED', 'PENDING')
        AND b."scheduledAt" >= NOW()

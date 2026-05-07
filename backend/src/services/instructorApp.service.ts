@@ -33,9 +33,9 @@ const getInstructorProfileByUserId = async (userId: string) => {
        u.name AS "userName",
        u.email AS "userEmail",
        u.phone AS "userPhone",
-       u.image AS "userImage"
+       u."profilePicture" AS "userImage"
      FROM "Instructor" i
-     INNER JOIN "User" u ON u.id = i."userId"
+     INNER JOIN users u ON u.id = i."userId"
      WHERE i."userId" = $1
      LIMIT 1`,
     userId
@@ -190,9 +190,9 @@ const getInstructorStudentsByUserId = async (userId: string) => {
        u.name AS "studentName",
        u.email AS "studentEmail",
        u.phone AS "studentPhone",
-       u.image AS "studentImage"
+       u."profilePicture" AS "studentImage"
      FROM "Booking" b
-     INNER JOIN "User" u ON u.id = b."studentId"
+     INNER JOIN users u ON u.id = b."studentId"
      WHERE b."instructorId" = $1
      ORDER BY b."scheduledAt" DESC`,
     instructor.id
@@ -326,7 +326,7 @@ const getInstructorStatsByUserId = async (userId: string) => {
            b.transmission,
            u.name AS "studentName"
          FROM "Booking" b
-         INNER JOIN "User" u ON u.id = b."studentId"
+         INNER JOIN users u ON u.id = b."studentId"
          WHERE b."instructorId" = $1
            AND b."scheduledAt" >= $2::timestamp
            AND b."scheduledAt" <= $3::timestamp
@@ -354,7 +354,7 @@ const getInstructorStatsByUserId = async (userId: string) => {
            b.transmission,
            u.name AS "studentName"
          FROM "Booking" b
-         INNER JOIN "User" u ON u.id = b."studentId"
+         INNER JOIN users u ON u.id = b."studentId"
          WHERE b."instructorId" = $1
            AND b."scheduledAt" > $2::timestamp
            AND b."scheduledAt" < $3::timestamp

@@ -219,9 +219,9 @@ const listInstructors = async (filters: { postcode?: string; transmission?: stri
        i."isFemale",
        i."isActive",
        u.name AS "userName",
-       u.image AS "userImage"
+       u."profilePicture" AS "userImage"
      FROM "Instructor" i
-     INNER JOIN "User" u ON u.id = i."userId"
+     INNER JOIN users u ON u.id = i."userId"
      WHERE ${conditions.join(' AND ')}
      ORDER BY i.rating DESC`,
     ...values
@@ -346,7 +346,7 @@ const registerUser = async (payload: unknown) => {
   const { name, email, phone, password, role } = parsed.data;
 
   const existing = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
-    `SELECT id FROM "User" WHERE email = $1 LIMIT 1`,
+    `SELECT id FROM users WHERE email = $1 LIMIT 1`,
     email
   );
   if (existing[0]) {
@@ -357,14 +357,14 @@ const registerUser = async (payload: unknown) => {
 
   try {
     const users = await prisma.$queryRawUnsafe<RegisterUserRow[]>(
-      `INSERT INTO "User" (name, email, phone, "passwordHash", role, "createdAt", "updatedAt")
+      `INSERT INTO users (name, email, phone, password, role, "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
        RETURNING id, email, name, role`,
       name,
       email,
       phone,
       passwordHash,
-      role
+      'USER'
     );
 
     const user = users[0];
@@ -387,14 +387,14 @@ const getTheoryQuestions = async (
   query: { page?: string; limit?: string; category?: string | null }
 ) => {
   const users = await prisma.$queryRawUnsafe<UserRoleRow[]>(
-    `SELECT id, role FROM "User" WHERE id = $1 LIMIT 1`,
+    `SELECT id, role::text AS role FROM users WHERE id = $1 LIMIT 1`,
     userId
   );
   const user = users[0];
   if (!user) {
     throw new PublicSiteError(401, 'Unauthorised');
   }
-  if (user.role !== 'STUDENT' && user.role !== 'ADMIN') {
+  if (user.role !== 'USER' && user.role !== 'ADMIN') {
     throw new PublicSiteError(403, 'Forbidden');
   }
 

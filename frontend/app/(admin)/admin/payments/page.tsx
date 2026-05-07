@@ -160,6 +160,7 @@ export default function AdminPaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [stripeConnectionOk, setStripeConnectionOk] = useState<boolean | null>(null);
   const [saveMsg, setSaveMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [testResult, setTestResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -190,6 +191,33 @@ export default function AdminPaymentsPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!settings?.has_secret_key) {
+      setStripeConnectionOk(null);
+      return;
+    }
+
+    let cancelled = false;
+    adminApiFetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "test_connection" }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        setStripeConnectionOk(Boolean(d?.success));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStripeConnectionOk(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [settings?.has_secret_key]);
 
   async function handleSave() {
     setSaving(true);
@@ -249,14 +277,17 @@ export default function AdminPaymentsPage() {
       const data = await res.json();
 
       if (data.success) {
+        setStripeConnectionOk(true);
         setTestResult({
           type: "success",
           text: `Connected! Currency: ${data.data.currency}`,
         });
       } else {
+        setStripeConnectionOk(false);
         setTestResult({ type: "error", text: data.error ?? "Connection failed." });
       }
     } catch {
+      setStripeConnectionOk(false);
       setTestResult({ type: "error", text: "Network error. Please try again." });
     } finally {
       setTesting(false);
@@ -288,7 +319,9 @@ export default function AdminPaymentsPage() {
     }
   }
 
-  const isConfigured = settings?.has_secret_key && settings?.has_publishable_key;
+  const isConfigured =
+    Boolean(settings?.has_secret_key && settings?.has_publishable_key) &&
+    stripeConnectionOk !== false;
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
@@ -351,7 +384,9 @@ export default function AdminPaymentsPage() {
                   Stripe is not fully configured
                 </p>
                 <p className="text-xs text-yellow-600 mt-0.5">
-                  Payments will fail until all credentials are set.
+                  {stripeConnectionOk === false
+                    ? "Saved keys failed live Stripe validation. Please update with real credentials."
+                    : "Payments will fail until all credentials are set."}
                 </p>
               </div>
             </>

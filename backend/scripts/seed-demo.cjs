@@ -19,13 +19,6 @@ async function tableExists(tableName) {
 async function ensureDrivingSchoolSchema() {
   await prisma.$executeRawUnsafe(`
     DO $$ BEGIN
-      CREATE TYPE "Role" AS ENUM ('ADMIN', 'INSTRUCTOR', 'STUDENT');
-    EXCEPTION
-      WHEN duplicate_object THEN NULL;
-    END $$;
-  `);
-  await prisma.$executeRawUnsafe(`
-    DO $$ BEGIN
       CREATE TYPE "LessonType" AS ENUM ('MANUAL', 'AUTOMATIC', 'INTENSIVE', 'THEORY');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
@@ -53,18 +46,6 @@ async function ensureDrivingSchoolSchema() {
     END $$;
   `);
 
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "User" (
-      id text PRIMARY KEY,
-      name text NOT NULL,
-      email text NOT NULL UNIQUE,
-      phone text,
-      "passwordHash" text NOT NULL,
-      role "Role" NOT NULL DEFAULT 'STUDENT',
-      "createdAt" timestamptz NOT NULL DEFAULT NOW(),
-      "updatedAt" timestamptz NOT NULL DEFAULT NOW()
-    );
-  `);
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "Area" (
       id text PRIMARY KEY,
@@ -722,24 +703,24 @@ async function seedAuthCore() {
 }
 
 async function seedDrivingSchoolTables() {
-  const hasUserTable = await tableExists('User');
+  const hasUserTable = await tableExists('users');
   if (!hasUserTable) {
-    console.warn('Skipping driving-school seed: "User" table not found.');
+    console.warn('Skipping driving-school seed: "users" table not found.');
     return;
   }
 
   const passwordHash = await bcrypt.hash('Demo@1234', 10);
 
   await prisma.$executeRawUnsafe(
-    `INSERT INTO "User" (id, name, email, phone, "passwordHash", role, "createdAt", "updatedAt")
+    `INSERT INTO users (id, name, email, phone, password, role, "createdAt", "updatedAt")
      VALUES
        ('seed-admin', 'Alice Admin', 'alice.admin@autopilot.demo', '07700900001', $1, 'ADMIN', NOW(), NOW()),
-       ('seed-instructor', 'Ian Instructor', 'ian.instructor@autopilot.demo', '07700900002', $1, 'INSTRUCTOR', NOW(), NOW()),
-       ('seed-student', 'Sam Student', 'sam.student@autopilot.demo', '07700900003', $1, 'STUDENT', NOW(), NOW())
+       ('seed-instructor', 'Ian Instructor', 'ian.instructor@autopilot.demo', '07700900002', $1, 'USER', NOW(), NOW()),
+       ('seed-student', 'Sam Student', 'sam.student@autopilot.demo', '07700900003', $1, 'USER', NOW(), NOW())
      ON CONFLICT (email) DO UPDATE SET
        name = EXCLUDED.name,
        phone = EXCLUDED.phone,
-       "passwordHash" = EXCLUDED."passwordHash",
+       password = EXCLUDED.password,
        role = EXCLUDED.role,
        "updatedAt" = NOW()`,
     passwordHash

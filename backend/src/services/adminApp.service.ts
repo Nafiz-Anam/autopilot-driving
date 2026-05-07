@@ -133,7 +133,7 @@ const getAllSettings = async (): Promise<SettingsPayload> => {
 
 const getStats = async () => {
   const totalUsersRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
-    `SELECT COUNT(*)::int AS total FROM "User"`
+    `SELECT COUNT(*)::int AS total FROM users`
   );
   const totalInstructorsRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
     `SELECT COUNT(*)::int AS total FROM "Instructor" WHERE "isActive" = true`
@@ -227,9 +227,9 @@ const listBookings = async (params: { status?: string; page?: number }) => {
        s.id AS "studentId", s.name AS "studentName", s.email AS "studentEmail",
        i.id AS "instructorId", iu.name AS "instructorUserName"
      FROM "Booking" b
-     INNER JOIN "User" s ON s.id = b."studentId"
+     INNER JOIN users s ON s.id = b."studentId"
      INNER JOIN "Instructor" i ON i.id = b."instructorId"
-     INNER JOIN "User" iu ON iu.id = i."userId"
+     INNER JOIN users iu ON iu.id = i."userId"
      WHERE ($1::text IS NULL OR b.status::text = $1)
      ORDER BY b."scheduledAt" DESC
      OFFSET $2 LIMIT $3`,
@@ -303,13 +303,13 @@ const getBookingById = async (id: string) => {
        b."durationMins", b.status::text AS status, b."paymentStatus"::text AS "paymentStatus",
        b."totalAmount"::text AS "totalAmount", b.notes,
        s.id AS "studentId", s.name AS "studentName", s.email AS "studentEmail",
-       s.phone AS "studentPhone", s.image AS "studentImage",
+       s.phone AS "studentPhone", s."profilePicture" AS "studentImage",
        i.id AS "instructorId", iu.id AS "instructorUserId", iu.name AS "instructorUserName",
-       iu.email AS "instructorUserEmail", iu.phone AS "instructorUserPhone", iu.image AS "instructorUserImage"
+       iu.email AS "instructorUserEmail", iu.phone AS "instructorUserPhone", iu."profilePicture" AS "instructorUserImage"
      FROM "Booking" b
-     INNER JOIN "User" s ON s.id = b."studentId"
+     INNER JOIN users s ON s.id = b."studentId"
      INNER JOIN "Instructor" i ON i.id = b."instructorId"
-     INNER JOIN "User" iu ON iu.id = i."userId"
+     INNER JOIN users iu ON iu.id = i."userId"
      WHERE b.id = $1
      LIMIT 1`,
     id
@@ -377,7 +377,7 @@ const listUsers = async (params: { search?: string; role?: string; page?: number
 
   const totalRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
     `SELECT COUNT(*)::int AS total
-     FROM "User" u
+     FROM users u
      WHERE ($1::text IS NULL OR u.role::text = $1)
        AND ($2::text IS NULL OR u.name ILIKE ('%' || $2 || '%') OR u.email ILIKE ('%' || $2 || '%'))`,
     role,
@@ -398,9 +398,9 @@ const listUsers = async (params: { search?: string; role?: string; page?: number
     }>
   >(
     `SELECT
-       u.id, u.name, u.email, u.role::text AS role, u.phone, u.image, u."createdAt",
+       u.id, u.name, u.email, u.role::text AS role, u.phone, u."profilePicture" AS image, u."createdAt",
        COUNT(b.id)::int AS "bookingsCount"
-     FROM "User" u
+     FROM users u
      LEFT JOIN "Booking" b ON b."studentId" = u.id
      WHERE ($1::text IS NULL OR u.role::text = $1)
        AND ($2::text IS NULL OR u.name ILIKE ('%' || $2 || '%') OR u.email ILIKE ('%' || $2 || '%'))
@@ -432,7 +432,7 @@ const listUsers = async (params: { search?: string; role?: string; page?: number
 
 const updateUserRole = async (id: string, role: string) => {
   await prisma.$executeRawUnsafe(
-    `UPDATE "User" SET role = $2::"Role", "updatedAt" = NOW() WHERE id = $1`,
+    `UPDATE users SET role = $2::"BackendUserRole", "updatedAt" = NOW() WHERE id = $1`,
     id,
     role
   );
@@ -440,7 +440,7 @@ const updateUserRole = async (id: string, role: string) => {
     Array<{ id: string; name: string | null; email: string; role: string }>
   >(
     `SELECT id, name, email, role::text AS role
-     FROM "User"
+     FROM users
      WHERE id = $1
      LIMIT 1`,
     id
@@ -461,8 +461,8 @@ const getUserById = async (id: string) => {
       updatedAt: Date;
     }>
   >(
-    `SELECT id, name, email, role::text AS role, phone, image, "createdAt", "updatedAt"
-     FROM "User"
+    `SELECT id, name, email, role::text AS role, phone, "profilePicture" AS image, "createdAt", "updatedAt"
+     FROM users
      WHERE id = $1
      LIMIT 1`,
     id
@@ -493,7 +493,7 @@ const getUserById = async (id: string) => {
        i.id AS "instructorId", iu.name AS "instructorUserName"
      FROM "Booking" b
      INNER JOIN "Instructor" i ON i.id = b."instructorId"
-     INNER JOIN "User" iu ON iu.id = i."userId"
+     INNER JOIN users iu ON iu.id = i."userId"
      WHERE b."studentId" = $1
      ORDER BY b."scheduledAt" DESC
      LIMIT 10`,
@@ -522,7 +522,7 @@ const getUserById = async (id: string) => {
 };
 
 const deleteUserById = async (id: string) => {
-  await prisma.$executeRawUnsafe(`DELETE FROM "User" WHERE id = $1`, id);
+  await prisma.$executeRawUnsafe(`DELETE FROM users WHERE id = $1`, id);
   return true;
 };
 
@@ -824,10 +824,10 @@ const listInstructors = async (params: { search?: string; isActive?: string | nu
        i.id, i."userId", i.bio, i.rating::text AS rating, i."reviewCount", i."yearsExp",
        i."licenceNumber", i.transmission, i.areas, i."pricePerHour"::text AS "pricePerHour",
        i."isFemale", i."isActive", i."createdAt",
-       u.name AS "userName", u.email AS "userEmail", u.image AS "userImage", u."createdAt" AS "userCreatedAt",
+       u.name AS "userName", u.email AS "userEmail", u."profilePicture" AS "userImage", u."createdAt" AS "userCreatedAt",
        COUNT(b.id)::int AS "bookingsCount"
      FROM "Instructor" i
-     INNER JOIN "User" u ON u.id = i."userId"
+     INNER JOIN users u ON u.id = i."userId"
      LEFT JOIN "Booking" b ON b."instructorId" = i.id
      WHERE ($1::boolean IS NULL OR i."isActive" = $1)
        AND ($2::text IS NULL OR u.name ILIKE ('%' || $2 || '%'))
@@ -932,10 +932,10 @@ const getInstructorById = async (id: string) => {
        i.id, i."userId", i.bio, i.rating::text AS rating, i."reviewCount", i."yearsExp",
        i."licenceNumber", i.transmission, i.areas, i."pricePerHour"::text AS "pricePerHour",
        i."isFemale", i."isActive", i."createdAt",
-       u.name AS "userName", u.email AS "userEmail", u.phone AS "userPhone", u.image AS "userImage", u."createdAt" AS "userCreatedAt",
+       u.name AS "userName", u.email AS "userEmail", u.phone AS "userPhone", u."profilePicture" AS "userImage", u."createdAt" AS "userCreatedAt",
        (SELECT COUNT(*)::int FROM "Booking" b WHERE b."instructorId" = i.id) AS "bookingsCount"
      FROM "Instructor" i
-     INNER JOIN "User" u ON u.id = i."userId"
+     INNER JOIN users u ON u.id = i."userId"
      WHERE i.id = $1
      LIMIT 1`,
     id
@@ -962,7 +962,7 @@ const getInstructorById = async (id: string) => {
        b."durationMins", b.status::text AS status, b."paymentStatus"::text AS "paymentStatus",
        b."totalAmount"::text AS "totalAmount", s.name AS "studentName"
      FROM "Booking" b
-     INNER JOIN "User" s ON s.id = b."studentId"
+     INNER JOIN users s ON s.id = b."studentId"
      WHERE b."instructorId" = $1
      ORDER BY b."scheduledAt" DESC
      LIMIT 10`,
