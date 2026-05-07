@@ -329,6 +329,48 @@ enum OtpType {
   PASSWORD_RESET
 }
 
+enum DrivingRole {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+
+  @@map("Role")
+}
+
+enum DrivingLessonType {
+  MANUAL
+  AUTOMATIC
+  INTENSIVE
+  THEORY
+
+  @@map("LessonType")
+}
+
+enum DrivingBookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+
+  @@map("BookingStatus")
+}
+
+enum DrivingPaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  REFUNDED
+
+  @@map("PaymentStatus")
+}
+
+enum DrivingCouponType {
+  PERCENT
+  FIXED
+
+  @@map("CouponType")
+}
+
 // Phase 1 Core Features Enums
 enum Permission {
   // User Management
@@ -560,4 +602,226 @@ model SessionSecurityEvent {
   resolvedBy  String?  @map("resolved_by")
   
   @@map("session_security_events")
+}
+
+// Driving-school domain (legacy tables used by admin/public modules)
+model DrivingUser {
+  id           String   @id
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String   @map("passwordHash")
+  role         DrivingRole
+  image        String?
+  createdAt    DateTime @default(now()) @map("createdAt")
+  updatedAt    DateTime @updatedAt @map("updatedAt")
+
+  instructor Instructor?
+  bookings   Booking[] @relation("BookingStudent")
+
+  @@map("User")
+}
+
+model Instructor {
+  id            String    @id
+  userId        String    @unique @map("userId")
+  bio           String?
+  photoUrl      String?   @map("photoUrl")
+  rating        Float     @default(0)
+  reviewCount   Int       @default(0) @map("reviewCount")
+  yearsExp      Int       @default(0) @map("yearsExp")
+  transmission  String[]
+  areas         String[]
+  pricePerHour  Decimal   @default(0) @db.Decimal(10, 2) @map("pricePerHour")
+  isFemale      Boolean   @default(false) @map("isFemale")
+  isActive      Boolean   @default(true) @map("isActive")
+  licenceNumber String?   @map("licenceNumber")
+  createdAt     DateTime  @default(now()) @map("createdAt")
+  user          DrivingUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availability  Availability[]
+  bookings      Booking[]
+
+  @@map("Instructor")
+}
+
+model Availability {
+  id           String @id
+  instructorId String @map("instructorId")
+  dayOfWeek    Int    @map("dayOfWeek")
+  startTime    String @map("startTime")
+  endTime      String @map("endTime")
+  isAvailable  Boolean @default(true) @map("isAvailable")
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@map("Availability")
+}
+
+model Area {
+  id             String  @id
+  name           String
+  postcodePrefix String  @map("postcodePrefix")
+  description    String?
+  isActive       Boolean @default(true) @map("isActive")
+
+  @@map("Area")
+}
+
+model InstructorApplication {
+  id              String   @id
+  fullName        String   @map("fullName")
+  email           String
+  phone           String?
+  postcode        String?
+  hasFullLicence  Boolean  @default(false) @map("hasFullLicence")
+  yearsExperience String?  @map("yearsExperience")
+  trainingStarted Boolean  @default(false) @map("trainingStarted")
+  message         String?
+  status          String   @default("pending")
+  createdAt       DateTime @default(now()) @map("createdAt")
+
+  @@map("InstructorApplication")
+}
+
+model ContactSubmission {
+  id          String   @id
+  name        String
+  phone       String?
+  postcode    String?
+  enquiryType String?  @map("enquiryType")
+  callTime    String?  @map("callTime")
+  message     String?
+  createdAt   DateTime @default(now()) @map("createdAt")
+
+  @@map("ContactSubmission")
+}
+
+model LessonPricingCategory {
+  id          String   @id
+  lessonType  DrivingLessonType @unique @map("lessonType")
+  slug        String   @unique
+  displayName String   @map("displayName")
+  description String?
+  sortOrder   Int      @default(0) @map("sortOrder")
+  isActive    Boolean  @default(true) @map("isActive")
+  createdAt   DateTime @default(now()) @map("createdAt")
+  updatedAt   DateTime @updatedAt @map("updatedAt")
+  packages    LessonPricingPackage[]
+
+  @@map("LessonPricingCategory")
+}
+
+model LessonPricingPackage {
+  id           String   @id
+  categoryId   String   @map("categoryId")
+  slug         String
+  name         String
+  hours        Int      @default(1)
+  lessons      Int      @default(1)
+  price        Decimal  @db.Decimal(10, 2)
+  pricePerHour Decimal? @db.Decimal(10, 2) @map("pricePerHour")
+  savings      Decimal? @db.Decimal(10, 2)
+  footerNote   String?  @map("footerNote")
+  badge        String?
+  isPopular    Boolean  @default(false) @map("isPopular")
+  sortOrder    Int      @default(0) @map("sortOrder")
+  isActive     Boolean  @default(true) @map("isActive")
+  createdAt    DateTime @default(now()) @map("createdAt")
+  updatedAt    DateTime @updatedAt @map("updatedAt")
+  category     LessonPricingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("LessonPricingPackage")
+}
+
+model Coupon {
+  id                String    @id
+  code              String    @unique
+  name              String
+  type              DrivingCouponType
+  value             Decimal   @db.Decimal(10, 2)
+  maxDiscountAmount Decimal?  @db.Decimal(10, 2) @map("maxDiscountAmount")
+  minOrderAmount    Decimal?  @db.Decimal(10, 2) @map("minOrderAmount")
+  startsAt          DateTime? @map("startsAt")
+  endsAt            DateTime? @map("endsAt")
+  maxRedemptions    Int?      @map("maxRedemptions")
+  redemptionCount   Int       @default(0) @map("redemptionCount")
+  isActive          Boolean   @default(true) @map("isActive")
+  createdAt         DateTime  @default(now()) @map("createdAt")
+  updatedAt         DateTime  @updatedAt @map("updatedAt")
+
+  @@map("Coupon")
+}
+
+model GiftVoucher {
+  id              String    @id
+  code            String    @unique
+  amount          Decimal   @db.Decimal(10, 2)
+  balance         Decimal   @db.Decimal(10, 2)
+  isRedeemed      Boolean   @default(false) @map("isRedeemed")
+  senderName      String    @map("senderName")
+  recipientName   String    @map("recipientName")
+  recipientEmail  String    @map("recipientEmail")
+  message         String?
+  stripePaymentId String?   @map("stripePaymentId")
+  expiresAt       DateTime? @map("expiresAt")
+  createdAt       DateTime  @default(now()) @map("createdAt")
+
+  @@map("GiftVoucher")
+}
+
+model Booking {
+  id               String    @id
+  reference        String    @unique
+  studentId        String    @map("studentId")
+  instructorId     String?   @map("instructorId")
+  lessonType       DrivingLessonType @map("lessonType")
+  transmission     String?
+  scheduledAt      DateTime  @map("scheduledAt")
+  durationMins     Int       @default(60) @map("durationMins")
+  status           DrivingBookingStatus
+  paymentStatus    DrivingPaymentStatus @map("paymentStatus")
+  stripePaymentId  String?   @map("stripePaymentId")
+  totalAmount      Decimal?  @db.Decimal(10, 2) @map("totalAmount")
+  pricingPackageId String?   @map("pricingPackageId")
+  voucherCode      String?   @map("voucherCode")
+  couponCode       String?   @map("couponCode")
+  discountAmount   Decimal?  @db.Decimal(10, 2) @map("discountAmount")
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("createdAt")
+  updatedAt        DateTime  @updatedAt @map("updatedAt")
+  student          DrivingUser @relation("BookingStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  instructor       Instructor? @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+
+  @@map("Booking")
+}
+
+model TheoryQuestion {
+  id           String @id
+  category     String
+  question     String
+  options      Json
+  correctIndex Int    @map("correctIndex")
+  explanation  String?
+  imageUrl     String? @map("imageUrl")
+  progress     StudentTheoryProgress[]
+
+  @@map("TheoryQuestion")
+}
+
+model StudentTheoryProgress {
+  id          String   @id
+  studentId   String   @map("studentId")
+  questionId  String   @map("questionId")
+  isCorrect   Boolean  @map("isCorrect")
+  attemptedAt DateTime @default(now()) @map("attemptedAt")
+  question    TheoryQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("StudentTheoryProgress")
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  @@map("Setting")
 }

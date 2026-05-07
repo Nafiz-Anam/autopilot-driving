@@ -16,6 +16,196 @@ async function tableExists(tableName) {
   return !!rows?.[0]?.reg;
 }
 
+async function ensureDrivingSchoolSchema() {
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      CREATE TYPE "Role" AS ENUM ('ADMIN', 'INSTRUCTOR', 'STUDENT');
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      CREATE TYPE "LessonType" AS ENUM ('MANUAL', 'AUTOMATIC', 'INTENSIVE', 'THEORY');
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED');
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      CREATE TYPE "PaymentStatus" AS ENUM ('UNPAID', 'PAID', 'FAILED', 'REFUNDED');
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await prisma.$executeRawUnsafe(`
+    DO $$ BEGIN
+      CREATE TYPE "CouponType" AS ENUM ('PERCENT', 'FIXED');
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "User" (
+      id text PRIMARY KEY,
+      name text NOT NULL,
+      email text NOT NULL UNIQUE,
+      phone text,
+      "passwordHash" text NOT NULL,
+      role "Role" NOT NULL DEFAULT 'STUDENT',
+      "createdAt" timestamptz NOT NULL DEFAULT NOW(),
+      "updatedAt" timestamptz NOT NULL DEFAULT NOW()
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Area" (
+      id text PRIMARY KEY,
+      name text NOT NULL,
+      "postcodePrefix" text NOT NULL,
+      description text,
+      "isActive" boolean NOT NULL DEFAULT true
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Instructor" (
+      id text PRIMARY KEY,
+      "userId" text NOT NULL UNIQUE,
+      bio text,
+      "photoUrl" text,
+      rating double precision NOT NULL DEFAULT 0,
+      "reviewCount" integer NOT NULL DEFAULT 0,
+      "yearsExp" integer NOT NULL DEFAULT 0,
+      transmission text[] NOT NULL DEFAULT ARRAY[]::text[],
+      areas text[] NOT NULL DEFAULT ARRAY[]::text[],
+      "pricePerHour" numeric(10,2) NOT NULL DEFAULT 0,
+      "isFemale" boolean NOT NULL DEFAULT false,
+      "isActive" boolean NOT NULL DEFAULT true,
+      "licenceNumber" text,
+      "createdAt" timestamptz NOT NULL DEFAULT NOW()
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "InstructorApplication" (
+      id text PRIMARY KEY,
+      "fullName" text NOT NULL,
+      email text NOT NULL,
+      phone text,
+      postcode text,
+      "hasFullLicence" boolean NOT NULL DEFAULT false,
+      "yearsExperience" text,
+      "trainingStarted" boolean NOT NULL DEFAULT false,
+      message text,
+      status text NOT NULL DEFAULT 'pending',
+      "createdAt" timestamptz NOT NULL DEFAULT NOW()
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "ContactSubmission" (
+      id text PRIMARY KEY,
+      name text NOT NULL,
+      phone text,
+      postcode text,
+      "enquiryType" text,
+      "callTime" text,
+      message text,
+      "createdAt" timestamptz NOT NULL DEFAULT NOW()
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "LessonPricingCategory" (
+      id text PRIMARY KEY,
+      "lessonType" "LessonType" NOT NULL UNIQUE,
+      slug text NOT NULL UNIQUE,
+      "displayName" text NOT NULL,
+      description text,
+      "sortOrder" integer NOT NULL DEFAULT 0,
+      "isActive" boolean NOT NULL DEFAULT true,
+      "createdAt" timestamptz NOT NULL DEFAULT NOW(),
+      "updatedAt" timestamptz NOT NULL DEFAULT NOW()
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "LessonPricingPackage" (
+      id text PRIMARY KEY,
+      "categoryId" text NOT NULL,
+      slug text NOT NULL,
+      name text NOT NULL,
+      hours integer NOT NULL DEFAULT 1,
+      lessons integer NOT NULL DEFAULT 1,
+      price numeric(10,2) NOT NULL DEFAULT 0,
+      "pricePerHour" numeric(10,2) NOT NULL DEFAULT 0,
+      savings numeric(10,2),
+      "footerNote" text,
+      badge text,
+      "isPopular" boolean NOT NULL DEFAULT false,
+      "sortOrder" integer NOT NULL DEFAULT 0,
+      "isActive" boolean NOT NULL DEFAULT true,
+      "createdAt" timestamptz NOT NULL DEFAULT NOW(),
+      "updatedAt" timestamptz NOT NULL DEFAULT NOW()
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Coupon" (
+      id text PRIMARY KEY,
+      code text NOT NULL UNIQUE,
+      name text NOT NULL,
+      type "CouponType" NOT NULL,
+      value numeric(10,2) NOT NULL,
+      "maxDiscountAmount" numeric(10,2),
+      "minOrderAmount" numeric(10,2),
+      "startsAt" timestamptz,
+      "endsAt" timestamptz,
+      "maxRedemptions" integer,
+      "redemptionCount" integer NOT NULL DEFAULT 0,
+      "isActive" boolean NOT NULL DEFAULT true,
+      "createdAt" timestamptz NOT NULL DEFAULT NOW(),
+      "updatedAt" timestamptz NOT NULL DEFAULT NOW()
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "TheoryQuestion" (
+      id text PRIMARY KEY,
+      category text NOT NULL,
+      question text NOT NULL,
+      options jsonb NOT NULL DEFAULT '[]'::jsonb,
+      "correctIndex" integer NOT NULL DEFAULT 0,
+      explanation text,
+      "imageUrl" text
+    );
+  `);
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Booking" (
+      id text PRIMARY KEY,
+      reference text NOT NULL UNIQUE,
+      "studentId" text NOT NULL,
+      "instructorId" text,
+      "lessonType" "LessonType" NOT NULL,
+      transmission text,
+      "scheduledAt" timestamptz NOT NULL,
+      "durationMins" integer NOT NULL DEFAULT 60,
+      status "BookingStatus" NOT NULL DEFAULT 'PENDING',
+      "paymentStatus" "PaymentStatus" NOT NULL DEFAULT 'UNPAID',
+      "stripePaymentId" text,
+      "totalAmount" numeric(10,2),
+      "pricingPackageId" text,
+      "voucherCode" text,
+      "couponCode" text,
+      "discountAmount" numeric(10,2),
+      notes text,
+      "createdAt" timestamptz NOT NULL DEFAULT NOW(),
+      "updatedAt" timestamptz NOT NULL DEFAULT NOW()
+    );
+  `);
+}
+
 async function seedAuthCore() {
   const passwordHash = await bcrypt.hash('Demo@1234', 10);
 
@@ -223,6 +413,310 @@ async function seedAuthCore() {
       permissions: ['user.read', 'booking.read', 'analytics.read'],
       rateLimitPerHour: 1000,
       isActive: true,
+    },
+  });
+
+  await prisma.passwordHistory.upsert({
+    where: { id: 'seed-pwh-admin-1' },
+    update: { userId: admin.id, password: passwordHash },
+    create: { id: 'seed-pwh-admin-1', userId: admin.id, password: passwordHash },
+  });
+
+  await prisma.passwordHistory.upsert({
+    where: { id: 'seed-pwh-user-1' },
+    update: { userId: basicUser.id, password: passwordHash },
+    create: { id: 'seed-pwh-user-1', userId: basicUser.id, password: passwordHash },
+  });
+
+  await prisma.otp.upsert({
+    where: { id: 'seed-otp-user-email' },
+    update: {
+      userId: basicUser.id,
+      otp: '123456',
+      type: 'EMAIL_VERIFICATION',
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      consumed: false,
+    },
+    create: {
+      id: 'seed-otp-user-email',
+      userId: basicUser.id,
+      otp: '123456',
+      type: 'EMAIL_VERIFICATION',
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      consumed: false,
+    },
+  });
+
+  await prisma.token.upsert({
+    where: { token: 'seed-access-token-admin' },
+    update: {
+      userId: admin.id,
+      type: 'ACCESS',
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      blacklisted: false,
+      deviceId: 'seed-admin-device',
+      deviceName: 'Seeded Mac',
+      ipAddress: '127.0.0.1',
+      userAgent: 'seed-script',
+    },
+    create: {
+      token: 'seed-access-token-admin',
+      userId: admin.id,
+      type: 'ACCESS',
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      blacklisted: false,
+      deviceId: 'seed-admin-device',
+      deviceName: 'Seeded Mac',
+      ipAddress: '127.0.0.1',
+      userAgent: 'seed-script',
+    },
+  });
+
+  await prisma.token.upsert({
+    where: { token: 'seed-refresh-token-admin' },
+    update: {
+      userId: admin.id,
+      type: 'REFRESH',
+      expires: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      blacklisted: false,
+    },
+    create: {
+      token: 'seed-refresh-token-admin',
+      userId: admin.id,
+      type: 'REFRESH',
+      expires: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      blacklisted: false,
+    },
+  });
+
+  await prisma.userActivity.upsert({
+    where: { id: 'seed-activity-admin-login' },
+    update: {
+      userId: admin.id,
+      activityType: 'LOGIN',
+      description: 'Admin logged in from dashboard',
+      metadata: { source: 'seed-script' },
+      ipAddress: '127.0.0.1',
+      userAgent: 'seed-script',
+    },
+    create: {
+      id: 'seed-activity-admin-login',
+      userId: admin.id,
+      activityType: 'LOGIN',
+      description: 'Admin logged in from dashboard',
+      metadata: { source: 'seed-script' },
+      ipAddress: '127.0.0.1',
+      userAgent: 'seed-script',
+    },
+  });
+
+  await prisma.userActivity.upsert({
+    where: { id: 'seed-activity-user-profile' },
+    update: {
+      userId: basicUser.id,
+      activityType: 'PROFILE_UPDATE',
+      description: 'Student profile updated',
+      metadata: { source: 'seed-script' },
+      ipAddress: '127.0.0.1',
+      userAgent: 'seed-script',
+    },
+    create: {
+      id: 'seed-activity-user-profile',
+      userId: basicUser.id,
+      activityType: 'PROFILE_UPDATE',
+      description: 'Student profile updated',
+      metadata: { source: 'seed-script' },
+      ipAddress: '127.0.0.1',
+      userAgent: 'seed-script',
+    },
+  });
+
+  await prisma.socialAccount.upsert({
+    where: { provider_providerId: { provider: 'google', providerId: 'seed-google-admin' } },
+    update: {
+      userId: admin.id,
+      accessToken: 'seed_google_access_admin',
+      refreshToken: 'seed_google_refresh_admin',
+      scope: 'openid email profile',
+    },
+    create: {
+      userId: admin.id,
+      provider: 'google',
+      providerId: 'seed-google-admin',
+      accessToken: 'seed_google_access_admin',
+      refreshToken: 'seed_google_refresh_admin',
+      scope: 'openid email profile',
+    },
+  });
+
+  const permissionRows = await prisma.permissionModel.findMany();
+  const permissionByName = Object.fromEntries(permissionRows.map((p) => [p.name, p]));
+
+  const rolePermissionPairs = [
+    ['admin', 'user.read'],
+    ['admin', 'user.update'],
+    ['admin', 'analytics.read'],
+    ['admin', 'system.configure'],
+    ['moderator', 'user.read'],
+    ['moderator', 'booking.read'],
+  ];
+
+  for (const [roleName, permissionName] of rolePermissionPairs) {
+    const role = roleByName[roleName];
+    const permission = permissionByName[permissionName];
+    if (!role || !permission) continue;
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: {
+          roleId: role.id,
+          permissionId: permission.id,
+        },
+      },
+      update: {},
+      create: {
+        roleId: role.id,
+        permissionId: permission.id,
+      },
+    });
+  }
+
+  await prisma.auditLog.upsert({
+    where: { id: 'seed-audit-admin-user-update' },
+    update: {
+      userId: admin.id,
+      action: 'UPDATE',
+      resource: 'user',
+      resourceId: basicUser.id,
+      oldValues: { role: 'USER' },
+      newValues: { role: 'USER' },
+      ipAddress: '127.0.0.1',
+      userAgent: 'seed-script',
+      sessionId: 'seed-admin-session',
+      requestId: 'seed-req-001',
+      severity: 'INFO',
+      category: 'AUTH',
+    },
+    create: {
+      id: 'seed-audit-admin-user-update',
+      userId: admin.id,
+      action: 'UPDATE',
+      resource: 'user',
+      resourceId: basicUser.id,
+      oldValues: { role: 'USER' },
+      newValues: { role: 'USER' },
+      ipAddress: '127.0.0.1',
+      userAgent: 'seed-script',
+      sessionId: 'seed-admin-session',
+      requestId: 'seed-req-001',
+      severity: 'INFO',
+      category: 'AUTH',
+    },
+  });
+
+  await prisma.dataProcessingRecord.upsert({
+    where: { id: 'seed-dpr-user-1' },
+    update: {
+      userId: basicUser.id,
+      purpose: 'Driving lesson booking management',
+      legalBasis: 'Contract',
+      dataTypes: ['name', 'email', 'phone', 'booking-history'],
+      retention: '3 years',
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    },
+    create: {
+      id: 'seed-dpr-user-1',
+      userId: basicUser.id,
+      purpose: 'Driving lesson booking management',
+      legalBasis: 'Contract',
+      dataTypes: ['name', 'email', 'phone', 'booking-history'],
+      retention: '3 years',
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  await prisma.passwordBreachCheck.upsert({
+    where: { id: 'seed-breach-check-admin' },
+    update: {
+      userId: admin.id,
+      passwordHash: passwordHash,
+      isBreached: false,
+    },
+    create: {
+      id: 'seed-breach-check-admin',
+      userId: admin.id,
+      passwordHash: passwordHash,
+      isBreached: false,
+    },
+  });
+
+  await prisma.iPSecurityAnalytics.upsert({
+    where: { id: 'seed-ip-analytics-localhost' },
+    update: {
+      ipAddress: '127.0.0.1',
+      countryCode: 'GB',
+      reputation: 'trusted',
+      requestCount: 420,
+      isBlocked: false,
+      blockReason: null,
+      riskScore: 0.1,
+      lastSeen: new Date(),
+    },
+    create: {
+      id: 'seed-ip-analytics-localhost',
+      ipAddress: '127.0.0.1',
+      countryCode: 'GB',
+      reputation: 'trusted',
+      requestCount: 420,
+      isBlocked: false,
+      blockReason: null,
+      riskScore: 0.1,
+      lastSeen: new Date(),
+    },
+  });
+
+  await prisma.iPSecurityRule.upsert({
+    where: { id: 'seed-ip-rule-whitelist-localhost' },
+    update: {
+      ipAddress: '127.0.0.1',
+      ruleType: 'WHITELIST',
+      reason: 'Local development IP',
+      isActive: true,
+      createdBy: 'seed-script',
+      updatedBy: 'seed-script',
+      userId: admin.id,
+    },
+    create: {
+      id: 'seed-ip-rule-whitelist-localhost',
+      ipAddress: '127.0.0.1',
+      ruleType: 'WHITELIST',
+      reason: 'Local development IP',
+      isActive: true,
+      createdBy: 'seed-script',
+      updatedBy: 'seed-script',
+      userId: admin.id,
+    },
+  });
+
+  await prisma.sessionSecurityEvent.upsert({
+    where: { id: 'seed-session-event-1' },
+    update: {
+      sessionId: 'seed-admin-session',
+      eventType: 'SUSPICIOUS_IP',
+      riskScore: 0.25,
+      details: { message: 'Demo security event' },
+      resolved: true,
+      resolvedAt: new Date(),
+      resolvedBy: admin.id,
+    },
+    create: {
+      id: 'seed-session-event-1',
+      sessionId: 'seed-admin-session',
+      eventType: 'SUSPICIOUS_IP',
+      riskScore: 0.25,
+      details: { message: 'Demo security event' },
+      resolved: true,
+      resolvedAt: new Date(),
+      resolvedBy: admin.id,
     },
   });
 }
@@ -451,6 +945,7 @@ async function seedDrivingSchoolTables() {
 
 async function main() {
   console.log('🌱 Seeding demo data...');
+  await ensureDrivingSchoolSchema();
   await seedAuthCore();
   await seedDrivingSchoolTables();
   console.log('✅ Demo seed completed.');

@@ -40,10 +40,13 @@ export default function AdminCouponsPage() {
   async function load() {
     setLoading(true);
     try {
-      const data = (await adminApiFetch("/coupons").then((r) => r.json())) as { data: CouponRow[] };
-      setCoupons(data.data);
+      const payload = (await adminApiFetch("/coupons").then((r) => r.json())) as {
+        data?: CouponRow[];
+      };
+      setCoupons(Array.isArray(payload?.data) ? payload.data : []);
     } catch {
       setMsg({ type: "err", text: "Could not load coupons." });
+      setCoupons([]);
     } finally {
       setLoading(false);
     }

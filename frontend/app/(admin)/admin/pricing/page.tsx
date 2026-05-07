@@ -36,10 +36,14 @@ type AdminCat = {
 };
 
 async function fetchAdminCategories(): Promise<AdminCat[]> {
-  const data = (await adminApiFetch("/pricing/categories").then((r) => r.json())) as {
-    data: AdminCat[];
+  const payload = (await adminApiFetch("/pricing/categories").then((r) => r.json())) as {
+    data?: AdminCat[];
   };
-  return data.data;
+  const categories = Array.isArray(payload?.data) ? payload.data : [];
+  return categories.map((cat) => ({
+    ...cat,
+    packages: Array.isArray(cat?.packages) ? cat.packages : [],
+  }));
 }
 
 export default function AdminPricingPage() {

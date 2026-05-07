@@ -52,6 +52,14 @@ const parseTheoryOptions = (raw: unknown): string[] => {
   return [];
 };
 
+const legacyTableExists = async (tableName: string): Promise<boolean> => {
+  const rows = await prisma.$queryRawUnsafe<Array<{ reg: string | null }>>(
+    `SELECT to_regclass($1)::text AS reg`,
+    `"${tableName}"`
+  );
+  return !!rows[0]?.reg;
+};
+
 const getSetting = async (key: string): Promise<string | null> => {
   const rows = await prisma.$queryRawUnsafe<Array<{ value: string }>>(
     `SELECT value FROM "Setting" WHERE key = $1 LIMIT 1`,
@@ -99,43 +107,62 @@ const getAllSettings = async (): Promise<SettingsPayload> => {
 };
 
 const getStats = async () => {
-  const rows = await prisma.$queryRawUnsafe<
-    Array<{
-      totalUsers: number;
-      totalInstructors: number;
-      totalBookings: number;
-      totalRevenue: string;
-      pendingApplications: number;
-      newContactsToday: number;
-      bookingsThisMonth: number;
-      activeAreas: number;
-    }>
-  >(
-    `SELECT
-       (SELECT COUNT(*)::int FROM "User") AS "totalUsers",
-       (SELECT COUNT(*)::int FROM "Instructor" WHERE "isActive" = true) AS "totalInstructors",
-       (SELECT COUNT(*)::int FROM "Booking") AS "totalBookings",
-       (SELECT COALESCE(SUM("totalAmount"), 0)::text FROM "Booking" WHERE "paymentStatus" = 'PAID') AS "totalRevenue",
-       (SELECT COUNT(*)::int FROM "InstructorApplication" WHERE status = 'pending') AS "pendingApplications",
-       (SELECT COUNT(*)::int FROM "ContactSubmission" WHERE "createdAt" >= date_trunc('day', now() AT TIME ZONE 'UTC')) AS "newContactsToday",
-       (SELECT COUNT(*)::int FROM "Booking" WHERE "createdAt" >= date_trunc('month', now() AT TIME ZONE 'UTC')) AS "bookingsThisMonth",
-       (SELECT COUNT(*)::int FROM "Area" WHERE "isActive" = true) AS "activeAreas"`
+  const totalUsersRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
+    `SELECT COUNT(*)::int AS total FROM "User"`
+  );
+  const totalInstructorsRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
+    `SELECT COUNT(*)::int AS total FROM "Instructor" WHERE "isActive" = true`
+  );
+  const totalBookingsRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
+    `SELECT COUNT(*)::int AS total FROM "Booking"`
+  );
+  const totalRevenueRows = await prisma.$queryRawUnsafe<Array<{ total: string }>>(
+    `SELECT COALESCE(SUM("totalAmount"), 0)::text AS total
+     FROM "Booking"
+     WHERE "paymentStatus" = 'PAID'`
+  );
+  const pendingApplicationsRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
+    `SELECT COUNT(*)::int AS total
+     FROM "InstructorApplication"
+     WHERE status = 'pending'`
+  );
+  const newContactsTodayRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
+    `SELECT COUNT(*)::int AS total
+     FROM "ContactSubmission"
+     WHERE "createdAt" >= date_trunc('day', now() AT TIME ZONE 'UTC')`
+  );
+  const bookingsThisMonthRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
+    `SELECT COUNT(*)::int AS total
+     FROM "Booking"
+     WHERE "createdAt" >= date_trunc('month', now() AT TIME ZONE 'UTC')`
+  );
+  const activeAreasRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
+    `SELECT COUNT(*)::int AS total FROM "Area" WHERE "isActive" = true`
   );
 
-  const row = rows[0];
   return {
-    totalUsers: row?.totalUsers ?? 0,
-    totalInstructors: row?.totalInstructors ?? 0,
-    totalBookings: row?.totalBookings ?? 0,
-    totalRevenue: Number(row?.totalRevenue ?? 0),
-    pendingApplications: row?.pendingApplications ?? 0,
-    newContactsToday: row?.newContactsToday ?? 0,
-    bookingsThisMonth: row?.bookingsThisMonth ?? 0,
-    activeAreas: row?.activeAreas ?? 0,
+    totalUsers: totalUsersRows[0]?.total ?? 0,
+    totalInstructors: totalInstructorsRows[0]?.total ?? 0,
+    totalBookings: totalBookingsRows[0]?.total ?? 0,
+    totalRevenue: Number(totalRevenueRows[0]?.total ?? 0),
+    pendingApplications: pendingApplicationsRows[0]?.total ?? 0,
+    newContactsToday: newContactsTodayRows[0]?.total ?? 0,
+    bookingsThisMonth: bookingsThisMonthRows[0]?.total ?? 0,
+    activeAreas: activeAreasRows[0]?.total ?? 0,
   };
 };
 
 const listBookings = async (params: { status?: string; page?: number }) => {
+  const hasBooking = await legacyTableExists('Booking');
+  if (!hasBooking) {
+    return {
+      data: [],
+      total: 0,
+      page: normalizePage(params.page),
+      totalPages: 0,
+    };
+  }
+
   const status = params.status ?? '';
   const page = normalizePage(params.page);
   const whereStatus = VALID_BOOKING_STATUSES.includes(status as any) ? status : null;
@@ -475,6 +502,16 @@ const deleteUserById = async (id: string) => {
 };
 
 const listApplications = async (params: { status?: string; page?: number }) => {
+  const hasApplication = await legacyTableExists('InstructorApplication');
+  if (!hasApplication) {
+    return {
+      data: [],
+      total: 0,
+      page: normalizePage(params.page),
+      totalPages: 0,
+    };
+  }
+
   const status = VALID_APPLICATION_STATUSES.includes((params.status ?? '') as any)
     ? params.status
     : null;
@@ -530,6 +567,10 @@ const getApplicationById = async (id: string) => {
 };
 
 const listAreas = async () => {
+  const hasArea = await legacyTableExists('Area');
+  if (!hasArea) {
+    return [];
+  }
   return prisma.$queryRawUnsafe<any[]>(`SELECT * FROM "Area" ORDER BY name ASC`);
 };
 
@@ -585,6 +626,16 @@ const deleteAreaById = async (id: string) => {
 };
 
 const listContacts = async (params: { page?: number }) => {
+  const hasContact = await legacyTableExists('ContactSubmission');
+  if (!hasContact) {
+    return {
+      data: [],
+      total: 0,
+      page: normalizePage(params.page),
+      totalPages: 0,
+    };
+  }
+
   const page = normalizePage(params.page);
   const offset = (page - 1) * PAGE_SIZE;
   const totalRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
@@ -612,6 +663,11 @@ const deleteContactById = async (id: string) => {
 };
 
 const listCoupons = async () => {
+  const hasCoupon = await legacyTableExists('Coupon');
+  if (!hasCoupon) {
+    return [];
+  }
+
   const rows = await prisma.$queryRawUnsafe<
     Array<{
       id: string;
@@ -659,6 +715,11 @@ const createCoupon = async (payload: {
   maxRedemptions?: number | null;
   isActive?: boolean;
 }) => {
+  const hasCoupon = await legacyTableExists('Coupon');
+  if (!hasCoupon) {
+    return null;
+  }
+
   const id = uuidv4();
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `INSERT INTO "Coupon"(
@@ -685,6 +746,11 @@ const createCoupon = async (payload: {
 };
 
 const patchCouponById = async (id: string, payload: { isActive?: boolean }) => {
+  const hasCoupon = await legacyTableExists('Coupon');
+  if (!hasCoupon) {
+    return null;
+  }
+
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `UPDATE "Coupon"
      SET "isActive" = COALESCE($2, "isActive"),
@@ -698,6 +764,11 @@ const patchCouponById = async (id: string, payload: { isActive?: boolean }) => {
 };
 
 const listInstructors = async (params: { search?: string; isActive?: string | null }) => {
+  const hasInstructor = await legacyTableExists('Instructor');
+  if (!hasInstructor) {
+    return [];
+  }
+
   const search = params.search?.trim() || null;
   const isActive =
     params.isActive === 'true' ? true : params.isActive === 'false' ? false : null;
@@ -912,6 +983,12 @@ const getInstructorById = async (id: string) => {
 };
 
 const listPricingCategories = async () => {
+  const hasCategory = await legacyTableExists('LessonPricingCategory');
+  const hasPackage = await legacyTableExists('LessonPricingPackage');
+  if (!hasCategory || !hasPackage) {
+    return [];
+  }
+
   const categories = await prisma.$queryRawUnsafe<any[]>(
     `SELECT id, "lessonType"::text AS "lessonType", slug, "displayName", description, "sortOrder", "isActive"
      FROM "LessonPricingCategory"
@@ -1226,6 +1303,11 @@ const testSettings = async (action: string) => {
 };
 
 const listTheory = async (params: { category?: string; page?: number }) => {
+  const hasTheory = await legacyTableExists('TheoryQuestion');
+  if (!hasTheory) {
+    return { data: [], total: 0, page: normalizePage(params.page), totalPages: 0 };
+  }
+
   const page = normalizePage(params.page);
   const category = params.category?.trim() || null;
   const offset = (page - 1) * PAGE_SIZE;
