@@ -15,6 +15,9 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  CreditCard,
+  Mail,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
@@ -48,6 +51,12 @@ interface RecentApplication {
   status: string;
   createdAt: string;
   phone: string;
+}
+
+interface AdminSystemSettings {
+  has_secret_key: boolean;
+  has_publishable_key: boolean;
+  has_smtp_config: boolean;
 }
 
 const containerVariants = {
@@ -121,6 +130,7 @@ export default function AdminDashboardPage() {
   const [recentApplications, setRecentApplications] = useState<RecentApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [appActions, setAppActions] = useState<Record<string, "approving" | "rejecting" | null>>({});
+  const [systemSettings, setSystemSettings] = useState<AdminSystemSettings | null>(null);
 
   useEffect(() => {
     adminApiFetch("/stats")
@@ -136,6 +146,19 @@ export default function AdminDashboardPage() {
     adminApiFetch("/applications?status=pending&page=1")
       .then((r) => r.json())
       .then((d) => setRecentApplications((d.data ?? []).slice(0, 5)))
+      .catch(() => {});
+
+    adminApiFetch("/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          setSystemSettings({
+            has_secret_key: !!d.data?.has_secret_key,
+            has_publishable_key: !!d.data?.has_publishable_key,
+            has_smtp_config: !!d.data?.has_smtp_config,
+          });
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -332,6 +355,41 @@ export default function AdminDashboardPage() {
           )}
         </motion.div>
       </div>
+
+      <motion.div variants={itemVariants} className="mt-6 bg-white rounded-2xl border border-brand-border shadow-sm p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Settings className="w-4 h-4 text-brand-red" />
+          <h3 className="font-bold text-brand-black text-sm">System Configuration</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="rounded-xl border border-brand-border p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <CreditCard className="w-4 h-4 text-brand-red" />
+              <p className="text-sm font-semibold text-brand-black">Stripe</p>
+            </div>
+            <p className={cn("text-xs", systemSettings?.has_secret_key && systemSettings?.has_publishable_key ? "text-green-700" : "text-yellow-700")}>
+              {systemSettings?.has_secret_key && systemSettings?.has_publishable_key
+                ? "Configured"
+                : "Needs setup"}
+            </p>
+            <a href="/admin/payments" className="inline-block mt-2 text-xs font-semibold text-brand-red hover:text-brand-orange">
+              Open payment settings &rarr;
+            </a>
+          </div>
+          <div className="rounded-xl border border-brand-border p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Mail className="w-4 h-4 text-brand-red" />
+              <p className="text-sm font-semibold text-brand-black">SMTP</p>
+            </div>
+            <p className={cn("text-xs", systemSettings?.has_smtp_config ? "text-green-700" : "text-yellow-700")}>
+              {systemSettings?.has_smtp_config ? "Configured" : "Needs setup"}
+            </p>
+            <a href="/admin/payments" className="inline-block mt-2 text-xs font-semibold text-brand-red hover:text-brand-orange">
+              Open SMTP settings &rarr;
+            </a>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
