@@ -52,6 +52,12 @@ router.delete('/pricing/packages/:id', adminAppController.deletePricingPackageBy
 router.get('/settings', adminAppController.getSettings);
 router.patch('/settings', adminAppController.patchSettings);
 router.post('/settings', adminAppController.postSettings);
+router.get('/settings/stripe', adminAppController.getStripeSettings);
+router.patch('/settings/stripe', adminAppController.patchStripeSettings);
+router.post('/settings/stripe/test', adminAppController.postStripeSettings);
+router.get('/settings/smtp', adminAppController.getSmtpSettings);
+router.patch('/settings/smtp', adminAppController.patchSmtpSettings);
+router.post('/settings/smtp/test', adminAppController.postSmtpSettings);
 
 router.get('/theory', adminAppController.getTheory);
 router.post('/theory', adminAppController.postTheory);

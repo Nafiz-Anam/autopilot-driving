@@ -50,6 +50,8 @@ interface StripeSettings {
   has_smtp_config: boolean;
 }
 
+type SettingsTab = "stripe" | "smtp";
+
 const containerVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.07 } },
@@ -157,11 +159,14 @@ function PlainInput({
 
 export default function AdminPaymentsPage() {
   const [settings, setSettings] = useState<StripeSettings | null>(null);
+  const [activeTab, setActiveTab] = useState<SettingsTab>("stripe");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingStripe, setSavingStripe] = useState(false);
+  const [savingSmtp, setSavingSmtp] = useState(false);
   const [testing, setTesting] = useState(false);
   const [stripeConnectionOk, setStripeConnectionOk] = useState<boolean | null>(null);
-  const [saveMsg, setSaveMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [stripeSaveMsg, setStripeSaveMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [smtpSaveMsg, setSmtpSaveMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [testResult, setTestResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [publishableKey, setPublishableKey] = useState("");
@@ -177,16 +182,19 @@ export default function AdminPaymentsPage() {
   const [smtpTestResult, setSmtpTestResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
-    adminApiFetch("/settings")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) {
-          setSettings(d.data);
-          setSmtpHost(d.data.smtp_host ?? "");
-          setSmtpPort(String(d.data.smtp_port ?? 587));
-          setSmtpUser(d.data.smtp_user ?? "");
-          setEmailFrom(d.data.email_from ?? "");
-          setEmailAdmin(d.data.email_admin ?? "");
+    Promise.all([
+      adminApiFetch("/settings/stripe").then((r) => r.json()),
+      adminApiFetch("/settings/smtp").then((r) => r.json()),
+    ])
+      .then(([stripeRes, smtpRes]) => {
+        if (stripeRes.success && smtpRes.success) {
+          const merged = { ...stripeRes.data, ...smtpRes.data };
+          setSettings(merged);
+          setSmtpHost(merged.smtp_host ?? "");
+          setSmtpPort(String(merged.smtp_port ?? 587));
+          setSmtpUser(merged.smtp_user ?? "");
+          setEmailFrom(merged.email_from ?? "");
+          setEmailAdmin(merged.email_admin ?? "");
         }
       })
       .finally(() => setLoading(false));
@@ -199,11 +207,7 @@ export default function AdminPaymentsPage() {
     }
 
     let cancelled = false;
-    adminApiFetch("/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "test_connection" }),
-    })
+    adminApiFetch("/settings/stripe/test", { method: "POST" })
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
@@ -219,27 +223,21 @@ export default function AdminPaymentsPage() {
     };
   }, [settings?.has_secret_key]);
 
-  async function handleSave() {
-    setSaving(true);
-    setSaveMsg(null);
+  async function handleStripeSave() {
+    setSavingStripe(true);
+    setStripeSaveMsg(null);
     try {
       const body: Record<string, string> = {};
       if (publishableKey.trim()) body.stripe_publishable_key = publishableKey.trim();
       if (secretKey.trim()) body.stripe_secret_key = secretKey.trim();
       if (webhookSecret.trim()) body.stripe_webhook_secret = webhookSecret.trim();
-      if (smtpHost.trim()) body.smtp_host = smtpHost.trim();
-      if (smtpPort.trim()) body.smtp_port = smtpPort.trim();
-      if (smtpUser.trim()) body.smtp_user = smtpUser.trim();
-      if (smtpPass.trim()) body.smtp_pass = smtpPass;
-      if (emailFrom.trim()) body.email_from = emailFrom.trim();
-      if (emailAdmin.trim()) body.email_admin = emailAdmin.trim();
 
       if (Object.keys(body).length === 0) {
-        setSaveMsg({ type: "error", text: "No changes to save." });
+        setStripeSaveMsg({ type: "error", text: "No Stripe changes to save." });
         return;
       }
 
-      const res = await adminApiFetch("/settings", {
+      const res = await adminApiFetch("/settings/stripe", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -247,21 +245,24 @@ export default function AdminPaymentsPage() {
       const data = await res.json();
 
       if (data.success) {
-        setSaveMsg({ type: "success", text: "Settings saved successfully." });
+        setStripeSaveMsg({ type: "success", text: "Stripe settings saved successfully." });
         setPublishableKey("");
         setSecretKey("");
         setWebhookSecret("");
-        setSmtpPass("");
-        // Refresh displayed settings
-        const refreshed = await adminApiFetch("/settings").then((r) => r.json());
-        if (refreshed.success) setSettings(refreshed.data);
+        const [stripeRes, smtpRes] = await Promise.all([
+          adminApiFetch("/settings/stripe").then((r) => r.json()),
+          adminApiFetch("/settings/smtp").then((r) => r.json()),
+        ]);
+        if (stripeRes.success && smtpRes.success) {
+          setSettings({ ...stripeRes.data, ...smtpRes.data });
+        }
       } else {
-        setSaveMsg({ type: "error", text: data.error ?? "Failed to save settings." });
+        setStripeSaveMsg({ type: "error", text: data.error ?? "Failed to save Stripe settings." });
       }
     } catch {
-      setSaveMsg({ type: "error", text: "Network error. Please try again." });
+      setStripeSaveMsg({ type: "error", text: "Network error. Please try again." });
     } finally {
-      setSaving(false);
+      setSavingStripe(false);
     }
   }
 
@@ -269,11 +270,7 @@ export default function AdminPaymentsPage() {
     setTesting(true);
     setTestResult(null);
     try {
-      const res = await adminApiFetch("/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "test_connection" }),
-      });
+      const res = await adminApiFetch("/settings/stripe/test", { method: "POST" });
       const data = await res.json();
 
       if (data.success) {
@@ -298,11 +295,7 @@ export default function AdminPaymentsPage() {
     setSmtpTesting(true);
     setSmtpTestResult(null);
     try {
-      const res = await adminApiFetch("/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "test_smtp" }),
-      });
+      const res = await adminApiFetch("/settings/smtp/test", { method: "POST" });
       const data = await res.json();
       if (data.success) {
         setSmtpTestResult({
@@ -323,6 +316,47 @@ export default function AdminPaymentsPage() {
     Boolean(settings?.has_secret_key && settings?.has_publishable_key) &&
     stripeConnectionOk !== false;
 
+  async function handleSmtpSave() {
+    setSavingSmtp(true);
+    setSmtpSaveMsg(null);
+    try {
+      const body: Record<string, string> = {};
+      if (smtpHost.trim()) body.smtp_host = smtpHost.trim();
+      if (smtpPort.trim()) body.smtp_port = smtpPort.trim();
+      if (smtpUser.trim()) body.smtp_user = smtpUser.trim();
+      if (smtpPass.trim()) body.smtp_pass = smtpPass;
+      if (emailFrom.trim()) body.email_from = emailFrom.trim();
+      if (emailAdmin.trim()) body.email_admin = emailAdmin.trim();
+
+      if (Object.keys(body).length === 0) {
+        setSmtpSaveMsg({ type: "error", text: "No SMTP changes to save." });
+        return;
+      }
+
+      const res = await adminApiFetch("/settings/smtp", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setSmtpSaveMsg({ type: "success", text: "SMTP settings saved successfully." });
+        setSmtpPass("");
+        const smtpRes = await adminApiFetch("/settings/smtp").then((r) => r.json());
+        if (smtpRes.success) {
+          setSettings((prev) => ({ ...(prev ?? ({} as StripeSettings)), ...smtpRes.data }));
+        }
+      } else {
+        setSmtpSaveMsg({ type: "error", text: data.error ?? "Failed to save SMTP settings." });
+      }
+    } catch {
+      setSmtpSaveMsg({ type: "error", text: "Network error. Please try again." });
+    } finally {
+      setSavingSmtp(false);
+    }
+  }
+
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       {/* Page Header */}
@@ -331,6 +365,35 @@ export default function AdminPaymentsPage() {
         <p className="text-brand-muted mt-1 text-sm">
           Configure Stripe and SMTP credentials. Changes take effect immediately.
         </p>
+      </motion.div>
+
+      <motion.div variants={itemVariants} className="mb-6">
+        <div className="inline-flex rounded-xl border border-brand-border bg-white p-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab("stripe")}
+            className={cn(
+              "px-4 py-2 text-sm font-semibold rounded-lg transition-colors",
+              activeTab === "stripe"
+                ? "bg-brand-red text-white"
+                : "text-brand-muted hover:text-brand-black"
+            )}
+          >
+            Stripe
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("smtp")}
+            className={cn(
+              "px-4 py-2 text-sm font-semibold rounded-lg transition-colors",
+              activeTab === "smtp"
+                ? "bg-brand-red text-white"
+                : "text-brand-muted hover:text-brand-black"
+            )}
+          >
+            SMTP
+          </button>
+        </div>
       </motion.div>
 
       {/* Status Banner */}
@@ -415,6 +478,8 @@ export default function AdminPaymentsPage() {
         </motion.div>
       )}
 
+      {activeTab === "stripe" && (
+      <>
       {/* Credentials Form */}
       <motion.div
         variants={itemVariants}
@@ -470,44 +535,38 @@ export default function AdminPaymentsPage() {
         )}
 
         <div className="px-6 py-4 border-t border-brand-border bg-brand-surface/50 flex items-center justify-between gap-4">
-          {saveMsg && (
+          {stripeSaveMsg && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className={cn(
                 "flex items-center gap-2 text-sm",
-                saveMsg.type === "success" ? "text-green-700" : "text-red-600"
+                stripeSaveMsg.type === "success" ? "text-green-700" : "text-red-600"
               )}
             >
-              {saveMsg.type === "success" ? (
+              {stripeSaveMsg.type === "success" ? (
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
               ) : (
                 <XCircle className="w-4 h-4 shrink-0" />
               )}
-              {saveMsg.text}
+              {stripeSaveMsg.text}
             </motion.div>
           )}
           <div className="flex-1" />
           <button
-            onClick={handleSave}
+            onClick={handleStripeSave}
             disabled={
-              saving ||
+              savingStripe ||
               loading ||
               (
                 !publishableKey.trim() &&
                 !secretKey.trim() &&
-                !webhookSecret.trim() &&
-                !smtpHost.trim() &&
-                !smtpPort.trim() &&
-                !smtpUser.trim() &&
-                !smtpPass.trim() &&
-                !emailFrom.trim() &&
-                !emailAdmin.trim()
+                !webhookSecret.trim()
               )
             }
             className="flex items-center gap-2 px-6 py-2.5 bg-brand-red text-white rounded-xl text-sm font-semibold hover:bg-brand-orange transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? (
+            {savingStripe ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Save className="w-4 h-4" />
@@ -560,8 +619,11 @@ export default function AdminPaymentsPage() {
           </a>
         </div>
       </motion.div>
+      </>
+      )}
 
       {/* SMTP Settings */}
+      {activeTab === "smtp" && (
       <motion.div
         variants={itemVariants}
         className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden mb-6"
@@ -649,7 +711,51 @@ export default function AdminPaymentsPage() {
             </div>
           )}
         </div>
+        <div className="px-6 py-4 border-t border-brand-border bg-brand-surface/50 flex items-center justify-between gap-4">
+          {smtpSaveMsg && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className={cn(
+                "flex items-center gap-2 text-sm",
+                smtpSaveMsg.type === "success" ? "text-green-700" : "text-red-600"
+              )}
+            >
+              {smtpSaveMsg.type === "success" ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <XCircle className="w-4 h-4 shrink-0" />
+              )}
+              {smtpSaveMsg.text}
+            </motion.div>
+          )}
+          <div className="flex-1" />
+          <button
+            onClick={handleSmtpSave}
+            disabled={
+              savingSmtp ||
+              loading ||
+              (
+                !smtpHost.trim() &&
+                !smtpPort.trim() &&
+                !smtpUser.trim() &&
+                !smtpPass.trim() &&
+                !emailFrom.trim() &&
+                !emailAdmin.trim()
+              )
+            }
+            className="flex items-center gap-2 px-6 py-2.5 bg-brand-red text-white rounded-xl text-sm font-semibold hover:bg-brand-orange transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {savingSmtp ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            Save SMTP
+          </button>
+        </div>
       </motion.div>
+      )}
 
       {/* Key Setup Guide */}
       <motion.div

@@ -1194,20 +1194,11 @@ const deactivatePricingPackage = async (id: string) => {
   return true;
 };
 
-const getSettings = async () => {
+const getStripeSettings = async () => {
   const settings = await getAllSettings();
   const hasValidPublishableKey = isStripePublishableKey(settings.stripe_publishable_key);
   const hasValidSecretKey = isStripeSecretKey(settings.stripe_secret_key);
   const hasValidWebhookSecret = isStripeWebhookSecret(settings.stripe_webhook_secret);
-  const hasValidSmtpHost =
-    !!settings.smtp_host && isSmtpHostLike(settings.smtp_host) && !isLikelyPlaceholder(settings.smtp_host);
-  const hasValidSmtpUser =
-    !!settings.smtp_user && isEmailLike(settings.smtp_user) && !isLikelyPlaceholder(settings.smtp_user);
-  const hasValidEmailFrom =
-    !!settings.email_from && isEmailLike(settings.email_from) && !isLikelyPlaceholder(settings.email_from);
-  const hasValidEmailAdmin =
-    !!settings.email_admin && isEmailLike(settings.email_admin) && !isLikelyPlaceholder(settings.email_admin);
-  const hasValidSmtpPass = !!settings.smtp_pass && !isLikelyPlaceholder(settings.smtp_pass);
 
   return {
     stripe_publishable_key: hasValidPublishableKey ? settings.stripe_publishable_key : '',
@@ -1220,6 +1211,22 @@ const getSettings = async () => {
       hasValidPublishableKey && settings.stripe_publishable_key.startsWith('pk_live_')
         ? 'live'
         : 'test',
+  };
+};
+
+const getSmtpSettings = async () => {
+  const settings = await getAllSettings();
+  const hasValidSmtpHost =
+    !!settings.smtp_host && isSmtpHostLike(settings.smtp_host) && !isLikelyPlaceholder(settings.smtp_host);
+  const hasValidSmtpUser =
+    !!settings.smtp_user && isEmailLike(settings.smtp_user) && !isLikelyPlaceholder(settings.smtp_user);
+  const hasValidEmailFrom =
+    !!settings.email_from && isEmailLike(settings.email_from) && !isLikelyPlaceholder(settings.email_from);
+  const hasValidEmailAdmin =
+    !!settings.email_admin && isEmailLike(settings.email_admin) && !isLikelyPlaceholder(settings.email_admin);
+  const hasValidSmtpPass = !!settings.smtp_pass && !isLikelyPlaceholder(settings.smtp_pass);
+
+  return {
     smtp_host: hasValidSmtpHost ? settings.smtp_host : '',
     smtp_port: settings.smtp_port,
     smtp_user: hasValidSmtpUser ? settings.smtp_user : '',
@@ -1237,7 +1244,12 @@ const getSettings = async () => {
   };
 };
 
-const patchSettings = async (payload: Record<string, unknown>) => {
+const getSettings = async () => {
+  const [stripe, smtp] = await Promise.all([getStripeSettings(), getSmtpSettings()]);
+  return { ...stripe, ...smtp };
+};
+
+const patchStripeSettings = async (payload: Record<string, unknown>) => {
   const updates: Promise<void>[] = [];
 
   if (payload.stripe_publishable_key !== undefined && payload.stripe_publishable_key !== '') {
@@ -1263,6 +1275,17 @@ const patchSettings = async (payload: Record<string, unknown>) => {
     }
     updates.push(updateSetting(SETTING_KEYS.STRIPE_WEBHOOK_SECRET, value));
   }
+
+  if (updates.length === 0) {
+    return { error: 'No valid Stripe fields to update' };
+  }
+
+  await Promise.all(updates);
+  return { ok: true };
+};
+
+const patchSmtpSettings = async (payload: Record<string, unknown>) => {
+  const updates: Promise<void>[] = [];
 
   if (payload.smtp_host !== undefined && payload.smtp_host !== '') {
     const value = String(payload.smtp_host).trim();
@@ -1310,56 +1333,87 @@ const patchSettings = async (payload: Record<string, unknown>) => {
   }
 
   if (updates.length === 0) {
-    return { error: 'No valid fields to update' };
+    return { error: 'No valid SMTP fields to update' };
   }
 
   await Promise.all(updates);
   return { ok: true };
 };
 
+const patchSettings = async (payload: Record<string, unknown>) => {
+  const stripePayload: Record<string, unknown> = {};
+  const smtpPayload: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(payload)) {
+    if (key.startsWith('stripe_')) stripePayload[key] = value;
+    if (key.startsWith('smtp_') || key.startsWith('email_')) smtpPayload[key] = value;
+  }
+
+  const hasStripe = Object.keys(stripePayload).length > 0;
+  const hasSmtp = Object.keys(smtpPayload).length > 0;
+
+  if (!hasStripe && !hasSmtp) {
+    return { error: 'No valid fields to update' };
+  }
+
+  if (hasStripe) {
+    const stripeResult = await patchStripeSettings(stripePayload);
+    if ('error' in stripeResult) return stripeResult;
+  }
+
+  if (hasSmtp) {
+    const smtpResult = await patchSmtpSettings(smtpPayload);
+    if ('error' in smtpResult) return smtpResult;
+  }
+
+  return { ok: true };
+};
+
+const testStripeConnection = async () => {
+  const secretKey = (await getSetting(SETTING_KEYS.STRIPE_SECRET_KEY)) ?? '';
+  if (!secretKey) {
+    return { error: 'No Stripe secret key configured' };
+  }
+
+  try {
+    const stripe = createStripeClient(secretKey);
+    const balance = await stripe.balance.retrieve();
+    return {
+      data: {
+        connected: true,
+        currency: balance.available[0]?.currency?.toUpperCase() ?? 'GBP',
+      },
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Connection failed' };
+  }
+};
+
+const testSmtpConnection = async () => {
+  const smtp = await getAllSettings();
+  if (!smtp.smtp_host || !smtp.smtp_user || !smtp.smtp_pass || !smtp.email_from) {
+    return { error: 'SMTP is not fully configured' };
+  }
+
+  try {
+    const transport = nodemailer.createTransport({
+      host: smtp.smtp_host,
+      port: smtp.smtp_port,
+      secure: smtp.smtp_port === 465,
+      auth: { user: smtp.smtp_user, pass: smtp.smtp_pass },
+    });
+    await transport.verify();
+    return {
+      data: { connected: true, host: smtp.smtp_host, port: smtp.smtp_port },
+    };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'SMTP connection failed' };
+  }
+};
+
 const testSettings = async (action: string) => {
-  if (action === 'test_connection') {
-    const secretKey = (await getSetting(SETTING_KEYS.STRIPE_SECRET_KEY)) ?? '';
-    if (!secretKey) {
-      return { error: 'No Stripe secret key configured' };
-    }
-
-    try {
-      const stripe = createStripeClient(secretKey);
-      const balance = await stripe.balance.retrieve();
-      return {
-        data: {
-          connected: true,
-          currency: balance.available[0]?.currency?.toUpperCase() ?? 'GBP',
-        },
-      };
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : 'Connection failed' };
-    }
-  }
-
-  if (action === 'test_smtp') {
-    const smtp = await getAllSettings();
-    if (!smtp.smtp_host || !smtp.smtp_user || !smtp.smtp_pass || !smtp.email_from) {
-      return { error: 'SMTP is not fully configured' };
-    }
-
-    try {
-      const transport = nodemailer.createTransport({
-        host: smtp.smtp_host,
-        port: smtp.smtp_port,
-        secure: smtp.smtp_port === 465,
-        auth: { user: smtp.smtp_user, pass: smtp.smtp_pass },
-      });
-      await transport.verify();
-      return {
-        data: { connected: true, host: smtp.smtp_host, port: smtp.smtp_port },
-      };
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : 'SMTP connection failed' };
-    }
-  }
-
+  if (action === 'test_connection') return testStripeConnection();
+  if (action === 'test_smtp') return testSmtpConnection();
   return { error: 'Unknown action' };
 };
 
@@ -1499,8 +1553,14 @@ export default {
   patchPricingPackage,
   deactivatePricingPackage,
   getSettings,
+  getStripeSettings,
+  getSmtpSettings,
   patchSettings,
+  patchStripeSettings,
+  patchSmtpSettings,
   testSettings,
+  testStripeConnection,
+  testSmtpConnection,
   listTheory,
   createTheory,
   getTheoryById,

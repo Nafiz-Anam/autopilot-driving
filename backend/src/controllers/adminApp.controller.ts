@@ -335,6 +335,48 @@ const postSettings = catchAsync(async (req: Request, res: Response) => {
   return res.status(httpStatus.OK).send({ success: true, data: result.data });
 });
 
+const getStripeSettings = catchAsync(async (_req: Request, res: Response) => {
+  const data = await adminAppService.getStripeSettings();
+  return res.status(httpStatus.OK).send({ success: true, data });
+});
+
+const patchStripeSettings = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminAppService.patchStripeSettings(req.body ?? {});
+  if ('error' in result) {
+    return res.status(httpStatus.BAD_REQUEST).send({ success: false, error: result.error });
+  }
+  return res.status(httpStatus.OK).send({ success: true });
+});
+
+const postStripeSettings = catchAsync(async (_req: Request, res: Response) => {
+  const result = await adminAppService.testStripeConnection();
+  if ('error' in result) {
+    return res.status(httpStatus.BAD_REQUEST).send({ success: false, error: result.error });
+  }
+  return res.status(httpStatus.OK).send({ success: true, data: result.data });
+});
+
+const getSmtpSettings = catchAsync(async (_req: Request, res: Response) => {
+  const data = await adminAppService.getSmtpSettings();
+  return res.status(httpStatus.OK).send({ success: true, data });
+});
+
+const patchSmtpSettings = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminAppService.patchSmtpSettings(req.body ?? {});
+  if ('error' in result) {
+    return res.status(httpStatus.BAD_REQUEST).send({ success: false, error: result.error });
+  }
+  return res.status(httpStatus.OK).send({ success: true });
+});
+
+const postSmtpSettings = catchAsync(async (_req: Request, res: Response) => {
+  const result = await adminAppService.testSmtpConnection();
+  if ('error' in result) {
+    return res.status(httpStatus.BAD_REQUEST).send({ success: false, error: result.error });
+  }
+  return res.status(httpStatus.OK).send({ success: true, data: result.data });
+});
+
 const getTheory = catchAsync(async (req: Request, res: Response) => {
   const data = await adminAppService.listTheory({
     category: String(req.query.category ?? ''),
@@ -423,6 +465,12 @@ export default {
   getSettings,
   patchSettings,
   postSettings,
+  getStripeSettings,
+  patchStripeSettings,
+  postStripeSettings,
+  getSmtpSettings,
+  patchSmtpSettings,
+  postSmtpSettings,
   getTheory,
   postTheory,
   getTheoryById,
