@@ -18,7 +18,14 @@ declare global {
   }
 }
 
-/** After `nextAuthBridge`, loads the driving-school `User` row from Postgres. */
+const mapBackendRoleToDrivingRole = (role: string): DrivingSchoolRole => {
+  if (role === 'ADMIN') return 'ADMIN';
+  // Current auth-core schema does not store STUDENT/INSTRUCTOR roles directly.
+  // Keep app-session compatible by mapping non-admin users to STUDENT for now.
+  return 'STUDENT';
+};
+
+/** After `nextAuthBridge`, loads the app user row from Prisma. */
 const loadDrivingSchoolUser =
   () => async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -26,16 +33,16 @@ const loadDrivingSchoolUser =
       if (!id) {
         return next(new ApiError(httpStatus.UNAUTHORIZED, 'Please authenticate'));
       }
-      const rows = await prisma.$queryRawUnsafe<
-        Array<{ id: string; role: string; name: string | null; email: string }>
-      >(`SELECT id, role::text AS role, name, email FROM "User" WHERE id = $1 LIMIT 1`, id);
-      const u = rows[0];
+      const u = await prisma.user.findUnique({
+        where: { id },
+        select: { id: true, role: true, name: true, email: true },
+      });
       if (!u) {
         return next(new ApiError(httpStatus.UNAUTHORIZED, 'User not found'));
       }
       req.drivingUser = {
         id: u.id,
-        role: u.role as DrivingSchoolRole,
+        role: mapBackendRoleToDrivingRole(u.role),
         name: u.name,
         email: u.email,
       };

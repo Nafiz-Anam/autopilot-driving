@@ -28,7 +28,7 @@ function stripeWebhookEndpoint(): string {
     const origin = new URL(getBackendApiBase()).origin;
     return `${origin}/v1/payments/webhook`;
   } catch {
-    return "https://api.driving.agiloit.store/v1/payments/webhook";
+    return "https://driving.agiloit.store/v1/payments/webhook";
   }
 }
 

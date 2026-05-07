@@ -1,5 +1,5 @@
 const DEFAULT_LOCAL_API = "http://localhost:8008/v1";
-const PROD_API = "https://api.driving.agiloit.store/v1";
+const PROD_API = "https://driving.agiloit.store/v1";
 
 export function getBackendApiBase(): string {
   const envBase = process.env.NEXT_PUBLIC_BACKEND_API_BASE_URL;
