@@ -294,9 +294,9 @@ export default function AdminPaymentsPage() {
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
       {/* Page Header */}
       <motion.div variants={itemVariants} className="mb-8">
-        <h1 className="text-3xl font-extrabold text-brand-black">Payment Settings</h1>
+        <h1 className="text-3xl font-extrabold text-brand-black">Settings</h1>
         <p className="text-brand-muted mt-1 text-sm">
-          Configure Stripe payment gateway credentials. Changes take effect immediately.
+          Configure Stripe and SMTP credentials. Changes take effect immediately.
         </p>
       </motion.div>
 

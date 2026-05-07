@@ -23,9 +23,34 @@ type SettingsPayload = {
   email_admin: string;
 };
 
-const isStripePublishableKey = (value: string): boolean => /^pk_(test|live)_/.test(value);
-const isStripeSecretKey = (value: string): boolean => /^sk_(test|live)_/.test(value);
-const isStripeWebhookSecret = (value: string): boolean => /^whsec_/.test(value);
+/**
+ * Treat only realistically formatted Stripe credentials as configured.
+ * This prevents placeholder strings (e.g. sk_test_********_key) from
+ * showing a false "configured" state in admin UI.
+ */
+const isStripePublishableKey = (value: string): boolean => /^pk_(test|live)_[A-Za-z0-9]{16,}$/.test(value);
+const isStripeSecretKey = (value: string): boolean => /^sk_(test|live)_[A-Za-z0-9]{16,}$/.test(value);
+const isStripeWebhookSecret = (value: string): boolean => /^whsec_[A-Za-z0-9]{16,}$/.test(value);
+const isEmailLike = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isSmtpHostLike = (value: string): boolean => /^(localhost|[A-Za-z0-9.-]+\.[A-Za-z]{2,}|(\d{1,3}\.){3}\d{1,3})$/.test(value);
+const isLikelyPlaceholder = (value: string): boolean => {
+  const v = value.trim().toLowerCase();
+  if (!v) return true;
+  return (
+    v.includes('demo') ||
+    v.includes('example') ||
+    v.includes('sample') ||
+    v.includes('dummy') ||
+    v.includes('placeholder') ||
+    v.includes('changeme') ||
+    v.includes('replace') ||
+    v.includes('your_') ||
+    v.includes('xxxx') ||
+    v.includes('*****') ||
+    v.includes('@example.com') ||
+    v.endsWith('.demo')
+  );
+};
 const normalizePromoCode = (code: string): string => code.trim().toUpperCase();
 
 const maskKey = (value: string): string => {
@@ -1171,27 +1196,43 @@ const deactivatePricingPackage = async (id: string) => {
 
 const getSettings = async () => {
   const settings = await getAllSettings();
+  const hasValidPublishableKey = isStripePublishableKey(settings.stripe_publishable_key);
+  const hasValidSecretKey = isStripeSecretKey(settings.stripe_secret_key);
+  const hasValidWebhookSecret = isStripeWebhookSecret(settings.stripe_webhook_secret);
+  const hasValidSmtpHost =
+    !!settings.smtp_host && isSmtpHostLike(settings.smtp_host) && !isLikelyPlaceholder(settings.smtp_host);
+  const hasValidSmtpUser =
+    !!settings.smtp_user && isEmailLike(settings.smtp_user) && !isLikelyPlaceholder(settings.smtp_user);
+  const hasValidEmailFrom =
+    !!settings.email_from && isEmailLike(settings.email_from) && !isLikelyPlaceholder(settings.email_from);
+  const hasValidEmailAdmin =
+    !!settings.email_admin && isEmailLike(settings.email_admin) && !isLikelyPlaceholder(settings.email_admin);
+  const hasValidSmtpPass = !!settings.smtp_pass && !isLikelyPlaceholder(settings.smtp_pass);
+
   return {
-    stripe_publishable_key: settings.stripe_publishable_key,
-    stripe_secret_key_masked: maskKey(settings.stripe_secret_key),
-    stripe_webhook_secret_masked: maskKey(settings.stripe_webhook_secret),
-    has_secret_key: !!settings.stripe_secret_key,
-    has_webhook_secret: !!settings.stripe_webhook_secret,
-    has_publishable_key: !!settings.stripe_publishable_key,
-    mode: settings.stripe_publishable_key?.startsWith('pk_live_') ? 'live' : 'test',
-    smtp_host: settings.smtp_host,
+    stripe_publishable_key: hasValidPublishableKey ? settings.stripe_publishable_key : '',
+    stripe_secret_key_masked: hasValidSecretKey ? maskKey(settings.stripe_secret_key) : '',
+    stripe_webhook_secret_masked: hasValidWebhookSecret ? maskKey(settings.stripe_webhook_secret) : '',
+    has_secret_key: hasValidSecretKey,
+    has_webhook_secret: hasValidWebhookSecret,
+    has_publishable_key: hasValidPublishableKey,
+    mode:
+      hasValidPublishableKey && settings.stripe_publishable_key.startsWith('pk_live_')
+        ? 'live'
+        : 'test',
+    smtp_host: hasValidSmtpHost ? settings.smtp_host : '',
     smtp_port: settings.smtp_port,
-    smtp_user: settings.smtp_user,
-    smtp_pass_masked: maskKey(settings.smtp_pass),
-    email_from: settings.email_from,
-    email_admin: settings.email_admin,
-    has_smtp_pass: !!settings.smtp_pass,
+    smtp_user: hasValidSmtpUser ? settings.smtp_user : '',
+    smtp_pass_masked: hasValidSmtpPass ? maskKey(settings.smtp_pass) : '',
+    email_from: hasValidEmailFrom ? settings.email_from : '',
+    email_admin: hasValidEmailAdmin ? settings.email_admin : '',
+    has_smtp_pass: hasValidSmtpPass,
     has_smtp_config: !!(
-      settings.smtp_host &&
-      settings.smtp_user &&
-      settings.smtp_pass &&
-      settings.email_from &&
-      settings.email_admin
+      hasValidSmtpHost &&
+      hasValidSmtpUser &&
+      hasValidSmtpPass &&
+      hasValidEmailFrom &&
+      hasValidEmailAdmin
     ),
   };
 };
@@ -1224,7 +1265,11 @@ const patchSettings = async (payload: Record<string, unknown>) => {
   }
 
   if (payload.smtp_host !== undefined && payload.smtp_host !== '') {
-    updates.push(updateSetting(SETTING_KEYS.SMTP_HOST, String(payload.smtp_host).trim()));
+    const value = String(payload.smtp_host).trim();
+    if (!isSmtpHostLike(value) || isLikelyPlaceholder(value)) {
+      return { error: 'Invalid SMTP host' };
+    }
+    updates.push(updateSetting(SETTING_KEYS.SMTP_HOST, value));
   }
 
   if (payload.smtp_port !== undefined && payload.smtp_port !== '') {
@@ -1236,16 +1281,32 @@ const patchSettings = async (payload: Record<string, unknown>) => {
   }
 
   if (payload.smtp_user !== undefined && payload.smtp_user !== '') {
-    updates.push(updateSetting(SETTING_KEYS.SMTP_USER, String(payload.smtp_user).trim()));
+    const value = String(payload.smtp_user).trim();
+    if (!isEmailLike(value) || isLikelyPlaceholder(value)) {
+      return { error: 'Invalid SMTP user email' };
+    }
+    updates.push(updateSetting(SETTING_KEYS.SMTP_USER, value));
   }
   if (payload.smtp_pass !== undefined && payload.smtp_pass !== '') {
-    updates.push(updateSetting(SETTING_KEYS.SMTP_PASS, String(payload.smtp_pass)));
+    const value = String(payload.smtp_pass);
+    if (isLikelyPlaceholder(value)) {
+      return { error: 'Invalid SMTP password' };
+    }
+    updates.push(updateSetting(SETTING_KEYS.SMTP_PASS, value));
   }
   if (payload.email_from !== undefined && payload.email_from !== '') {
-    updates.push(updateSetting(SETTING_KEYS.EMAIL_FROM, String(payload.email_from).trim()));
+    const value = String(payload.email_from).trim();
+    if (!isEmailLike(value) || isLikelyPlaceholder(value)) {
+      return { error: 'Invalid sender email' };
+    }
+    updates.push(updateSetting(SETTING_KEYS.EMAIL_FROM, value));
   }
   if (payload.email_admin !== undefined && payload.email_admin !== '') {
-    updates.push(updateSetting(SETTING_KEYS.EMAIL_ADMIN, String(payload.email_admin).trim()));
+    const value = String(payload.email_admin).trim();
+    if (!isEmailLike(value) || isLikelyPlaceholder(value)) {
+      return { error: 'Invalid admin email' };
+    }
+    updates.push(updateSetting(SETTING_KEYS.EMAIL_ADMIN, value));
   }
 
   if (updates.length === 0) {

@@ -372,7 +372,7 @@ export default function AdminDashboardPage() {
                 ? "Configured"
                 : "Needs setup"}
             </p>
-            <a href="/admin/payments" className="inline-block mt-2 text-xs font-semibold text-brand-red hover:text-brand-orange">
+            <a href="/admin/settings" className="inline-block mt-2 text-xs font-semibold text-brand-red hover:text-brand-orange">
               Open payment settings &rarr;
             </a>
           </div>
@@ -384,7 +384,7 @@ export default function AdminDashboardPage() {
             <p className={cn("text-xs", systemSettings?.has_smtp_config ? "text-green-700" : "text-yellow-700")}>
               {systemSettings?.has_smtp_config ? "Configured" : "Needs setup"}
             </p>
-            <a href="/admin/payments" className="inline-block mt-2 text-xs font-semibold text-brand-red hover:text-brand-orange">
+            <a href="/admin/settings" className="inline-block mt-2 text-xs font-semibold text-brand-red hover:text-brand-orange">
               Open SMTP settings &rarr;
             </a>
           </div>
