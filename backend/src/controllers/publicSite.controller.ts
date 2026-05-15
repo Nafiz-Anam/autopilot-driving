@@ -19,7 +19,11 @@ const handlePublicSiteError = (res: Response, error: unknown) => {
 
 const getAreas = catchAsync(async (req: Request, res: Response) => {
   try {
-    const data = await publicSiteService.getAreaCoverage(String(req.query.postcode ?? ''));
+    if (req.query.postcode) {
+      const data = await publicSiteService.getAreaCoverage(String(req.query.postcode));
+      return res.send({ success: true, data });
+    }
+    const data = await publicSiteService.listActiveAreas();
     return res.send({ success: true, data });
   } catch (error) {
     return handlePublicSiteError(res, error);

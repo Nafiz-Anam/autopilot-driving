@@ -603,17 +603,21 @@ const createArea = async (payload: {
   name: string;
   postcodePrefix: string;
   description?: string;
+  latitude?: number;
+  longitude?: number;
   isActive?: boolean;
 }) => {
   const id = uuidv4();
   const rows = await prisma.$queryRawUnsafe<any[]>(
-    `INSERT INTO "Area"(id, name, "postcodePrefix", description, "isActive")
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO "Area"(id, name, "postcodePrefix", description, latitude, longitude, "isActive")
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
     id,
     payload.name,
     payload.postcodePrefix,
     payload.description ?? '',
+    payload.latitude ?? null,
+    payload.longitude ?? null,
     payload.isActive ?? true
   );
   return rows[0] ?? null;
@@ -625,6 +629,8 @@ const updateAreaById = async (
     name?: string;
     postcodePrefix?: string;
     description?: string;
+    latitude?: number;
+    longitude?: number;
     isActive?: boolean;
   }
 ) => {
@@ -633,13 +639,17 @@ const updateAreaById = async (
      SET name = COALESCE($2, name),
          "postcodePrefix" = COALESCE($3, "postcodePrefix"),
          description = COALESCE($4, description),
-         "isActive" = COALESCE($5, "isActive")
+         latitude = COALESCE($5, latitude),
+         longitude = COALESCE($6, longitude),
+         "isActive" = COALESCE($7, "isActive")
      WHERE id = $1
      RETURNING *`,
     id,
     payload.name ?? null,
     payload.postcodePrefix ?? null,
     payload.description ?? null,
+    payload.latitude ?? null,
+    payload.longitude ?? null,
     typeof payload.isActive === 'boolean' ? payload.isActive : null
   );
   return rows[0] ?? null;

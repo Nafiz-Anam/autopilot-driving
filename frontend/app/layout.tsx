@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_GB",
   },
+  icons: {
+    icon: "/autopilot-driving-icon.png",
+    shortcut: "/autopilot-driving-icon.png",
+    apple: "/autopilot-driving-icon.png",
+  },
 };
 
 export default function RootLayout({

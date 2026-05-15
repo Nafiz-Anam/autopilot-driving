@@ -637,6 +637,8 @@ model Area {
   name           String
   postcodePrefix String  @map("postcodePrefix")
   description    String?
+  latitude       Float?
+  longitude      Float?
   isActive       Boolean @default(true) @map("isActive")
 
   @@map("Area")

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Phone, Mail, MapPin } from "lucide-react";
 
 function FacebookIcon({ size = 18 }: { size?: number }) {
@@ -36,23 +37,14 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand column */}
           <div className="col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
-                <defs>
-                  <linearGradient id="footer-logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#E8200A" />
-                    <stop offset="100%" stopColor="#FF5500" />
-                  </linearGradient>
-                </defs>
-                <path d="M18 4L32 28H22L18 20L14 28H4L18 4Z" fill="url(#footer-logo-gradient)" />
-                <path d="M18 12L26 28H22L18 20L14 28H10L18 12Z" fill="white" opacity="0.3" />
-              </svg>
-              <div className="flex flex-col leading-none">
-                <span className="text-lg font-bold text-white" style={{ fontFamily: "'Moderniz', 'Barlow', sans-serif" }}>
-                  AUTOPILOT
-                </span>
-                <span className="text-xs text-[#FF5500] tracking-widest">DRIVING SCHOOL</span>
-              </div>
+            <Link href="/" className="flex items-center mb-4 transition-opacity hover:opacity-90">
+              <Image
+                src="/autopilot-logo-transparent.png"
+                alt="AutoPilot Driving School"
+                width={160}
+                height={40}
+                className="h-auto w-auto object-contain"
+              />
             </Link>
             <p className="text-[#6B6B6B] text-sm leading-relaxed mb-4">
               UK&apos;s premier driving school. Expert DVSA-approved instructors covering East Berkshire and West London.

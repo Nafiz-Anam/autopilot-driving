@@ -17,6 +17,7 @@ const COVERAGE_LOCATIONS = [
 type LeafletMapInstance = {
   remove: () => void;
   fitBounds: (bounds: [number, number][]) => void;
+  setView: (coords: [number, number], zoom: number) => void;
 };
 
 type LeafletNamespace = {
@@ -36,7 +37,7 @@ declare global {
   }
 }
 
-export default function CoverageLeafletMap() {
+export default function CoverageLeafletMap({ areas }: { areas: any[] }) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<LeafletMapInstance | null>(null);
 
@@ -94,13 +95,42 @@ export default function CoverageLeafletMap() {
           })
           .addTo(map);
 
-        COVERAGE_LOCATIONS.forEach((location) => {
-          window.L?.marker(location.coords).addTo(map).bindPopup(
-            `<strong>${location.name}</strong><br />Postcode area: ${location.postcode}`
-          );
+        const markers: [number, number][] = [];
+
+        areas.forEach((area) => {
+          let coords: [number, number] | null = null;
+
+          // 1. Use database coordinates if available
+          if (area.latitude != null && area.longitude != null) {
+            coords = [area.latitude, area.longitude];
+          }
+
+          // 2. Fallback to hardcoded lookup
+          if (!coords) {
+            const match = COVERAGE_LOCATIONS.find(
+              (loc) =>
+                loc.name.toLowerCase() === area.name.toLowerCase() ||
+                area.postcodePrefix.toUpperCase().startsWith(loc.postcode.toUpperCase())
+            );
+            if (match) {
+              coords = match.coords;
+            }
+          }
+
+          if (coords) {
+            window.L?.marker(coords).addTo(map).bindPopup(
+              `<strong>${area.name}</strong><br />Postcode area: ${area.postcodePrefix}`
+            );
+            markers.push(coords);
+          }
         });
 
-        map.fitBounds(COVERAGE_LOCATIONS.map((location) => location.coords));
+        if (markers.length > 0) {
+          map.fitBounds(markers);
+        } else {
+          // Default view if no markers match
+          map.setView([51.5, -0.6], 10);
+        }
       }
     };
 
@@ -113,7 +143,7 @@ export default function CoverageLeafletMap() {
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [areas]);
 
   return <div ref={mapRef} className="h-[420px] w-full" aria-label="Autopilot coverage locations map" />;
 }

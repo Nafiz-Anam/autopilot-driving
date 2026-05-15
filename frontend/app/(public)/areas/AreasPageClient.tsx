@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -9,71 +9,14 @@ import { PageHero } from "@/components/shared/PageHero";
 import { backendApiUrl } from "@/lib/backend-api";
 import { cn } from "@/lib/utils";
 
-const AREAS = [
-  {
-    name: "Slough",
-    postcode: "SL1",
-    prefix: "SL1",
-    description: "SL1–SL3",
-    districts: "Town Centre, Cippenham, Langley, Colnbrook",
-  },
-  {
-    name: "Windsor",
-    postcode: "SL4",
-    prefix: "SL4",
-    description: "SL4",
-    districts: "Windsor, Eton, Old Windsor, Datchet",
-  },
-  {
-    name: "Maidenhead",
-    postcode: "SL6",
-    prefix: "SL6",
-    description: "SL6",
-    districts: "Maidenhead, Bray, Cox Green, Furze Platt",
-  },
-  {
-    name: "Reading",
-    postcode: "RG1",
-    prefix: "RG1",
-    description: "RG1–RG7",
-    districts: "Reading town, Caversham, Tilehurst, Earley",
-  },
-  {
-    name: "Wokingham",
-    postcode: "RG40",
-    prefix: "RG40",
-    description: "RG40–RG41",
-    districts: "Wokingham, Finchampstead, Arborfield",
-  },
-  {
-    name: "Bracknell",
-    postcode: "RG12",
-    prefix: "RG12",
-    description: "RG12",
-    districts: "Bracknell, Sandhurst, Crowthorne",
-  },
-  {
-    name: "Staines",
-    postcode: "TW18",
-    prefix: "TW18",
-    description: "TW18–TW19",
-    districts: "Staines-upon-Thames, Stanwell, Ashford",
-  },
-  {
-    name: "Feltham",
-    postcode: "TW13",
-    prefix: "TW13",
-    description: "TW13–TW14",
-    districts: "Feltham, Hanworth, Bedfont",
-  },
-  {
-    name: "Hounslow",
-    postcode: "TW3",
-    prefix: "TW3",
-    description: "TW3–TW6",
-    districts: "Hounslow, Isleworth, Heston, Heathrow",
-  },
-];
+interface AreaData {
+  id: string;
+  name: string;
+  postcodePrefix: string;
+  description: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
 
 const CoverageLeafletMap = dynamic(() => import("./CoverageLeafletMap"), {
   ssr: false,
@@ -183,7 +126,7 @@ function PostcodeChecker() {
   );
 }
 
-function AreaCards() {
+function AreaCards({ areas }: { areas: AreaData[] }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
@@ -202,9 +145,9 @@ function AreaCards() {
           </p>
         </div>
         <div ref={ref} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {AREAS.map((area, i) => (
+          {areas.map((area, i) => (
             <motion.div
-              key={area.postcode}
+              key={area.id}
               initial={{ opacity: 0, y: 24 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.4, delay: i * 0.06 }}
@@ -214,16 +157,16 @@ function AreaCards() {
                 <div>
                   <h3 className="text-lg font-bold text-brand-black">{area.name}</h3>
                   <span className="text-xs font-semibold text-brand-red bg-red-50 px-2 py-0.5 rounded-full">
-                    {area.description}
+                    {area.postcodePrefix}
                   </span>
                 </div>
                 <div className="w-10 h-10 bg-brand-red rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                  {area.prefix}
+                  {area.postcodePrefix.slice(0, 4)}
                 </div>
               </div>
-              <p className="text-sm text-brand-muted mb-4">{area.districts}</p>
+              <p className="text-sm text-brand-muted mb-4">{area.description}</p>
               <Link
-                href={`/booking?postcode=${area.postcode}`}
+                href={`/booking?postcode=${area.postcodePrefix}`}
                 className="text-sm font-semibold text-brand-red hover:text-brand-orange transition-colors duration-200"
               >
                 Book in {area.name} →
@@ -237,11 +180,40 @@ function AreaCards() {
 }
 
 export default function AreasPageClient() {
+  const [areas, setAreas] = useState<AreaData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchAreas() {
+      try {
+        const { data } = await axios.get<{ success: boolean; data: AreaData[] }>(
+          backendApiUrl("/public/areas")
+        );
+        if (data.success) {
+          setAreas(data.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch areas:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAreas();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-red"></div>
+      </div>
+    );
+  }
+
   return (
     <>
       <PageHero title="We Cover Your Area" dark={true} />
       <PostcodeChecker />
-      <AreaCards />
+      <AreaCards areas={areas} />
 
       {/* Map Section */}
       <section className="py-16 bg-brand-surface px-4">
@@ -258,9 +230,9 @@ export default function AreasPageClient() {
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-2 mb-5">
-            {AREAS.map((area) => (
+            {areas.map((area) => (
               <span
-                key={`map-pin-${area.postcode}`}
+                key={`map-pin-${area.id}`}
                 className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-brand-border text-sm text-brand-black"
               >
                 <span className="text-brand-red">●</span>
@@ -269,7 +241,7 @@ export default function AreasPageClient() {
             ))}
           </div>
           <div className="rounded-2xl overflow-hidden shadow-lg border border-brand-border">
-            <CoverageLeafletMap />
+            <CoverageLeafletMap areas={areas} />
           </div>
         </div>
       </section>

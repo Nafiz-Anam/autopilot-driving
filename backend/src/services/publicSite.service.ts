@@ -150,9 +150,11 @@ const getAreaCoverage = async (postcode: string) => {
       name: string;
       postcodePrefix: string;
       description: string | null;
+      latitude: number | null;
+      longitude: number | null;
     }>
   >(
-    `SELECT id, name, "postcodePrefix", description
+    `SELECT id, name, "postcodePrefix", description, latitude, longitude
      FROM "Area"
      WHERE "postcodePrefix" LIKE $1 || '%'
        AND "isActive" = true
@@ -172,8 +174,37 @@ const getAreaCoverage = async (postcode: string) => {
       name: area.name,
       postcodePrefix: area.postcodePrefix,
       description: area.description,
+      latitude: area.latitude,
+      longitude: area.longitude,
     },
   };
+};
+
+const listActiveAreas = async () => {
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{
+      id: string;
+      name: string;
+      postcodePrefix: string;
+      description: string | null;
+      latitude: number | null;
+      longitude: number | null;
+    }>
+  >(
+    `SELECT id, name, "postcodePrefix", description, latitude, longitude
+     FROM "Area"
+     WHERE "isActive" = true
+     ORDER BY name ASC`
+  );
+
+  return rows.map(row => ({
+    id: row.id,
+    name: row.name,
+    postcodePrefix: row.postcodePrefix,
+    description: row.description,
+    latitude: row.latitude,
+    longitude: row.longitude,
+  }));
 };
 
 const listInstructors = async (filters: { postcode?: string; transmission?: string; female?: string }) => {
@@ -559,6 +590,7 @@ const getGoogleReviews = async (): Promise<{ reviews: GoogleReview[]; rating: nu
 export default {
   PublicSiteError,
   getAreaCoverage,
+  listActiveAreas,
   listInstructors,
   createInstructorApplication,
   createContactSubmission,

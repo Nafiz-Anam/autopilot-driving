@@ -156,16 +156,18 @@ const getAreas = catchAsync(async (_req: Request, res: Response) => {
 });
 
 const postAreas = catchAsync(async (req: Request, res: Response) => {
-  const { name, postcodePrefix, description, isActive } = req.body as {
+  const { name, postcodePrefix, description, latitude, longitude, isActive } = req.body as {
     name?: string;
     postcodePrefix?: string;
     description?: string;
+    latitude?: number;
+    longitude?: number;
     isActive?: boolean;
   };
   if (!name || !postcodePrefix) {
     return res.status(httpStatus.BAD_REQUEST).send({ error: 'name and postcodePrefix are required' });
   }
-  const data = await adminAppService.createArea({ name, postcodePrefix, description, isActive });
+  const data = await adminAppService.createArea({ name, postcodePrefix, description, latitude, longitude, isActive });
   return res.status(httpStatus.CREATED).send({ data });
 });
 
