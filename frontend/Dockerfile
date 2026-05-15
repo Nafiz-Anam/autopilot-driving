@@ -2,17 +2,18 @@
 # Stage 1: deps — install all node_modules
 # ──────────────────────────────────────────────────────────────────────────────
 FROM node:22-alpine AS deps
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml .npmrc ./
-RUN pnpm install --frozen-lockfile --shamefully-hoist
+RUN pnpm config set strict-dep-builds false --location project \
+  && pnpm install --frozen-lockfile --shamefully-hoist --config.strict-dep-builds=false
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Stage 2: builder — Next.js standalone (UI-only, no DB client)
 # ──────────────────────────────────────────────────────────────────────────────
 FROM node:22-alpine AS builder
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
