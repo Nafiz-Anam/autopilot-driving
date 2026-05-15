@@ -14,10 +14,10 @@ services:
     networks:
       - autopilot-staging
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis/redis-stack-server:latest
@@ -28,13 +28,13 @@ services:
     networks:
       - autopilot-staging
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
 
   backend:
-    image: docker.io/${DOCKERHUB_USERNAME}/autopilot-driving-backend:${IMAGE_TAG}
+    image: ${BACKEND_IMAGE}
     container_name: autopilot_staging_backend
     restart: unless-stopped
     env_file:
@@ -45,21 +45,44 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
       CLIENT_URL: ${NEXT_PUBLIC_APP_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRATION_MINUTES: ${JWT_ACCESS_EXPIRATION_MINUTES:-15}
+      JWT_REFRESH_EXPIRATION_DAYS: ${JWT_REFRESH_EXPIRATION_DAYS:-7}
+      JWT_RESET_PASSWORD_EXPIRATION_MINUTES: ${JWT_RESET_PASSWORD_EXPIRATION_MINUTES:-10}
+      JWT_VERIFY_EMAIL_EXPIRATION_MINUTES: ${JWT_VERIFY_EMAIL_EXPIRATION_MINUTES:-10}
+      NEXTAUTH_BRIDGE_SECRET: ${NEXTAUTH_BRIDGE_SECRET}
       GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
       GOOGLE_PLACE_ID: ${GOOGLE_PLACE_ID:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "8008:8008"
     networks:
       - autopilot-staging
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.autopilot-api.rule=Host(`api.driving.agiloit.com`)"
+      - "traefik.http.routers.autopilot-api.entrypoints=websecure"
+      - "traefik.http.routers.autopilot-api.tls.certresolver=le"
+      - "traefik.http.routers.autopilot-api.service=autopilot-api"
+      - "traefik.http.services.autopilot-api.loadbalancer.server.port=8008"
+      - "traefik.http.routers.autopilot-api-http.rule=Host(`api.driving.agiloit.com`)"
+      - "traefik.http.routers.autopilot-api-http.entrypoints=web"
+      - "traefik.http.routers.autopilot-api-http.middlewares=redirect-to-https@file"
 
   frontend:
-    image: docker.io/${DOCKERHUB_USERNAME}/autopilot-driving-frontend:${IMAGE_TAG}
+    image: ${FRONTEND_IMAGE}
     container_name: autopilot_staging_frontend
     restart: unless-stopped
     env_file:
@@ -68,21 +91,29 @@ services:
       NODE_ENV: production
       PORT: 3008
       HOSTNAME: 0.0.0.0
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      NEXT_PUBLIC_BACKEND_API_BASE_URL: ${NEXT_PUBLIC_BACKEND_API_BASE_URL}
       NEXTAUTH_URL: ${NEXTAUTH_URL}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_BRIDGE_SECRET: ${NEXTAUTH_BRIDGE_SECRET}
       AUTH_TRUST_HOST: "true"
     depends_on:
-      db:
-        condition: service_healthy
       backend:
         condition: service_started
-    ports:
-      - "3008:3008"
     networks:
       - autopilot-staging
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.autopilot-web.rule=Host(`driving.agiloit.com`)"
+      - "traefik.http.routers.autopilot-web.entrypoints=websecure"
+      - "traefik.http.routers.autopilot-web.tls.certresolver=le"
+      - "traefik.http.routers.autopilot-web.service=autopilot-web"
+      - "traefik.http.services.autopilot-web.loadbalancer.server.port=3008"
+      - "traefik.http.routers.autopilot-web-http.rule=Host(`driving.agiloit.com`)"
+      - "traefik.http.routers.autopilot-web-http.entrypoints=web"
+      - "traefik.http.routers.autopilot-web-http.middlewares=redirect-to-https@file"
 
 volumes:
   postgres_staging_data:
@@ -90,4 +121,7 @@ volumes:
 
 networks:
   autopilot-staging:
+    name: autopilot-staging
     driver: bridge
+  web:
+    external: true

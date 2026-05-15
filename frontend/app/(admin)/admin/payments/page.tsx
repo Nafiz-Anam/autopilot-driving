@@ -28,7 +28,7 @@ function stripeWebhookEndpoint(): string {
     const origin = new URL(getBackendApiBase()).origin;
     return `${origin}/v1/payments/webhook`;
   } catch {
-    return "https://driving.agiloit.store/v1/payments/webhook";
+    return "https://driving.agiloit.com/v1/payments/webhook";
   }
 }
 
@@ -653,7 +653,7 @@ export default function AdminPaymentsPage() {
             label="SMTP User"
             value={smtpUser}
             onChange={setSmtpUser}
-            placeholder="no-reply@driving.agiloit.store"
+            placeholder="no-reply@driving.agiloit.com"
             icon={Mail}
             description="SMTP account username."
           />
@@ -671,7 +671,7 @@ export default function AdminPaymentsPage() {
             label="Email From"
             value={emailFrom}
             onChange={setEmailFrom}
-            placeholder="no-reply@driving.agiloit.store"
+            placeholder="no-reply@driving.agiloit.com"
             icon={Mail}
             description="Sender address used by app emails."
           />
@@ -679,7 +679,7 @@ export default function AdminPaymentsPage() {
             label="Admin Notification Email"
             value={emailAdmin}
             onChange={setEmailAdmin}
-            placeholder="admin@driving.agiloit.store"
+            placeholder="admin@driving.agiloit.com"
             icon={Mail}
             description="Receives contact and instructor notifications."
           />

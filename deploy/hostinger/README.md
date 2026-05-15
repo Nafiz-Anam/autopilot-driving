@@ -75,11 +75,11 @@ Set these in GitHub -> Settings -> Secrets and variables -> Actions:
 ## 5) Recommended domain and SSL setup
 
 - Point your domain/subdomain A record to the VPS IP.
-- Add A record `driving.agiloit.store` -> VPS IP.
-- Add A record `api.driving.agiloit.store` -> VPS IP.
+- Add A record `driving.agiloit.com` -> VPS IP.
+- Add A record `api.driving.agiloit.com` -> VPS IP.
 - Nginx in this stack routes:
-    - `driving.agiloit.store` -> `frontend:3008`
-    - `api.driving.agiloit.store` -> `backend:8008`
+    - `driving.agiloit.com` -> `frontend:3008`
+    - `api.driving.agiloit.com` -> `backend:8008`
 - Enable SSL in Cloudflare for these domains (recommended: Full/Strict with origin cert setup).
 
 ## 6) Production safety checks

@@ -78,7 +78,7 @@ services:
       PORT: 3008
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-      NEXT_PUBLIC_BACKEND_API_BASE_URL: ${NEXT_PUBLIC_BACKEND_API_BASE_URL:-https://driving.agiloit.store/v1}
+      NEXT_PUBLIC_BACKEND_API_BASE_URL: ${NEXT_PUBLIC_BACKEND_API_BASE_URL:-https://driving.agiloit.com/v1}
     expose:
       - "3008"
     depends_on:
