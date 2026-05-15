@@ -4,7 +4,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile
 
 # ── Stage 2: builder ──────────────────────────────────────────────────────────
