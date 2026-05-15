@@ -124,7 +124,7 @@ export function HeroSection() {
             >
               <TrustBadge
                 icon={<Star size={13} className="fill-amber-400 text-amber-400" />}
-                label="4.9/5 Rating"
+                label="5/5 Rating"
               />
               <div className="w-px h-4 bg-[#E5E5E5]" />
               <TrustBadge
@@ -214,7 +214,7 @@ export function HeroSection() {
                             <Star size={9} className="fill-amber-400 text-amber-400" />
                           </motion.div>
                         ))}
-                        <span className="text-[10px] text-[#6B6B6B] ml-1">4.9</span>
+                        <span className="text-[10px] text-[#6B6B6B] ml-1">5.0</span>
                       </div>
                     </div>
                     <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded-full flex-shrink-0">

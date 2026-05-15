@@ -85,6 +85,15 @@ const getTheoryQuestions = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
+const getGoogleReviews = catchAsync(async (_req: Request, res: Response) => {
+  try {
+    const data = await publicSiteService.getGoogleReviews();
+    return res.send({ success: true, data });
+  } catch (error) {
+    return handlePublicSiteError(res, error);
+  }
+});
+
 export default {
   getAreas,
   getInstructors,
@@ -92,4 +101,5 @@ export default {
   submitContact,
   register,
   getTheoryQuestions,
+  getGoogleReviews,
 };

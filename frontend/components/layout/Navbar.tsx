@@ -29,6 +29,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileLearnOpen, setMobileLearnOpen] = useState(false);
   const pathname = usePathname();
   const { data: session } = useAppSession();
 
@@ -41,6 +42,7 @@ export function Navbar() {
   useEffect(() => {
     setMobileOpen(false);
     setDropdownOpen(false);
+    setMobileLearnOpen(false);
   }, [pathname]);
 
   return (
@@ -190,20 +192,42 @@ export function Navbar() {
               }}
               className="flex flex-col gap-2"
             >
-              <MobileNavItem href="/learn-to-drive" label="Learn to Drive" />
-              {learnLinks.map((link, i) => (
-                <motion.div
-                  key={link.href}
-                  variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+              {/* Learn to Drive — collapsible */}
+              <motion.div variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}>
+                <button
+                  className="w-full flex items-center justify-between py-3 text-white text-xl font-bold hover:text-brand-orange transition-colors"
+                  onClick={() => setMobileLearnOpen((prev) => !prev)}
                 >
-                  <Link
-                    href={link.href}
-                    className="block pl-4 py-2.5 text-[#6B6B6B] hover:text-[#FF5500] text-base font-medium border-l border-[#2A2A2A] transition-colors"
+                  Learn to Drive
+                  <motion.span
+                    animate={{ rotate: mobileLearnOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    {link.label}
-                  </Link>
-                </motion.div>
-              ))}
+                    <ChevronDown size={20} />
+                  </motion.span>
+                </button>
+              </motion.div>
+              <AnimatePresence initial={false}>
+                {mobileLearnOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="overflow-hidden"
+                  >
+                    {learnLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="block pl-4 py-2.5 text-brand-muted hover:text-brand-orange text-base font-medium border-l border-[#2A2A2A] transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
               {navLinks.map((link) => (
                 <MobileNavItem key={link.href} href={link.href} label={link.label} />
               ))}

@@ -1,10 +1,31 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { Star } from "lucide-react";
+import { backendApiUrl } from "@/lib/backend-api";
 
-const testimonials = [
+interface ReviewData {
+  authorName: string;
+  authorPhotoUrl: string | null;
+  rating: number;
+  text: string;
+  relativeTime: string;
+  publishTime: string;
+}
+
+interface CardProps {
+  quote: string;
+  name: string;
+  passed: string;
+  initials: string;
+  accent: string;
+  photoUrl?: string | null;
+}
+
+const ACCENT_COLORS = ["#E8200A", "#FF3A1A", "#FF5500"];
+
+const FALLBACK_TESTIMONIALS: CardProps[] = [
   {
     quote:
       "Passed first time! My instructor was incredibly patient and professional. The booking system made everything so easy.",
@@ -63,15 +84,26 @@ const testimonials = [
   },
 ];
 
-interface CardProps {
-  quote: string;
-  name: string;
-  passed: string;
-  initials: string;
-  accent: string;
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((n) => n[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
-function TestimonialCard({ quote, name, passed, initials, accent }: CardProps) {
+function mapReviewToCard(review: ReviewData, index: number): CardProps {
+  return {
+    quote: review.text,
+    name: review.authorName,
+    passed: review.relativeTime,
+    initials: getInitials(review.authorName),
+    accent: ACCENT_COLORS[index % ACCENT_COLORS.length],
+    photoUrl: review.authorPhotoUrl,
+  };
+}
+
+function TestimonialCard({ quote, name, passed, initials, accent, photoUrl }: CardProps) {
   return (
     <div
       className="flex-none w-[300px] sm:w-[340px] bg-[#F8F7F5] rounded-3xl p-6 relative select-none"
@@ -86,24 +118,32 @@ function TestimonialCard({ quote, name, passed, initials, accent }: CardProps) {
         </div>
 
         {/* Quote */}
-        <p className="text-[#1A1A1A] text-sm leading-relaxed mb-5 font-medium flex-1">
+        <p className="text-brand-dark-surface text-sm leading-relaxed mb-5 font-medium flex-1">
           &ldquo;{quote}&rdquo;
         </p>
 
         {/* Author */}
         <div className="flex items-center gap-3 pt-4 border-t border-[#EBEBEB]">
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
-            style={{
-              background: `linear-gradient(135deg, ${accent} 0%, ${accent}BB 100%)`,
-              boxShadow: `0 4px 10px ${accent}30`,
-            }}
-          >
-            {initials}
-          </div>
+          {photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={name}
+              className="w-9 h-9 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+              style={{
+                background: `linear-gradient(135deg, ${accent} 0%, ${accent}BB 100%)`,
+                boxShadow: `0 4px 10px ${accent}30`,
+              }}
+            >
+              {initials}
+            </div>
+          )}
           <div>
-            <p className="font-bold text-[#0D0D0D] text-sm leading-tight">{name}</p>
-            <p className="text-[#9A9A9A] text-xs mt-0.5">Passed {passed}</p>
+            <p className="font-bold text-brand-black text-sm leading-tight">{name}</p>
+            <p className="text-[#9A9A9A] text-xs mt-0.5">{passed}</p>
           </div>
         </div>
       </div>
@@ -148,6 +188,24 @@ function MarqueeRow({
 export function Testimonials() {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [testimonials, setTestimonials] = useState<CardProps[]>(FALLBACK_TESTIMONIALS);
+  const [rating, setRating] = useState<number | null>(null);
+  const [totalReviews, setTotalReviews] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(backendApiUrl("/public/reviews"))
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data.reviews?.length > 0) {
+          setTestimonials(json.data.reviews.map(mapReviewToCard));
+          setRating(json.data.rating);
+          setTotalReviews(json.data.totalReviews);
+        }
+      })
+      .catch(() => {
+        // silently fall back to hardcoded testimonials
+      });
+  }, []);
 
   const row2 = [...testimonials].reverse();
 
@@ -159,22 +217,37 @@ export function Testimonials() {
           initial={{ opacity: 0, y: 16 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.4 }}
-          className="text-[#E8200A] uppercase tracking-widest text-xs font-semibold mb-3"
+          className="text-brand-red uppercase tracking-widest text-xs font-semibold mb-3"
         >
           Student Stories
         </motion.p>
-        <motion.h2
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0D0D0D]"
-          style={{
-            fontFamily: "'Moderniz', 'Barlow', sans-serif",
-            letterSpacing: "-0.02em",
-          }}
+          className="flex flex-wrap items-end gap-4"
         >
-          What Our Students Say
-        </motion.h2>
+          <h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-black"
+            style={{
+              fontFamily: "'Moderniz', 'Barlow', sans-serif",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            What Our Students Say
+          </h2>
+          {rating !== null && totalReviews !== null && (
+            <div className="flex items-center gap-2 mb-1">
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={16} className="fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <span className="text-sm font-semibold text-brand-black">{rating.toFixed(1)}</span>
+              <span className="text-sm text-brand-muted">({totalReviews} Google reviews)</span>
+            </div>
+          )}
+        </motion.div>
       </div>
 
       {/* Row 1 — scrolls left */}

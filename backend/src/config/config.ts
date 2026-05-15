@@ -27,6 +27,8 @@ const envVarsSchema = z.object({
   REDIS_DB: z.string().transform(Number).pipe(z.number().default(0)),
   /** Shared with Next.js — short-lived JWT for app User ids until full API JWT auth. */
   NEXTAUTH_BRIDGE_SECRET: z.string().optional(),
+  GOOGLE_PLACES_API_KEY: z.string().optional(),
+  GOOGLE_PLACE_ID: z.string().optional(),
 });
 
 let envVars: z.infer<typeof envVarsSchema>;
@@ -71,6 +73,10 @@ const config = {
   clientUrl: envVars.CLIENT_URL,
   nextAuthBridge: {
     secret: (envVars.NEXTAUTH_BRIDGE_SECRET && envVars.NEXTAUTH_BRIDGE_SECRET.trim()) || envVars.JWT_SECRET,
+  },
+  google: {
+    placesApiKey: envVars.GOOGLE_PLACES_API_KEY,
+    placeId: envVars.GOOGLE_PLACE_ID,
   },
 };
 

@@ -13,6 +13,8 @@ const envVarsSchema = z.object({
   SMTP_PASSWORD: z.string(),
   EMAIL_FROM: z.string(),
   ALLOWED_ORIGINS: z.string(),
+  GOOGLE_PLACES_API_KEY: z.string().optional(),
+  GOOGLE_PLACE_ID: z.string().optional(),
 });
 
 let envVars: z.infer<typeof envVarsSchema>;
@@ -51,6 +53,10 @@ const config = {
   },
   cors: {
     origins: envVars.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8008'],
+  },
+  google: {
+    placesApiKey: envVars.GOOGLE_PLACES_API_KEY,
+    placeId: envVars.GOOGLE_PLACE_ID,
   },
 };
 

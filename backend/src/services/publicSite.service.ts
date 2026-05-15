@@ -3,6 +3,7 @@ import { z } from 'zod';
 import prisma from '../client';
 import emailService from './email.service';
 import settingsService, { SETTING_KEYS } from './settings.service';
+import config from '../config/config';
 
 class PublicSiteError extends Error {
   statusCode: number;
@@ -480,6 +481,81 @@ const getTheoryQuestions = async (
   };
 };
 
+interface GoogleReview {
+  authorName: string;
+  authorPhotoUrl: string | null;
+  rating: number;
+  text: string;
+  relativeTime: string;
+  publishTime: string;
+}
+
+interface ReviewsCache {
+  data: { reviews: GoogleReview[]; rating: number; totalReviews: number };
+  cachedAt: number;
+}
+
+const REVIEWS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+let reviewsCache: ReviewsCache | null = null;
+
+const getGoogleReviews = async (): Promise<{ reviews: GoogleReview[]; rating: number; totalReviews: number }> => {
+  const apiKey = config.google.placesApiKey;
+  const placeId = config.google.placeId;
+
+  if (!apiKey || !placeId) {
+    throw new PublicSiteError(503, 'Google Places API not configured');
+  }
+
+  const now = Date.now();
+  if (reviewsCache && now - reviewsCache.cachedAt < REVIEWS_CACHE_TTL_MS) {
+    return reviewsCache.data;
+  }
+
+  const url = `https://places.googleapis.com/v1/places/${placeId}`;
+  const response = await fetch(url, {
+    headers: {
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': 'reviews,rating,userRatingCount',
+    },
+  });
+
+  if (!response.ok) {
+    throw new PublicSiteError(502, 'Failed to fetch Google reviews');
+  }
+
+  const json = await response.json() as {
+    rating?: number;
+    userRatingCount?: number;
+    reviews?: Array<{
+      rating: number;
+      relativePublishTimeDescription: string;
+      text?: { text: string };
+      authorAttribution?: { displayName: string; photoUri?: string };
+      publishTime?: string;
+    }>;
+  };
+
+  const reviews: GoogleReview[] = (json.reviews ?? [])
+    .filter(r => r.text?.text)
+    .map(r => ({
+      authorName: r.authorAttribution?.displayName ?? 'Student',
+      authorPhotoUrl: r.authorAttribution?.photoUri ?? null,
+      rating: r.rating,
+      text: r.text!.text,
+      relativeTime: r.relativePublishTimeDescription,
+      publishTime: r.publishTime ?? '',
+    }));
+
+  const result = {
+    reviews,
+    rating: json.rating ?? 5,
+    totalReviews: json.userRatingCount ?? 0,
+  };
+
+  reviewsCache = { data: result, cachedAt: now };
+  return result;
+};
+
 export default {
   PublicSiteError,
   getAreaCoverage,
@@ -488,4 +564,5 @@ export default {
   createContactSubmission,
   registerUser,
   getTheoryQuestions,
+  getGoogleReviews,
 };
