@@ -711,6 +711,9 @@ async function seedDrivingSchoolTables() {
 
   const passwordHash = await bcrypt.hash('Demo@1234', 10);
 
+  // Clean up old demo data to allow fresh seed
+  await prisma.$executeRawUnsafe(`DELETE FROM users WHERE id LIKE 'seed-%' OR email LIKE '%.demo'`);
+
   await prisma.$executeRawUnsafe(
     `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", gender, country, city, state, "createdAt", "updatedAt")
      VALUES
@@ -721,18 +724,7 @@ async function seedDrivingSchoolTables() {
        ('seed-student-1', 'Sam Student', 'sam.student@autopilot.demo', '07700900003', $1, 'USER', true, 'MALE', 'UK', 'Slough', 'Berkshire', NOW(), NOW()),
        ('seed-student-2', 'Lisa Learner', 'lisa.learner@autopilot.demo', '07700900006', $1, 'USER', true, 'FEMALE', 'UK', 'Reading', 'Berkshire', NOW(), NOW()),
        ('seed-student-3', 'Tom Turner', 'tom.turner@autopilot.demo', '07700900007', $1, 'USER', true, 'MALE', 'UK', 'Windsor', 'Berkshire', NOW(), NOW()),
-       ('seed-student-4', 'Jessica James', 'jessica.james@autopilot.demo', '07700900008', $1, 'USER', true, 'FEMALE', 'UK', 'Maidenhead', 'Berkshire', NOW(), NOW())
-     ON CONFLICT (email) DO UPDATE SET
-       name = EXCLUDED.name,
-       phone = EXCLUDED.phone,
-       password = EXCLUDED.password,
-       role = EXCLUDED.role,
-       "isEmailVerified" = EXCLUDED."isEmailVerified",
-       gender = EXCLUDED.gender,
-       country = EXCLUDED.country,
-       city = EXCLUDED.city,
-       state = EXCLUDED.state,
-       "updatedAt" = NOW()`,
+       ('seed-student-4', 'Jessica James', 'jessica.james@autopilot.demo', '07700900008', $1, 'USER', true, 'FEMALE', 'UK', 'Maidenhead', 'Berkshire', NOW(), NOW())`,
     passwordHash
   );
 
