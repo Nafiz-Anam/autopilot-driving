@@ -52,7 +52,7 @@ Create `/home/driving/autopilot/docker-compose.traefik.yml`:
 ```yaml
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:latest
     container_name: traefik
     restart: unless-stopped
     command:

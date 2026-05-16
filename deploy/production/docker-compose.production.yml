@@ -79,7 +79,9 @@ services:
       - "traefik.http.services.autopilot-api-prod.loadbalancer.server.port=8008"
       - "traefik.http.routers.autopilot-api-prod-http.rule=Host(`api.driving.agiloit.store`)"
       - "traefik.http.routers.autopilot-api-prod-http.entrypoints=web"
-      - "traefik.http.routers.autopilot-api-prod-http.middlewares=redirect-to-https@file"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      - "traefik.http.routers.autopilot-api-prod-http.middlewares=redirect-to-https"
 
   frontend:
     image: ${FRONTEND_IMAGE}
@@ -113,7 +115,9 @@ services:
       - "traefik.http.services.autopilot-web-prod.loadbalancer.server.port=3008"
       - "traefik.http.routers.autopilot-web-prod-http.rule=Host(`driving.agiloit.store`)"
       - "traefik.http.routers.autopilot-web-prod-http.entrypoints=web"
-      - "traefik.http.routers.autopilot-web-prod-http.middlewares=redirect-to-https@file"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      - "traefik.http.routers.autopilot-web-prod-http.middlewares=redirect-to-https"
 
 volumes:
   postgres_prod_data:
