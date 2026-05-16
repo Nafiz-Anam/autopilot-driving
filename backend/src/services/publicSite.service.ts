@@ -529,6 +529,7 @@ interface ReviewsCache {
 const REVIEWS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 let reviewsCache: ReviewsCache | null = null;
 
+// TODO: endpoint is blocked until a valid GOOGLE_PLACE_ID is configured — frontend is using static demo reviews for now
 const getGoogleReviews = async (): Promise<{ reviews: GoogleReview[]; rating: number; totalReviews: number }> => {
   const apiKey = config.google.placesApiKey;
   const placeId = config.google.placeId;

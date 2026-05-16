@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Star } from "lucide-react";
-import { backendApiUrl } from "@/lib/backend-api";
+// TODO: re-enable dynamic import once a valid Google Place ID is configured
+// import { backendApiUrl } from "@/lib/backend-api";
 
 interface ReviewData {
   authorName: string;
@@ -188,24 +189,27 @@ function MarqueeRow({
 export function Testimonials() {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const [testimonials, setTestimonials] = useState<CardProps[]>(FALLBACK_TESTIMONIALS);
-  const [rating, setRating] = useState<number | null>(null);
-  const [totalReviews, setTotalReviews] = useState<number | null>(null);
+  // TODO: replace static data with live Google reviews once Place ID is confirmed working
+  // const [testimonials, setTestimonials] = useState<CardProps[]>(FALLBACK_TESTIMONIALS);
+  // const [rating, setRating] = useState<number | null>(null);
+  // const [totalReviews, setTotalReviews] = useState<number | null>(null);
+  const testimonials = FALLBACK_TESTIMONIALS;
 
-  useEffect(() => {
-    fetch(backendApiUrl("/public/reviews"))
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && json.data.reviews?.length > 0) {
-          setTestimonials(json.data.reviews.map(mapReviewToCard));
-          setRating(json.data.rating);
-          setTotalReviews(json.data.totalReviews);
-        }
-      })
-      .catch(() => {
-        // silently fall back to hardcoded testimonials
-      });
-  }, []);
+  // TODO: re-enable once Google Place ID issue is resolved — fetches live reviews + rating
+  // useEffect(() => {
+  //   fetch(backendApiUrl("/public/reviews"))
+  //     .then((res) => res.json())
+  //     .then((json) => {
+  //       if (json.success && json.data.reviews?.length > 0) {
+  //         setTestimonials(json.data.reviews.map(mapReviewToCard));
+  //         setRating(json.data.rating);
+  //         setTotalReviews(json.data.totalReviews);
+  //       }
+  //     })
+  //     .catch(() => {
+  //       // silently fall back to hardcoded testimonials
+  //     });
+  // }, []);
 
   const row2 = [...testimonials].reverse();
 
@@ -236,7 +240,8 @@ export function Testimonials() {
           >
             What Our Students Say
           </h2>
-          {rating !== null && totalReviews !== null && (
+          {/* TODO: re-enable dynamic rating badge once Google Place ID is working */}
+          {/* {rating !== null && totalReviews !== null && (
             <div className="flex items-center gap-2 mb-1">
               <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
@@ -246,7 +251,7 @@ export function Testimonials() {
               <span className="text-sm font-semibold text-brand-black">{rating.toFixed(1)}</span>
               <span className="text-sm text-brand-muted">({totalReviews} Google reviews)</span>
             </div>
-          )}
+          )} */}
         </motion.div>
       </div>
 
