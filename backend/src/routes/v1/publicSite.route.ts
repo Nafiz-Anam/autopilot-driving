@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.get('/areas', publicSiteController.getAreas);
 router.get('/instructors', publicSiteController.getInstructors);
+router.get('/pricing/categories', publicSiteController.getPricingCategories);
 router.post('/instructors/apply', publicSiteController.applyInstructor);
 router.post('/contact', publicSiteController.submitContact);
 router.post('/register', publicSiteController.register);

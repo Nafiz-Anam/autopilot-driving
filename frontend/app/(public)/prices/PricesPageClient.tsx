@@ -656,7 +656,7 @@ export default function PricesPageClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(backendApiUrl("/pricing/categories"), { cache: "no-store" })
+    fetch(backendApiUrl("/public/pricing/categories"), { cache: "no-store" })
       .then((r) => r.json())
       .then((d: { success?: boolean; data?: PublicPricingCategory[] }) => {
         if (d.success && Array.isArray(d.data)) setCats(d.data);

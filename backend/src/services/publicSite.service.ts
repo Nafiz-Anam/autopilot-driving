@@ -587,8 +587,54 @@ const getGoogleReviews = async (): Promise<{ reviews: GoogleReview[]; rating: nu
   return result;
 };
 
+
+const getPricingCategories = async () => {
+  const categories = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT id, "lessonType"::text AS "lessonType", slug, "displayName", description, "sortOrder", "isActive"
+     FROM "LessonPricingCategory"
+     WHERE "isActive" = true
+     ORDER BY "sortOrder" ASC`
+  );
+  const packages = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT id, "categoryId", slug, name, hours, lessons,
+            price::text AS price, "pricePerHour"::text AS "pricePerHour",
+            savings::text AS savings, "footerNote", badge, "isPopular", "sortOrder", "isActive"
+     FROM "LessonPricingPackage"
+     WHERE "isActive" = true
+     ORDER BY "sortOrder" ASC`
+  );
+
+  const data = categories.map(c => ({
+    id: c.id,
+    lessonType: c.lessonType,
+    slug: c.slug,
+    displayName: c.displayName,
+    description: c.description,
+    sortOrder: c.sortOrder,
+    packages: packages
+      .filter(p => p.categoryId === c.id)
+      .map(p => ({
+        id: p.id,
+        categoryId: p.categoryId,
+        slug: p.slug,
+        name: p.name,
+        hours: p.hours,
+        lessons: p.lessons,
+        price: parseFloat(p.price),
+        pricePerHour: p.pricePerHour ? parseFloat(p.pricePerHour) : null,
+        savings: p.savings ? parseFloat(p.savings) : null,
+        footerNote: p.footerNote,
+        badge: p.badge,
+        isPopular: p.isPopular,
+      })),
+  }));
+
+  return data;
+};
+
 export default {
   PublicSiteError,
+  getPricingCategories,
   getAreaCoverage,
   listActiveAreas,
   listInstructors,

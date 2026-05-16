@@ -98,6 +98,16 @@ const getGoogleReviews = catchAsync(async (_req: Request, res: Response) => {
   }
 });
 
+
+const getPricingCategories = catchAsync(async (_req: Request, res: Response) => {
+  try {
+    const data = await publicSiteService.getPricingCategories();
+    return res.send({ success: true, data });
+  } catch (error) {
+    return handlePublicSiteError(res, error);
+  }
+});
+
 export default {
   getAreas,
   getInstructors,
@@ -106,4 +116,5 @@ export default {
   register,
   getTheoryQuestions,
   getGoogleReviews,
+  getPricingCategories,
 };
