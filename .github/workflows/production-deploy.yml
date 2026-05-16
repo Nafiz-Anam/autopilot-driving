@@ -79,7 +79,7 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.frontend_repo }}:${{ steps.meta.outputs.tag }}
             ${{ steps.meta.outputs.frontend_repo }}:production
-          cache-from: type=gha,scope=frontend
+          no-cache: true
           cache-to: type=gha,scope=frontend,mode=max
 
   deploy:
