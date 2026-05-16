@@ -712,31 +712,48 @@ async function seedDrivingSchoolTables() {
   const passwordHash = await bcrypt.hash('Demo@1234', 10);
 
   await prisma.$executeRawUnsafe(
-    `INSERT INTO users (id, name, email, phone, password, role, "createdAt", "updatedAt")
+    `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", gender, country, city, state, "createdAt", "updatedAt")
      VALUES
-       ('seed-admin', 'Alice Admin', 'alice.admin@autopilot.demo', '07700900001', $1, 'ADMIN', NOW(), NOW()),
-       ('seed-instructor', 'Ian Instructor', 'ian.instructor@autopilot.demo', '07700900002', $1, 'USER', NOW(), NOW()),
-       ('seed-student', 'Sam Student', 'sam.student@autopilot.demo', '07700900003', $1, 'USER', NOW(), NOW())
+       ('seed-admin', 'Alice Admin', 'alice.admin@autopilot.demo', '07700900001', $1, 'ADMIN', true, 'FEMALE', 'UK', 'Slough', 'Berkshire', NOW(), NOW()),
+       ('seed-instructor-1', 'Ian Instructor', 'ian.instructor@autopilot.demo', '07700900002', $1, 'USER', true, 'MALE', 'UK', 'Slough', 'Berkshire', NOW(), NOW()),
+       ('seed-instructor-2', 'Emma Evans', 'emma.evans@autopilot.demo', '07700900004', $1, 'USER', true, 'FEMALE', 'UK', 'Reading', 'Berkshire', NOW(), NOW()),
+       ('seed-instructor-3', 'David Driver', 'david.driver@autopilot.demo', '07700900005', $1, 'USER', true, 'MALE', 'UK', 'Windsor', 'Berkshire', NOW(), NOW()),
+       ('seed-student-1', 'Sam Student', 'sam.student@autopilot.demo', '07700900003', $1, 'USER', true, 'MALE', 'UK', 'Slough', 'Berkshire', NOW(), NOW()),
+       ('seed-student-2', 'Lisa Learner', 'lisa.learner@autopilot.demo', '07700900006', $1, 'USER', true, 'FEMALE', 'UK', 'Reading', 'Berkshire', NOW(), NOW()),
+       ('seed-student-3', 'Tom Turner', 'tom.turner@autopilot.demo', '07700900007', $1, 'USER', true, 'MALE', 'UK', 'Windsor', 'Berkshire', NOW(), NOW()),
+       ('seed-student-4', 'Jessica James', 'jessica.james@autopilot.demo', '07700900008', $1, 'USER', true, 'FEMALE', 'UK', 'Maidenhead', 'Berkshire', NOW(), NOW())
      ON CONFLICT (email) DO UPDATE SET
        name = EXCLUDED.name,
        phone = EXCLUDED.phone,
        password = EXCLUDED.password,
        role = EXCLUDED.role,
+       "isEmailVerified" = EXCLUDED."isEmailVerified",
+       gender = EXCLUDED.gender,
+       country = EXCLUDED.country,
+       city = EXCLUDED.city,
+       state = EXCLUDED.state,
        "updatedAt" = NOW()`,
     passwordHash
   );
 
   if (await tableExists('Area')) {
     await prisma.$executeRawUnsafe(`
-      INSERT INTO "Area" (id, name, "postcodePrefix", description, "isActive")
+      INSERT INTO "Area" (id, name, "postcodePrefix", description, latitude, longitude, "isActive")
       VALUES
-        ('seed-area-sl1', 'Slough', 'SL1', 'Central Slough coverage', true),
-        ('seed-area-rg1', 'Reading', 'RG1', 'Reading town centre and nearby', true),
-        ('seed-area-sl4', 'Windsor', 'SL4', 'Windsor and Eton coverage', true)
+        ('seed-area-sl1', 'Slough', 'SL1', 'Central Slough coverage including High Street and surrounding areas', 51.5105, -0.5955, true),
+        ('seed-area-sl2', 'Slough South', 'SL2', 'Southern Slough including Langley', 51.4900, -0.5800, true),
+        ('seed-area-rg1', 'Reading Town Centre', 'RG1', 'Reading town centre and nearby suburbs', 51.4556, -0.9719, true),
+        ('seed-area-rg2', 'Reading South', 'RG2', 'South Reading including Caversham', 51.4300, -0.9600, true),
+        ('seed-area-sl4', 'Windsor', 'SL4', 'Windsor and Eton coverage including Old Windsor', 51.4769, -0.7675, true),
+        ('seed-area-sl5', 'Ascot', 'SL5', 'Ascot and surrounding areas', 51.4056, -0.6606, true),
+        ('seed-area-rg4', 'Henley-on-Thames', 'RG4', 'Henley and surrounding villages', 51.5344, -0.7639, true),
+        ('seed-area-sl3', 'Iver', 'SL3', 'Iver and surrounding areas', 51.5097, -0.5219, true)
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
         "postcodePrefix" = EXCLUDED."postcodePrefix",
         description = EXCLUDED.description,
+        latitude = EXCLUDED.latitude,
+        longitude = EXCLUDED.longitude,
         "isActive" = EXCLUDED."isActive"
     `);
   }
@@ -746,7 +763,9 @@ async function seedDrivingSchoolTables() {
       INSERT INTO "Instructor"
       (id, "userId", bio, "photoUrl", rating, "reviewCount", "yearsExp", transmission, areas, "pricePerHour", "isFemale", "isActive", "licenceNumber", "createdAt")
       VALUES
-      ('seed-inst-1', 'seed-instructor', 'DVSA-approved instructor with 8 years experience.', NULL, 4.9, 128, 8, ARRAY['manual','automatic'], ARRAY['SL1','RG1','SL4'], 42.00, false, true, 'LIC-AP-001', NOW())
+      ('seed-inst-1', 'seed-instructor-1', 'DVSA-approved instructor with 8 years experience in manual and automatic transmission. Patient and friendly approach to learning.', NULL, 4.9, 156, 8, ARRAY['manual','automatic'], ARRAY['SL1','SL2','RG1'], 42.00, false, true, 'LIC-AP-001', NOW()),
+      ('seed-inst-2', 'seed-instructor-2', 'Specialist in nervous learners and intensive courses. Female instructor available. 6 years of teaching experience.', NULL, 4.8, 134, 6, ARRAY['manual','automatic'], ARRAY['RG1','RG2','RG4'], 45.00, true, true, 'LIC-AP-002', NOW()),
+      ('seed-inst-3', 'seed-instructor-3', 'Expert in motorway and motorway simulation. Focuses on defensive driving techniques. 10+ years experience.', NULL, 4.7, 98, 10, ARRAY['automatic','manual'], ARRAY['SL1','SL4','SL5'], 48.00, false, true, 'LIC-AP-003', NOW())
       ON CONFLICT ("userId") DO UPDATE SET
         bio = EXCLUDED.bio,
         rating = EXCLUDED.rating,
@@ -765,11 +784,27 @@ async function seedDrivingSchoolTables() {
     await prisma.$executeRawUnsafe(`
       INSERT INTO "Availability" (id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable")
       VALUES
-        ('seed-av-1', 'seed-inst-1', 1, '09:00', '17:00', true),
-        ('seed-av-2', 'seed-inst-1', 2, '09:00', '17:00', true),
-        ('seed-av-3', 'seed-inst-1', 3, '09:00', '17:00', true),
-        ('seed-av-4', 'seed-inst-1', 4, '09:00', '17:00', true),
-        ('seed-av-5', 'seed-inst-1', 5, '09:00', '17:00', true)
+        -- Ian Instructor (seed-inst-1): Monday-Friday 9am-5pm
+        ('seed-av-1-1', 'seed-inst-1', 1, '09:00', '17:00', true),
+        ('seed-av-1-2', 'seed-inst-1', 2, '09:00', '17:00', true),
+        ('seed-av-1-3', 'seed-inst-1', 3, '09:00', '17:00', true),
+        ('seed-av-1-4', 'seed-inst-1', 4, '09:00', '17:00', true),
+        ('seed-av-1-5', 'seed-inst-1', 5, '09:00', '17:00', true),
+        ('seed-av-1-6', 'seed-inst-1', 6, '10:00', '14:00', true),
+        -- Emma Evans (seed-inst-2): Tuesday-Saturday, mornings and afternoons
+        ('seed-av-2-2', 'seed-inst-2', 2, '08:00', '12:00', true),
+        ('seed-av-2-3', 'seed-inst-2', 3, '14:00', '18:00', true),
+        ('seed-av-2-4', 'seed-inst-2', 4, '08:00', '12:00', true),
+        ('seed-av-2-5', 'seed-inst-2', 5, '14:00', '18:00', true),
+        ('seed-av-2-6', 'seed-inst-2', 6, '09:00', '17:00', true),
+        ('seed-av-2-7', 'seed-inst-2', 7, '10:00', '16:00', true),
+        -- David Driver (seed-inst-3): Weekdays afternoons and Saturday full day
+        ('seed-av-3-1', 'seed-inst-3', 1, '13:00', '19:00', true),
+        ('seed-av-3-2', 'seed-inst-3', 2, '13:00', '19:00', true),
+        ('seed-av-3-3', 'seed-inst-3', 3, '13:00', '19:00', true),
+        ('seed-av-3-4', 'seed-inst-3', 4, '13:00', '19:00', true),
+        ('seed-av-3-5', 'seed-inst-3', 5, '13:00', '19:00', true),
+        ('seed-av-3-6', 'seed-inst-3', 6, '08:00', '18:00', true)
       ON CONFLICT (id) DO NOTHING
     `);
   }
@@ -819,13 +854,20 @@ async function seedDrivingSchoolTables() {
       INSERT INTO "Coupon"
       (id, code, name, type, value, "maxDiscountAmount", "minOrderAmount", "startsAt", "endsAt", "maxRedemptions", "redemptionCount", "isActive", "createdAt", "updatedAt")
       VALUES
-        ('seed-coupon-welcome', 'WELCOME10', 'Welcome Discount', 'PERCENT', 10.00, 40.00, 80.00, NOW() - INTERVAL '1 day', NOW() + INTERVAL '180 day', 1000, 0, true, NOW(), NOW())
+        ('seed-coupon-welcome', 'WELCOME10', 'Welcome Discount', 'PERCENT', 10.00, 50.00, 100.00, NOW() - INTERVAL '1 day', NOW() + INTERVAL '180 day', 1000, 45, true, NOW(), NOW()),
+        ('seed-coupon-summer', 'SUMMER20', 'Summer Special', 'PERCENT', 20.00, 100.00, 200.00, NOW() - INTERVAL '7 day', NOW() + INTERVAL '60 day', 500, 128, true, NOW(), NOW()),
+        ('seed-coupon-intensive', 'INTENSIVE15', 'Intensive Course Discount', 'PERCENT', 15.00, 150.00, 500.00, NOW(), NOW() + INTERVAL '90 day', 300, 0, true, NOW(), NOW()),
+        ('seed-coupon-referral', 'REFER25', 'Referral Bonus', 'FIXED', 25.00, NULL, 0.00, NOW() - INTERVAL '30 day', NOW() + INTERVAL '365 day', 200, 67, true, NOW(), NOW()),
+        ('seed-coupon-block-manual', 'MANUAL5', 'Manual Block Discount', 'FIXED', 15.00, NULL, 350.00, NOW(), NOW() + INTERVAL '120 day', 100, 23, true, NOW(), NOW()),
+        ('seed-coupon-earlybird', 'EARLYBIRD30', 'Early Bird Special', 'PERCENT', 30.00, 200.00, 400.00, NOW(), NOW() + INTERVAL '14 day', 50, 12, true, NOW(), NOW()),
+        ('seed-coupon-expired', 'OLDCODE10', 'Expired Coupon', 'PERCENT', 10.00, 40.00, 100.00, NOW() - INTERVAL '90 day', NOW() - INTERVAL '30 day', 100, 85, false, NOW() - INTERVAL '35 day', NOW())
       ON CONFLICT (code) DO UPDATE SET
         name = EXCLUDED.name,
         type = EXCLUDED.type,
         value = EXCLUDED.value,
         "maxDiscountAmount" = EXCLUDED."maxDiscountAmount",
         "minOrderAmount" = EXCLUDED."minOrderAmount",
+        "startsAt" = EXCLUDED."startsAt",
         "endsAt" = EXCLUDED."endsAt",
         "isActive" = EXCLUDED."isActive",
         "updatedAt" = NOW()
@@ -837,7 +879,10 @@ async function seedDrivingSchoolTables() {
       INSERT INTO "GiftVoucher"
       (id, code, amount, balance, "isRedeemed", "senderName", "recipientName", "recipientEmail", message, "stripePaymentId", "expiresAt", "createdAt")
       VALUES
-        ('seed-gv-1', 'GIFT100', 100.00, 100.00, false, 'Alice Admin', 'Sam Student', 'sam.student@autopilot.demo', 'Happy driving!', NULL, NOW() + INTERVAL '365 day', NOW())
+        ('seed-gv-1', 'GIFT100', 100.00, 100.00, false, 'Alice Admin', 'Sam Student', 'sam.student@autopilot.demo', 'Happy driving! Good luck with your lessons.', NULL, NOW() + INTERVAL '365 day', NOW()),
+        ('seed-gv-2', 'GIFT150', 150.00, 75.50, false, 'John Doe', 'Lisa Learner', 'lisa.learner@autopilot.demo', 'Best of luck - you''ve got this!', 'stripe_pi_111111', NOW() + INTERVAL '365 day', NOW() - INTERVAL '30 day'),
+        ('seed-gv-3', 'GIFT200', 200.00, 0.00, true, 'Family Member', 'Tom Turner', 'tom.turner@autopilot.demo', 'Congratulations on learning to drive!', 'stripe_pi_222222', NOW() + INTERVAL '180 day', NOW() - INTERVAL '60 day'),
+        ('seed-gv-4', 'GIFT50', 50.00, 50.00, false, 'Margaret Pink', 'Jessica James', 'jessica.james@autopilot.demo', 'A little gift to help with your lessons.', NULL, NOW() + INTERVAL '365 day', NOW() - INTERVAL '5 day')
       ON CONFLICT (code) DO UPDATE SET
         amount = EXCLUDED.amount,
         balance = EXCLUDED.balance,
@@ -851,8 +896,17 @@ async function seedDrivingSchoolTables() {
       INSERT INTO "Booking"
       (id, reference, "studentId", "instructorId", "lessonType", transmission, "scheduledAt", "durationMins", status, "paymentStatus", "stripePaymentId", "totalAmount", "pricingPackageId", "voucherCode", "couponCode", "discountAmount", notes, "createdAt", "updatedAt")
       VALUES
-        ('seed-booking-1', 'AP-000001', 'seed-student', 'seed-inst-1', 'MANUAL', 'manual', NOW() + INTERVAL '2 day', 120, 'CONFIRMED', 'PAID', NULL, 82.00, 'seed-pkg-manual-block10', NULL, 'WELCOME10', 8.00, 'Seeded confirmed booking', NOW(), NOW()),
-        ('seed-booking-2', 'AP-000002', 'seed-student', 'seed-inst-1', 'AUTOMATIC', 'automatic', NOW() + INTERVAL '7 day', 60, 'PENDING', 'UNPAID', NULL, 47.00, 'seed-pkg-auto-single', NULL, NULL, NULL, 'Seeded pending booking', NOW(), NOW())
+        -- Confirmed bookings
+        ('seed-booking-1', 'AP-000001', 'seed-student-1', 'seed-inst-1', 'MANUAL', 'manual', NOW() + INTERVAL '2 day', 120, 'CONFIRMED', 'PAID', NULL, 82.00, 'seed-pkg-manual-block10', NULL, 'WELCOME10', 8.00, 'First lesson confirmed', NOW(), NOW()),
+        ('seed-booking-2', 'AP-000002', 'seed-student-2', 'seed-inst-2', 'AUTOMATIC', 'automatic', NOW() + INTERVAL '5 day', 60, 'CONFIRMED', 'PAID', NULL, 45.00, 'seed-pkg-auto-single', NULL, NULL, NULL, 'Single automatic lesson', NOW(), NOW()),
+        -- Pending bookings (unpaid)
+        ('seed-booking-3', 'AP-000003', 'seed-student-1', 'seed-inst-1', 'AUTOMATIC', 'automatic', NOW() + INTERVAL '7 day', 60, 'PENDING', 'UNPAID', NULL, 47.00, 'seed-pkg-auto-single', NULL, NULL, NULL, 'Awaiting payment', NOW(), NOW()),
+        ('seed-booking-4', 'AP-000004', 'seed-student-3', 'seed-inst-3', 'INTENSIVE', 'manual', NOW() + INTERVAL '10 day', 540, 'PENDING', 'UNPAID', NULL, 760.00, 'seed-pkg-intensive-20', NULL, NULL, NULL, 'Intensive 20 hours - payment pending', NOW(), NOW()),
+        -- Completed bookings
+        ('seed-booking-5', 'AP-000005', 'seed-student-2', 'seed-inst-2', 'MANUAL', 'manual', NOW() - INTERVAL '3 day', 60, 'COMPLETED', 'PAID', 'stripe_pi_123456', 42.00, 'seed-pkg-manual-single', NULL, NULL, NULL, 'Lesson completed successfully', NOW() - INTERVAL '5 day', NOW() - INTERVAL '3 day'),
+        ('seed-booking-6', 'AP-000006', 'seed-student-4', 'seed-inst-1', 'MANUAL', 'manual', NOW() - INTERVAL '1 day', 60, 'COMPLETED', 'PAID', NULL, 42.00, 'seed-pkg-manual-single', NULL, NULL, NULL, 'Great progress today!', NOW() - INTERVAL '3 day', NOW() - INTERVAL '1 day'),
+        -- Cancelled bookings
+        ('seed-booking-7', 'AP-000007', 'seed-student-3', 'seed-inst-2', 'THEORY', 'manual', NOW() + INTERVAL '15 day', 60, 'CANCELLED', 'REFUNDED', NULL, 29.99, 'seed-pkg-theory', NULL, NULL, NULL, 'Student cancelled due to illness', NOW() - INTERVAL '2 day', NOW() - INTERVAL '1 day')
       ON CONFLICT (id) DO UPDATE SET
         status = EXCLUDED.status,
         "paymentStatus" = EXCLUDED."paymentStatus",
@@ -865,8 +919,21 @@ async function seedDrivingSchoolTables() {
     await prisma.$executeRawUnsafe(`
       INSERT INTO "TheoryQuestion" (id, category, question, options, "correctIndex", explanation, "imageUrl")
       VALUES
-        ('seed-theory-1', 'Road Signs', 'What does a red circle road sign usually indicate?', '["Mandatory instruction","Warning","Tourist information","Motorway"]'::jsonb, 0, 'Red circles usually show prohibitions or mandatory instructions.', NULL),
-        ('seed-theory-2', 'Hazard Awareness', 'When should you use mirrors?', '["Only before turning","Only at junctions","Regularly throughout driving","Never while moving"]'::jsonb, 2, 'Mirror checks should be frequent and planned.', NULL)
+        ('seed-theory-1', 'Road Signs', 'What does a red circle road sign usually indicate?', '["Prohibition or mandatory instruction","Warning","Tourist information","Motorway ahead"]'::jsonb, 0, 'Red circles with a white background indicate prohibitions. A red circle with a blue background indicates a mandatory instruction.', NULL),
+        ('seed-theory-2', 'Hazard Awareness', 'When should you use mirrors?', '["Only before turning","Only at junctions","Regularly throughout driving","Never while moving"]'::jsonb, 2, 'Mirror checks should be frequent and planned. A safe driver looks in mirrors every 5-10 seconds.', NULL),
+        ('seed-theory-3', 'Speed Limits', 'What is the national speed limit for cars on a single carriageway road?', '["40 mph","50 mph","60 mph","70 mph"]'::jsonb, 2, 'The national speed limit for cars on a single carriageway is 60 mph unless otherwise indicated.', NULL),
+        ('seed-theory-4', 'Following Distances', 'What is the minimum stopping distance at 50 mph on a dry road?', '["38 metres","53 metres","73 metres","96 metres"]'::jsonb, 2, 'At 50 mph, the stopping distance is 53 metres (3 seconds rule applies).', NULL),
+        ('seed-theory-5', 'Traffic Lights', 'What should you do when traffic lights turn amber?', '["Speed up to cross","Prepare to stop","Stop immediately","Ignore and continue"]'::jsonb, 1, 'When lights turn amber, you should prepare to stop unless you are too close to do so safely.', NULL),
+        ('seed-theory-6', 'Parking', 'Where is it illegal to park?', '["On the pavement","Near a junction","In a disabled bay without permit","All of the above"]'::jsonb, 3, 'It is illegal to park on pavements, near junctions, or in disabled bays without a valid permit.', NULL),
+        ('seed-theory-7', 'Pedestrians', 'What should you do if you see a pedestrian crossing ahead?', '["Slow down and be prepared to stop","Maintain your speed","Speed up to pass first","Sound horn"]'::jsonb, 0, 'You should always slow down and be prepared to stop for pedestrians at crossings.', NULL),
+        ('seed-theory-8', 'Road Conditions', 'In wet weather, how should you increase your following distance?', '["Double it","Triple it","Maintain the same distance","No distance needed"]'::jsonb, 0, 'In wet weather, you should double your normal following distance as wet roads reduce grip.', NULL),
+        ('seed-theory-9', 'Motorways', 'What is the minimum speed limit on a motorway for cars?', '["No minimum","30 mph","40 mph","50 mph"]'::jsonb, 0, 'There is no official minimum speed limit on a motorway, but you should be able to maintain a reasonable speed.', NULL),
+        ('seed-theory-10', 'Hazards', 'What should you do if you see a hazard ahead?', '["Honk your horn","Flash your headlights","Slow down and assess","Speed up"]'::jsonb, 2, 'You should slow down and fully assess the hazard to decide the appropriate action.', NULL),
+        ('seed-theory-11', 'Motorcyclists', 'Why should you give extra space to motorcyclists?', '["They need more road space","They are harder to see and can be unstable","They have priority","No extra space needed"]'::jsonb, 1, 'Motorcyclists are harder to spot and more vulnerable. They can also become unstable if you pass too close.', NULL),
+        ('seed-theory-12', 'Tiredness', 'What is the best way to stay alert when driving?', '["Take regular breaks","Drink coffee","Drive faster","Ignore fatigue"]'::jsonb, 0, 'Taking regular breaks is the best way to combat driver fatigue. A 15-minute break every 2 hours is recommended.', NULL),
+        ('seed-theory-13', 'Fog', 'What should you do in dense fog?', '["Use full beam headlights","Use dipped beam and fog lights","Slow down","All of the above except A"]'::jsonb, 3, 'Use dipped beam and fog lights, and slow down significantly. Full beam reflects off fog and reduces visibility.', NULL),
+        ('seed-theory-14', 'Braking', 'What should you do if your brakes fail?', '["Use the handbrake gradually","Sound the horn","Flash headlights","Press the brake pedal harder"]'::jsonb, 0, 'If brakes fail, use the handbrake gradually while sounding the horn to alert other users.', NULL),
+        ('seed-theory-15', 'Accidents', 'What should you do at the scene of an accident?', '["Call emergency services","Move casualty if trained","Gather witness details","All of the above"]'::jsonb, 3, 'Call emergency services, help casualties if trained, and gather witness information for reports.', NULL)
       ON CONFLICT (id) DO UPDATE SET
         question = EXCLUDED.question,
         options = EXCLUDED.options,
@@ -879,8 +946,29 @@ async function seedDrivingSchoolTables() {
     await prisma.$executeRawUnsafe(`
       INSERT INTO "StudentTheoryProgress" (id, "studentId", "questionId", "isCorrect", "attemptedAt")
       VALUES
-        ('seed-progress-1', 'seed-student', 'seed-theory-1', true, NOW() - INTERVAL '1 day'),
-        ('seed-progress-2', 'seed-student', 'seed-theory-2', false, NOW() - INTERVAL '12 hours')
+        -- Sam Student (seed-student-1) progress
+        ('seed-progress-1-1', 'seed-student-1', 'seed-theory-1', true, NOW() - INTERVAL '5 day'),
+        ('seed-progress-1-2', 'seed-student-1', 'seed-theory-2', true, NOW() - INTERVAL '5 day'),
+        ('seed-progress-1-3', 'seed-student-1', 'seed-theory-3', false, NOW() - INTERVAL '4 day'),
+        ('seed-progress-1-4', 'seed-student-1', 'seed-theory-4', true, NOW() - INTERVAL '4 day'),
+        ('seed-progress-1-5', 'seed-student-1', 'seed-theory-5', true, NOW() - INTERVAL '3 day'),
+        -- Lisa Learner (seed-student-2) progress
+        ('seed-progress-2-1', 'seed-student-2', 'seed-theory-1', true, NOW() - INTERVAL '3 day'),
+        ('seed-progress-2-2', 'seed-student-2', 'seed-theory-2', false, NOW() - INTERVAL '2 day'),
+        ('seed-progress-2-3', 'seed-student-2', 'seed-theory-3', true, NOW() - INTERVAL '2 day'),
+        ('seed-progress-2-4', 'seed-student-2', 'seed-theory-6', true, NOW() - INTERVAL '1 day'),
+        -- Tom Turner (seed-student-3) progress
+        ('seed-progress-3-1', 'seed-student-3', 'seed-theory-1', true, NOW() - INTERVAL '6 day'),
+        ('seed-progress-3-2', 'seed-student-3', 'seed-theory-2', true, NOW() - INTERVAL '6 day'),
+        ('seed-progress-3-3', 'seed-student-3', 'seed-theory-5', false, NOW() - INTERVAL '5 day'),
+        ('seed-progress-3-4', 'seed-student-3', 'seed-theory-7', true, NOW() - INTERVAL '4 day'),
+        ('seed-progress-3-5', 'seed-student-3', 'seed-theory-8', true, NOW() - INTERVAL '3 day'),
+        ('seed-progress-3-6', 'seed-student-3', 'seed-theory-9', false, NOW() - INTERVAL '2 day'),
+        -- Jessica James (seed-student-4) progress
+        ('seed-progress-4-1', 'seed-student-4', 'seed-theory-1', true, NOW() - INTERVAL '2 day'),
+        ('seed-progress-4-2', 'seed-student-4', 'seed-theory-4', true, NOW() - INTERVAL '2 day'),
+        ('seed-progress-4-3', 'seed-student-4', 'seed-theory-11', true, NOW() - INTERVAL '1 day'),
+        ('seed-progress-4-4', 'seed-student-4', 'seed-theory-12', true, NOW() - INTERVAL '1 day')
       ON CONFLICT (id) DO NOTHING
     `);
   }
@@ -889,7 +977,11 @@ async function seedDrivingSchoolTables() {
     await prisma.$executeRawUnsafe(`
       INSERT INTO "ContactSubmission" (id, name, phone, postcode, "enquiryType", "callTime", message, "createdAt")
       VALUES
-        ('seed-contact-1', 'John Doe', '07700111222', 'SL1 1AA', 'Lesson enquiry', 'Evening', 'Looking to start manual lessons next week.', NOW() - INTERVAL '2 day')
+        ('seed-contact-1', 'John Doe', '07700111222', 'SL1 1AA', 'Lesson enquiry', 'Evening', 'Looking to start manual lessons next week.', NOW() - INTERVAL '2 day'),
+        ('seed-contact-2', 'Sarah Smith', '07700222333', 'RG1 3BB', 'Gift voucher', 'Any time', 'Would like to purchase a gift voucher for my son.', NOW() - INTERVAL '1 day'),
+        ('seed-contact-3', 'Mike Johnson', '07700444555', 'SL4 1AA', 'Instructor enquiry', 'Afternoon', 'Interested in male instructor for intensive course.', NOW() - INTERVAL '5 hour'),
+        ('seed-contact-4', 'Emma Wilson', '07700555666', 'SL2 2AA', 'Lesson enquiry', 'Morning', 'Need manual lessons, female instructor preferred.', NOW() - INTERVAL '12 hour'),
+        ('seed-contact-5', 'Robert Brown', '07700666777', 'RG2 4AA', 'General enquiry', 'Evening', 'What areas do you cover?', NOW() - INTERVAL '1 hour')
       ON CONFLICT (id) DO NOTHING
     `);
   }
@@ -899,7 +991,10 @@ async function seedDrivingSchoolTables() {
       INSERT INTO "InstructorApplication"
       (id, "fullName", email, phone, postcode, "hasFullLicence", "yearsExperience", "trainingStarted", message, status, "createdAt")
       VALUES
-        ('seed-app-1', 'Nora Trainer', 'nora.trainer@autopilot.demo', '07700333444', 'RG1 2BB', true, '5+', true, 'Interested in joining as a part-time instructor.', 'pending', NOW() - INTERVAL '3 day')
+        ('seed-app-1', 'Nora Trainer', 'nora.trainer@autopilot.demo', '07700333444', 'RG1 2BB', true, '5+', true, 'Interested in joining as a part-time instructor. Available weekends.', 'pending', NOW() - INTERVAL '3 day'),
+        ('seed-app-2', 'Mark Peterson', 'mark.peterson@email.com', '07700444555', 'SL1 4AA', true, '3+', true, 'Former ADI, looking to return to instruction. Flexible hours.', 'pending', NOW() - INTERVAL '1 day'),
+        ('seed-app-3', 'Caroline Hughes', 'caroline.hughes@email.com', '07700555666', 'RG4 5BB', true, '7+', true, 'Specialist in nervous learners and intensive training.', 'approved', NOW() - INTERVAL '20 day'),
+        ('seed-app-4', 'Patrick O''Brien', 'patrick.obrien@email.com', '07700666777', 'SL5 2AA', false, '1+', false, 'Currently training to become an ADI. Hoping to join next year.', 'pending', NOW() - INTERVAL '5 day')
       ON CONFLICT (id) DO NOTHING
     `);
   }
