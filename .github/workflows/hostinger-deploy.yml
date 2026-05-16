@@ -5,15 +5,7 @@
 name: Hostinger Deploy (DEPRECATED)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/hostinger-deploy.yml"
-      - "docker-compose.hostinger.yml"
-      - "deploy/nginx/**"
-      - "backend/**"
-      - "frontend/**"
+  # Disabled: Use production-deploy.yml instead
   workflow_dispatch:
 
 concurrency:
