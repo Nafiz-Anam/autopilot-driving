@@ -216,20 +216,20 @@ export default function AreasPageClient() {
       <AreaCards areas={areas} />
 
       {/* Map Section */}
-      <section className="py-16 bg-brand-surface px-4">
+      <section className="py-16 lg:py-24 bg-brand-surface px-4 relative z-10">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8">
             <h2
-              className="text-3xl font-bold text-brand-black"
+              className="text-3xl lg:text-4xl font-bold text-brand-black mb-3"
               style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
             >
               Find Us on the Map
             </h2>
-            <p className="text-brand-muted mt-3">
+            <p className="text-brand-muted mt-3 max-w-2xl mx-auto">
               Each pin marks one of our active lesson coverage locations.
             </p>
           </div>
-          <div className="flex flex-wrap justify-center gap-2 mb-5">
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
             {areas.map((area) => (
               <span
                 key={`map-pin-${area.id}`}
@@ -240,7 +240,7 @@ export default function AreasPageClient() {
               </span>
             ))}
           </div>
-          <div className="rounded-2xl overflow-hidden shadow-lg border border-brand-border">
+          <div className="relative rounded-2xl overflow-hidden shadow-lg border border-brand-border bg-white">
             <CoverageLeafletMap areas={areas} />
           </div>
         </div>
