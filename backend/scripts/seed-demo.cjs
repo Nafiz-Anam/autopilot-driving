@@ -722,9 +722,8 @@ async function seedDrivingSchoolTables() {
        ('seed-student-2', 'Lisa Learner', 'lisa.learner@autopilot.demo', '07700900006', $1, 'USER', true, 'FEMALE', 'UK', 'Reading', 'Berkshire', NOW(), NOW()),
        ('seed-student-3', 'Tom Turner', 'tom.turner@autopilot.demo', '07700900007', $1, 'USER', true, 'MALE', 'UK', 'Windsor', 'Berkshire', NOW(), NOW()),
        ('seed-student-4', 'Jessica James', 'jessica.james@autopilot.demo', '07700900008', $1, 'USER', true, 'FEMALE', 'UK', 'Maidenhead', 'Berkshire', NOW(), NOW())
-     ON CONFLICT (id) DO UPDATE SET
+     ON CONFLICT (email) DO UPDATE SET
        name = EXCLUDED.name,
-       email = EXCLUDED.email,
        phone = EXCLUDED.phone,
        password = EXCLUDED.password,
        role = EXCLUDED.role,
