@@ -1,4 +1,8 @@
-name: Hostinger Deploy
+# DEPRECATED: This workflow is no longer in use.
+# Use .github/workflows/production-deploy.yml instead for deployments to the new VPS.
+# This file is kept for reference only and can be safely deleted.
+
+name: Hostinger Deploy (DEPRECATED)
 
 on:
   push:

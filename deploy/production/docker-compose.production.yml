@@ -1,0 +1,127 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: autopilot_prod_db
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - autopilot-prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: autopilot_prod_redis
+    restart: unless-stopped
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - autopilot-prod
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    image: ${BACKEND_IMAGE}
+    container_name: autopilot_prod_backend
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 8008
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
+      CLIENT_URL: ${NEXT_PUBLIC_APP_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRATION_MINUTES: ${JWT_ACCESS_EXPIRATION_MINUTES:-15}
+      JWT_REFRESH_EXPIRATION_DAYS: ${JWT_REFRESH_EXPIRATION_DAYS:-7}
+      JWT_RESET_PASSWORD_EXPIRATION_MINUTES: ${JWT_RESET_PASSWORD_EXPIRATION_MINUTES:-10}
+      JWT_VERIFY_EMAIL_EXPIRATION_MINUTES: ${JWT_VERIFY_EMAIL_EXPIRATION_MINUTES:-10}
+      NEXTAUTH_BRIDGE_SECRET: ${NEXTAUTH_BRIDGE_SECRET}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      GOOGLE_PLACE_ID: ${GOOGLE_PLACE_ID:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - autopilot-prod
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.autopilot-api-prod.rule=Host(`api.driving.agiloit.store`)"
+      - "traefik.http.routers.autopilot-api-prod.entrypoints=websecure"
+      - "traefik.http.routers.autopilot-api-prod.tls.certresolver=le"
+      - "traefik.http.routers.autopilot-api-prod.service=autopilot-api-prod"
+      - "traefik.http.services.autopilot-api-prod.loadbalancer.server.port=8008"
+      - "traefik.http.routers.autopilot-api-prod-http.rule=Host(`api.driving.agiloit.store`)"
+      - "traefik.http.routers.autopilot-api-prod-http.entrypoints=web"
+      - "traefik.http.routers.autopilot-api-prod-http.middlewares=redirect-to-https@file"
+
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    container_name: autopilot_prod_frontend
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 3008
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      NEXT_PUBLIC_BACKEND_API_BASE_URL: ${NEXT_PUBLIC_BACKEND_API_BASE_URL}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_BRIDGE_SECRET: ${NEXTAUTH_BRIDGE_SECRET}
+      AUTH_TRUST_HOST: "true"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - autopilot-prod
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.autopilot-web-prod.rule=Host(`driving.agiloit.store`)"
+      - "traefik.http.routers.autopilot-web-prod.entrypoints=websecure"
+      - "traefik.http.routers.autopilot-web-prod.tls.certresolver=le"
+      - "traefik.http.routers.autopilot-web-prod.service=autopilot-web-prod"
+      - "traefik.http.services.autopilot-web-prod.loadbalancer.server.port=3008"
+      - "traefik.http.routers.autopilot-web-prod-http.rule=Host(`driving.agiloit.store`)"
+      - "traefik.http.routers.autopilot-web-prod-http.entrypoints=web"
+      - "traefik.http.routers.autopilot-web-prod-http.middlewares=redirect-to-https@file"
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+
+networks:
+  autopilot-prod:
+    name: autopilot-prod
+    driver: bridge
+  web:
+    external: true
