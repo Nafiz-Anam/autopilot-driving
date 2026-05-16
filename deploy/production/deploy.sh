@@ -17,5 +17,8 @@ docker network inspect web >/dev/null 2>&1 || docker network create web
 docker compose --env-file .env.production -f docker-compose.production.yml pull
 docker compose --env-file .env.production -f docker-compose.production.yml up -d --remove-orphans
 
+# Ensure Traefik reverse proxy is running (required for SSL/TLS and routing)
+docker compose -f docker-compose.traefik.yml up -d
+
 # Trim dangling images to keep disk usage in check.
 docker image prune -f >/dev/null || true
