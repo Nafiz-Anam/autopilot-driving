@@ -766,7 +766,7 @@ async function seedDrivingSchoolTables() {
       ('seed-inst-1', 'seed-instructor-1', 'DVSA-approved instructor with 8 years experience in manual and automatic transmission. Patient and friendly approach to learning.', NULL, 4.9, 156, 8, ARRAY['manual','automatic'], ARRAY['SL1','SL2','RG1'], 42.00, false, true, 'LIC-AP-001', NOW()),
       ('seed-inst-2', 'seed-instructor-2', 'Specialist in nervous learners and intensive courses. Female instructor available. 6 years of teaching experience.', NULL, 4.8, 134, 6, ARRAY['manual','automatic'], ARRAY['RG1','RG2','RG4'], 45.00, true, true, 'LIC-AP-002', NOW()),
       ('seed-inst-3', 'seed-instructor-3', 'Expert in motorway and motorway simulation. Focuses on defensive driving techniques. 10+ years experience.', NULL, 4.7, 98, 10, ARRAY['automatic','manual'], ARRAY['SL1','SL4','SL5'], 48.00, false, true, 'LIC-AP-003', NOW())
-      ON CONFLICT ("userId") DO UPDATE SET
+      ON CONFLICT (id) DO UPDATE SET
         bio = EXCLUDED.bio,
         rating = EXCLUDED.rating,
         "reviewCount" = EXCLUDED."reviewCount",
