@@ -16,6 +16,8 @@ const learnLinks = [
   { label: "Female Instructors", href: "/learn-to-drive/female-instructors" },
   { label: "Pass Plus", href: "/learn-to-drive/pass-plus" },
   { label: "Theory Training", href: "/learn-to-drive/theory-training" },
+  { label: "Mock Test", href: "/learn-to-drive/mock-test" },
+  { label: "Motorway", href: "/learn-to-drive/motorway" },
 ];
 
 const navLinks = [
