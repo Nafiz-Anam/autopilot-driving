@@ -1,6 +1,6 @@
 export type Role = "STUDENT" | "INSTRUCTOR" | "ADMIN";
 
-export type LessonType = "MANUAL" | "AUTOMATIC" | "INTENSIVE" | "REFRESHER" | "PASS_PLUS" | "THEORY";
+export type LessonType = "MANUAL" | "AUTOMATIC" | "INTENSIVE" | "REFRESHER" | "PASS_PLUS" | "THEORY" | "MOTORWAY" | "MOCK_TEST";
 
 export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
 

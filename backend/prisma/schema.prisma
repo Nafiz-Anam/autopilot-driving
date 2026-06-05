@@ -336,6 +336,10 @@ enum DrivingLessonType {
   AUTOMATIC
   INTENSIVE
   THEORY
+  REFRESHER
+  PASS_PLUS
+  MOTORWAY
+  MOCK_TEST
 
   @@map("LessonType")
 }

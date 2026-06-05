@@ -4,5 +4,9 @@
       "Bash(DATABASE_URL=\"postgresql://postgres:password@localhost:5432/autopilot_db\" pnpm exec prisma generate)",
       "Bash(npx tsc *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "notion"
+  ],
+  "enableAllProjectMcpServers": true
 }

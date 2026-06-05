@@ -19,11 +19,16 @@ async function tableExists(tableName) {
 async function ensureDrivingSchoolSchema() {
   await prisma.$executeRawUnsafe(`
     DO $$ BEGIN
-      CREATE TYPE "LessonType" AS ENUM ('MANUAL', 'AUTOMATIC', 'INTENSIVE', 'THEORY');
+      CREATE TYPE "LessonType" AS ENUM ('MANUAL', 'AUTOMATIC', 'INTENSIVE', 'THEORY', 'REFRESHER', 'PASS_PLUS', 'MOTORWAY', 'MOCK_TEST');
     EXCEPTION
       WHEN duplicate_object THEN NULL;
     END $$;
   `);
+  // Add new enum values to existing DB (idempotent)
+  await prisma.$executeRawUnsafe(`ALTER TYPE "LessonType" ADD VALUE IF NOT EXISTS 'REFRESHER'`);
+  await prisma.$executeRawUnsafe(`ALTER TYPE "LessonType" ADD VALUE IF NOT EXISTS 'PASS_PLUS'`);
+  await prisma.$executeRawUnsafe(`ALTER TYPE "LessonType" ADD VALUE IF NOT EXISTS 'MOTORWAY'`);
+  await prisma.$executeRawUnsafe(`ALTER TYPE "LessonType" ADD VALUE IF NOT EXISTS 'MOCK_TEST'`);
   await prisma.$executeRawUnsafe(`
     DO $$ BEGIN
       CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED');
@@ -805,10 +810,14 @@ async function seedDrivingSchoolTables() {
     await prisma.$executeRawUnsafe(`
       INSERT INTO "LessonPricingCategory" (id, "lessonType", slug, "displayName", description, "sortOrder", "isActive", "createdAt", "updatedAt")
       VALUES
-        ('seed-cat-manual', 'MANUAL', 'manual', 'Manual Driving Lessons', 'Learn with manual transmission', 1, true, NOW(), NOW()),
-        ('seed-cat-auto', 'AUTOMATIC', 'automatic', 'Automatic Driving Lessons', 'Learn with automatic transmission', 2, true, NOW(), NOW()),
-        ('seed-cat-intensive', 'INTENSIVE', 'intensive', 'Intensive Courses', 'Fast-track intensive course options', 3, true, NOW(), NOW()),
-        ('seed-cat-theory', 'THEORY', 'theory', 'Theory Training', 'DVSA theory prep package', 4, true, NOW(), NOW())
+        ('seed-cat-manual',     'MANUAL',     'manual',            'Manual Driving Lessons',  'Learn with manual transmission',        1, true, NOW(), NOW()),
+        ('seed-cat-auto',       'AUTOMATIC',  'automatic',         'Automatic Driving Lessons','Learn with automatic transmission',      2, true, NOW(), NOW()),
+        ('seed-cat-intensive',  'INTENSIVE',  'intensive',         'Intensive Courses',        'Fast-track intensive course options',    3, true, NOW(), NOW()),
+        ('seed-cat-theory',     'THEORY',     'theory',            'Theory Training',          'DVSA theory prep package',              4, true, NOW(), NOW()),
+        ('seed-cat-refresher',  'REFRESHER',  'refresher-lessons', 'Refresher Lessons',        'Back behind the wheel after a break',   5, true, NOW(), NOW()),
+        ('seed-cat-pass-plus',  'PASS_PLUS',  'pass-plus',         'Pass Plus',                'Advanced post-test training course',    6, true, NOW(), NOW()),
+        ('seed-cat-motorway',   'MOTORWAY',   'motorway-lessons',  'Motorway Lessons',         'Safe motorway driving with an ADI',     7, true, NOW(), NOW()),
+        ('seed-cat-mock-test',  'MOCK_TEST',  'mock-test',         'Mock Test',                'Full mock driving test session',        8, true, NOW(), NOW())
       ON CONFLICT ("lessonType") DO UPDATE SET
         slug = EXCLUDED.slug,
         "displayName" = EXCLUDED."displayName",
@@ -824,13 +833,20 @@ async function seedDrivingSchoolTables() {
       INSERT INTO "LessonPricingPackage"
       (id, "categoryId", slug, name, hours, lessons, price, "pricePerHour", savings, "footerNote", badge, "isPopular", "sortOrder", "isActive", "createdAt", "updatedAt")
       VALUES
-        ('seed-pkg-manual-single', 'seed-cat-manual', 'single', 'Single Manual Lesson', 1, 1, 45.00, 45.00, NULL, 'Pay as you go', NULL, false, 1, true, NOW(), NOW()),
-        ('seed-pkg-manual-block10', 'seed-cat-manual', 'block10', 'Manual 10 Hours', 10, 10, 410.00, 41.00, 40.00, 'Best for new starters', 'Popular', true, 2, true, NOW(), NOW()),
-        ('seed-pkg-auto-single', 'seed-cat-auto', 'single', 'Single Automatic Lesson', 1, 1, 47.00, 47.00, NULL, 'Pay as you go', NULL, false, 1, true, NOW(), NOW()),
-        ('seed-pkg-auto-block10', 'seed-cat-auto', 'block10', 'Automatic 10 Hours', 10, 10, 430.00, 43.00, 40.00, 'Flexible scheduling', NULL, false, 2, true, NOW(), NOW()),
-        ('seed-pkg-intensive-20', 'seed-cat-intensive', 'intensive-20', 'Intensive 20 Hours', 20, 20, 760.00, 38.00, 140.00, 'Pass faster with focused blocks', 'Best Value', true, 1, true, NOW(), NOW()),
-        ('seed-pkg-intensive-30', 'seed-cat-intensive', 'intensive-30', 'Intensive 30 Hours', 30, 30, 1110.00, 37.00, 240.00, 'Ideal for beginners', NULL, false, 2, true, NOW(), NOW()),
-        ('seed-pkg-theory', 'seed-cat-theory', 'theory-access', 'Theory Access', 1, 1, 29.99, 29.99, NULL, 'One-time payment', NULL, false, 1, true, NOW(), NOW())
+        ('seed-pkg-manual-single',   'seed-cat-manual',    'single',      'Single Manual Lesson',   1,  1,  45.00,  45.00, NULL,   'Pay as you go',             NULL,          false, 1, true, NOW(), NOW()),
+        ('seed-pkg-manual-block10',  'seed-cat-manual',    'block10',     'Manual 10 Hours',        10, 10, 410.00, 41.00, 40.00,  'Best for new starters',     'Popular',     true,  2, true, NOW(), NOW()),
+        ('seed-pkg-auto-single',     'seed-cat-auto',      'single',      'Single Automatic Lesson',1,  1,  47.00,  47.00, NULL,   'Pay as you go',             NULL,          false, 1, true, NOW(), NOW()),
+        ('seed-pkg-auto-block10',    'seed-cat-auto',      'block10',     'Automatic 10 Hours',     10, 10, 430.00, 43.00, 40.00,  'Flexible scheduling',       NULL,          false, 2, true, NOW(), NOW()),
+        ('seed-pkg-intensive-20',    'seed-cat-intensive', 'intensive-20','Intensive 20 Hours',     20, 20, 760.00, 38.00, 140.00, 'Pass faster with focused blocks','Best Value',true, 1, true, NOW(), NOW()),
+        ('seed-pkg-intensive-30',    'seed-cat-intensive', 'intensive-30','Intensive 30 Hours',     30, 30, 1110.00,37.00, 240.00, 'Ideal for beginners',       NULL,          false, 2, true, NOW(), NOW()),
+        ('seed-pkg-theory',          'seed-cat-theory',    'theory-access','Theory Access',          1,  1,  29.99,  29.99, NULL,   'One-time payment',          NULL,          false, 1, true, NOW(), NOW()),
+        ('seed-pkg-refresher-single','seed-cat-refresher', 'single',      'Single Refresher',       1,  1,  47.00,  47.00, NULL,   'Pay as you go',             NULL,          false, 1, true, NOW(), NOW()),
+        ('seed-pkg-refresher-block5','seed-cat-refresher', 'block5',      'Refresher 5 Hours',      5,  5,  215.00, 43.00, 20.00,  'Get your confidence back',  'Popular',     true,  2, true, NOW(), NOW()),
+        ('seed-pkg-pass-plus-std',   'seed-cat-pass-plus', 'standard',    'Pass Plus Standard',     6,  6,  210.00, 35.00, NULL,   'DVSA-recognised course',    'Recommended', true,  1, true, NOW(), NOW()),
+        ('seed-pkg-motorway-single', 'seed-cat-motorway',  'single',      'Single Motorway',        1,  1,  50.00,  50.00, NULL,   'Pay as you go',             NULL,          false, 1, true, NOW(), NOW()),
+        ('seed-pkg-motorway-block3', 'seed-cat-motorway',  'block3',      'Motorway 3 Hours',       3,  3,  138.00, 46.00, 12.00,  'Build confidence at speed', 'Popular',     true,  2, true, NOW(), NOW()),
+        ('seed-pkg-mock-test-single','seed-cat-mock-test', 'single',      'Mock Test Session',      2,  1,  75.00,  37.50, NULL,   'Full test-route debrief',   NULL,          false, 1, true, NOW(), NOW()),
+        ('seed-pkg-mock-test-x2',    'seed-cat-mock-test', 'two-pack',    'Mock Test × 2',          4,  2,  140.00, 35.00, 10.00,  'Two sessions + feedback',   'Best Value',  true,  2, true, NOW(), NOW())
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
         price = EXCLUDED.price,
