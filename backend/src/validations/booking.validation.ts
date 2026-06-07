@@ -20,4 +20,5 @@ export const createBookingBodySchema = z
 
 export const cancelBookingBodySchema = z.object({
   action: z.literal('cancel'),
+  reason: z.string().min(1, 'Cancellation reason is required').max(500),
 });

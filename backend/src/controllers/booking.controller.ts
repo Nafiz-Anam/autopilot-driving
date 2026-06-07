@@ -93,10 +93,10 @@ const cancelMine = catchAsync(async (req: Request, res: Response) => {
   const bookingId = typeof rawId === 'string' ? rawId : rawId?.[0] ?? '';
   const parsed = cancelBookingBodySchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(httpStatus.BAD_REQUEST).send({ error: 'Invalid action' });
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'Invalid action', details: parsed.error.flatten() });
   }
 
-  const result = await bookingService.cancelForStudent(bookingId, studentId);
+  const result = await bookingService.cancelForStudent(bookingId, studentId, parsed.data.reason);
 
   if ('error' in result) {
     switch (result.error) {
@@ -106,10 +106,6 @@ const cancelMine = catchAsync(async (req: Request, res: Response) => {
         return res.status(httpStatus.FORBIDDEN).send({ error: 'Forbidden' });
       case 'BAD_STATE':
         return res.status(httpStatus.BAD_REQUEST).send({ error: 'Booking cannot be cancelled' });
-      case 'WITHIN_24H':
-        return res
-          .status(httpStatus.BAD_REQUEST)
-          .send({ error: 'Cannot cancel within 24 hours of lesson' });
       default:
         return res.status(httpStatus.BAD_REQUEST).send({ error: 'Invalid request' });
     }

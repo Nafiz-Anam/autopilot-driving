@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarDays,
   CalendarPlus,
   InboxIcon,
   RotateCcw,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
@@ -89,12 +91,31 @@ function isWithin24h(scheduledAt: string) {
   return new Date(scheduledAt).getTime() - Date.now() < 24 * 60 * 60 * 1000;
 }
 
+interface CancelModal {
+  bookingId: string;
+  scheduledAt: string;
+}
+
+const CANCEL_REASONS = [
+  "Change of plans",
+  "Found another instructor",
+  "Personal emergency",
+  "Illness",
+  "Work or school commitment",
+  "Financial reasons",
+  "Other",
+];
+
 export default function StudentBookingsPage() {
-  const [bookings, setBookings]       = useState<Booking[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [bookings, setBookings]         = useState<Booking[]>([]);
+  const [loading, setLoading]           = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
-  const [updatingId, setUpdatingId]   = useState<string | null>(null);
+  const [cancelModal, setCancelModal]   = useState<CancelModal | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [otherReason, setOtherReason]   = useState("");
+  const [submitting, setSubmitting]     = useState(false);
+  const [cancelError, setCancelError]   = useState("");
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -113,27 +134,53 @@ export default function StudentBookingsPage() {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  function handleCancelled(id: string) {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: "CANCELLED" as BookingStatus } : b))
-    );
-    setConfirmCancelId(null);
+  function openCancelModal(booking: Booking) {
+    setCancelModal({ bookingId: booking.id, scheduledAt: booking.scheduledAt });
+    setCancelReason("");
+    setOtherReason("");
+    setCancelError("");
   }
 
-  async function handleCancel(id: string) {
-    setUpdatingId(id);
+  function closeCancelModal() {
+    if (submitting) return;
+    setCancelModal(null);
+    setCancelReason("");
+    setOtherReason("");
+    setCancelError("");
+  }
+
+  async function handleCancel() {
+    if (!cancelModal) return;
+    const finalReason = cancelReason === "Other" ? otherReason.trim() : cancelReason;
+    if (!finalReason) {
+      setCancelError("Please select or enter a reason.");
+      return;
+    }
+
+    setSubmitting(true);
+    setCancelError("");
     try {
       const headers = await getNextAuthBridgeHeaders();
-      const res = await fetch(backendApiUrl(`/bookings/${id}`), {
+      const res = await fetch(backendApiUrl(`/bookings/${cancelModal.bookingId}`), {
         method: "PATCH",
         headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "cancel" }),
+        body: JSON.stringify({ action: "cancel", reason: finalReason }),
       });
-      if (res.ok) handleCancelled(id);
+      if (res.ok) {
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === cancelModal.bookingId ? { ...b, status: "CANCELLED" as BookingStatus } : b
+          )
+        );
+        closeCancelModal();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setCancelError(body.error ?? "Something went wrong. Please try again.");
+      }
     } catch {
-      // silent
+      setCancelError("Network error. Please try again.");
     } finally {
-      setUpdatingId(null);
+      setSubmitting(false);
     }
   }
 
@@ -238,7 +285,6 @@ export default function StudentBookingsPage() {
                   const pc = PAYMENT_CONFIG[booking.paymentStatus] ?? "bg-gray-100 text-brand-muted border border-gray-200";
                   const typeLabel = LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType;
                   const isUpcoming = booking.status === "CONFIRMED" || booking.status === "PENDING";
-                  const withinWindow = isWithin24h(booking.scheduledAt);
 
                   return (
                     <tr key={booking.id} className="hover:bg-brand-surface/50 transition-colors">
@@ -293,39 +339,14 @@ export default function StudentBookingsPage() {
                               <span className="hidden sm:inline">Calendar</span>
                             </button>
                           )}
-                          {isUpcoming &&
-                            (confirmCancelId === booking.id ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs text-brand-muted">Cancel?</span>
-                                <button
-                                  onClick={() => handleCancel(booking.id)}
-                                  disabled={updatingId === booking.id}
-                                  className="text-xs px-2.5 py-1 bg-brand-red text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
-                                >
-                                  {updatingId === booking.id ? "…" : "Yes"}
-                                </button>
-                                <button
-                                  onClick={() => setConfirmCancelId(null)}
-                                  className="text-xs text-brand-muted hover:text-brand-black transition-colors"
-                                >
-                                  No
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => !withinWindow && setConfirmCancelId(booking.id)}
-                                disabled={withinWindow}
-                                title={withinWindow ? "Cannot cancel within 24 hours of lesson" : "Cancel this booking"}
-                                className={cn(
-                                  "text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors",
-                                  withinWindow
-                                    ? "border-brand-border text-brand-border cursor-not-allowed opacity-50"
-                                    : "border-red-200 text-brand-red hover:bg-red-50"
-                                )}
-                              >
-                                Cancel
-                              </button>
-                            ))}
+                          {isUpcoming && (
+                            <button
+                              onClick={() => openCancelModal(booking)}
+                              className="text-xs px-2.5 py-1 rounded-lg border border-red-200 text-brand-red hover:bg-red-50 font-medium transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          )}
                           {booking.status === "COMPLETED" && (
                             <a
                               href="/book"
@@ -345,6 +366,119 @@ export default function StudentBookingsPage() {
           </table>
         </div>
       </motion.div>
+      {/* Cancellation modal */}
+      <AnimatePresence>
+        {cancelModal && (() => {
+          const within24h = isWithin24h(cancelModal.scheduledAt);
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+              onClick={(e) => { if (e.target === e.currentTarget) closeCancelModal(); }}
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 16, scale: 0.97 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6"
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-brand-black">Cancel Booking</h3>
+                    <p className="text-sm text-brand-muted mt-0.5">Please tell us why you&apos;re cancelling.</p>
+                  </div>
+                  <button
+                    onClick={closeCancelModal}
+                    disabled={submitting}
+                    className="text-brand-muted hover:text-brand-black transition-colors ml-4 mt-0.5"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Refund notice */}
+                <div className={cn(
+                  "rounded-xl px-4 py-3 mb-5 flex gap-3 text-sm",
+                  within24h
+                    ? "bg-amber-50 border border-amber-200 text-amber-800"
+                    : "bg-green-50 border border-green-200 text-green-800"
+                )}>
+                  <AlertTriangle className={cn("w-4 h-4 mt-0.5 shrink-0", within24h ? "text-amber-500" : "text-green-500")} />
+                  <span>
+                    {within24h
+                      ? "Your lesson is within 24 hours. No refund will be issued for this cancellation."
+                      : "Your lesson is more than 24 hours away. A full refund will be automatically issued."}
+                  </span>
+                </div>
+
+                {/* Reason picker */}
+                <div className="space-y-2 mb-4">
+                  {CANCEL_REASONS.map((r) => (
+                    <label
+                      key={r}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer text-sm transition-colors",
+                        cancelReason === r
+                          ? "border-brand-black bg-brand-surface text-brand-black font-medium"
+                          : "border-brand-border text-brand-muted hover:border-gray-300"
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="cancel-reason"
+                        value={r}
+                        checked={cancelReason === r}
+                        onChange={() => { setCancelReason(r); setCancelError(""); }}
+                        className="accent-brand-black"
+                      />
+                      {r}
+                    </label>
+                  ))}
+                </div>
+
+                {/* Free-text if "Other" */}
+                {cancelReason === "Other" && (
+                  <textarea
+                    ref={reasonRef}
+                    value={otherReason}
+                    onChange={(e) => { setOtherReason(e.target.value); setCancelError(""); }}
+                    placeholder="Please describe your reason…"
+                    rows={3}
+                    className="w-full border border-brand-border rounded-xl px-3 py-2.5 text-sm text-brand-black placeholder:text-brand-muted focus:outline-none focus:border-brand-black resize-none mb-4"
+                  />
+                )}
+
+                {/* Error */}
+                {cancelError && (
+                  <p className="text-sm text-brand-red mb-3">{cancelError}</p>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={closeCancelModal}
+                    disabled={submitting}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-brand-border text-sm font-semibold text-brand-muted hover:text-brand-black transition-colors disabled:opacity-50"
+                  >
+                    Keep Booking
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    disabled={submitting}
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-brand-red text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                  >
+                    {submitting ? "Cancelling…" : "Confirm Cancel"}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
     </motion.div>
   );
 }

@@ -127,7 +127,7 @@ const createForStudent = async (input: CreateBookingInput) => {
   };
 };
 
-const cancelForStudent = async (bookingId: string, studentId: string) => {
+const cancelForStudent = async (bookingId: string, studentId: string, reason: string) => {
   const rows = await prisma.$queryRawUnsafe<
     Array<{
       id: string;
@@ -150,27 +150,36 @@ const cancelForStudent = async (bookingId: string, studentId: string) => {
   if (booking.status !== 'CONFIRMED' && booking.status !== 'PENDING') {
     return { error: 'BAD_STATE' as const };
   }
+
   const hoursUntilLesson = (booking.scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60);
-  if (hoursUntilLesson < 24) {
-    return { error: 'WITHIN_24H' as const };
-  }
+  const eligibleForRefund = hoursUntilLesson >= 24;
 
   await prisma.$executeRawUnsafe(
-    `UPDATE "Booking" SET status = 'CANCELLED', "updatedAt" = $2::timestamp WHERE id = $1`,
+    `UPDATE "Booking"
+     SET status = 'CANCELLED', "cancellationReason" = $2, "updatedAt" = $3::timestamp
+     WHERE id = $1`,
     bookingId,
+    reason,
     new Date().toISOString()
   );
 
-  // Auto-refund if the booking was paid (cancelled more than 24h before lesson)
+  // Auto-refund only when cancelled more than 24h before the lesson
   let refundResult: { refunded: boolean; stripeRefundId?: string } = { refunded: false };
-  if (booking.paymentStatus === 'PAID') {
+  if (eligibleForRefund && booking.paymentStatus === 'PAID') {
     const result = await refundService.issueRefundForBooking(bookingId);
     if (result.refunded) {
       refundResult = { refunded: true, stripeRefundId: result.stripeRefundId };
     }
   }
 
-  return { data: { id: bookingId, status: 'CANCELLED' as const, refund: refundResult } };
+  return {
+    data: {
+      id: bookingId,
+      status: 'CANCELLED' as const,
+      refund: refundResult,
+      noRefundReason: !eligibleForRefund ? 'Cancelled within 24 hours of lesson — no refund issued' : undefined,
+    },
+  };
 };
 
 const getAvailability = async (instructorId: string, startDateStr: string, endDateStr: string) => {
