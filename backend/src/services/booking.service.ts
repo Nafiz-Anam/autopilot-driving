@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
 import pricingService from './pricing.service';
 import { generateBookingReference } from '../utils/bookingReference';
+import refundService from './refund.service';
 
 const ALL_SLOTS = [
   '08:00',
@@ -132,10 +133,11 @@ const cancelForStudent = async (bookingId: string, studentId: string) => {
       id: string;
       studentId: string;
       status: string;
+      paymentStatus: string;
       scheduledAt: Date;
     }>
   >(
-    `SELECT id, "studentId", status, "scheduledAt" FROM "Booking" WHERE id = $1 LIMIT 1`,
+    `SELECT id, "studentId", status, "paymentStatus", "scheduledAt" FROM "Booking" WHERE id = $1 LIMIT 1`,
     bookingId
   );
   const booking = rows[0];
@@ -159,7 +161,16 @@ const cancelForStudent = async (bookingId: string, studentId: string) => {
     new Date().toISOString()
   );
 
-  return { data: { id: bookingId, status: 'CANCELLED' as const } };
+  // Auto-refund if the booking was paid (cancelled more than 24h before lesson)
+  let refundResult: { refunded: boolean; stripeRefundId?: string } = { refunded: false };
+  if (booking.paymentStatus === 'PAID') {
+    const result = await refundService.issueRefundForBooking(bookingId);
+    if (result.refunded) {
+      refundResult = { refunded: true, stripeRefundId: result.stripeRefundId };
+    }
+  }
+
+  return { data: { id: bookingId, status: 'CANCELLED' as const, refund: refundResult } };
 };
 
 const getAvailability = async (instructorId: string, startDateStr: string, endDateStr: string) => {
