@@ -1,5 +1,6 @@
 import express from 'express';
 import instructorAppController from '../../controllers/instructorApp.controller';
+import calendarController from '../../controllers/calendar.controller';
 import nextAuthBridge from '../../middlewares/nextAuthBridge';
 import { loadDrivingSchoolUser, requireDrivingRoles } from '../../middlewares/drivingSchoolUser';
 
@@ -15,5 +16,6 @@ router.post('/schedule', instructorAppController.postSchedule);
 
 router.get('/students', instructorAppController.getStudents);
 router.get('/stats', instructorAppController.getStats);
+router.get('/calendar-url', calendarController.getCalendarUrl);
 
 export default router;

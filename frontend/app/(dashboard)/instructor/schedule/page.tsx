@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAppSession } from "@/components/providers/AppAuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Info } from "lucide-react";
+import { Check, Info, CalendarPlus, Copy, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
@@ -119,6 +119,8 @@ export default function InstructorSchedulePage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const [webcalUrl, setWebcalUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Fetch existing availability on mount
   useEffect(() => {
@@ -149,6 +151,29 @@ export default function InstructorSchedulePage() {
     }
     fetchSchedule();
   }, []);
+
+  useEffect(() => {
+    async function fetchCalendarUrl() {
+      try {
+        const headers = await getNextAuthBridgeHeaders();
+        const res = await fetch(backendApiUrl("/instructor/calendar-url"), { headers });
+        if (res.ok) {
+          const data = await res.json();
+          setWebcalUrl(data.data?.webcalUrl ?? null);
+        }
+      } catch {
+        // non-critical
+      }
+    }
+    fetchCalendarUrl();
+  }, []);
+
+  async function copyCalendarUrl() {
+    if (!webcalUrl) return;
+    await navigator.clipboard.writeText(webcalUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
 
   function toggle(day: string, hour: string) {
     const key = `${day}-${hour}`;
@@ -222,29 +247,50 @@ export default function InstructorSchedulePage() {
           </p>
         </div>
 
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className={cn(
-            "shrink-0 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2",
-            saved
-              ? "bg-green-500 text-white"
-              : "bg-brand-red text-white hover:bg-brand-orange disabled:opacity-60"
+        <div className="flex items-center gap-2">
+          {webcalUrl && (
+            <div className="flex items-center gap-1.5">
+              <a
+                href={webcalUrl}
+                className="shrink-0 px-4 py-2.5 rounded-xl font-semibold text-sm border border-brand-border text-brand-black hover:bg-brand-surface transition-colors flex items-center gap-2"
+                title="Click to subscribe — opens Apple Calendar, Google Calendar, or Outlook"
+              >
+                <CalendarPlus className="w-4 h-4" />
+                Subscribe to Calendar
+              </a>
+              <button
+                onClick={copyCalendarUrl}
+                title="Copy calendar feed URL"
+                className="p-2.5 rounded-xl border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors"
+              >
+                {copied ? <CheckCheck className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
           )}
-        >
-          {saving ? (
-            <>
-              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Saving…
-            </>
-          ) : saved ? (
-            <>
-              <Check className="w-4 h-4" /> Saved!
-            </>
-          ) : (
-            "Save Availability"
-          )}
-        </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className={cn(
+              "shrink-0 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2",
+              saved
+                ? "bg-green-500 text-white"
+                : "bg-brand-red text-white hover:bg-brand-orange disabled:opacity-60"
+            )}
+          >
+            {saving ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Saving…
+              </>
+            ) : saved ? (
+              <>
+                <Check className="w-4 h-4" /> Saved!
+              </>
+            ) : (
+              "Save Availability"
+            )}
+          </button>
+        </div>
       </motion.div>
 
       {/* ── Stats bar ── */}

@@ -509,6 +509,65 @@ export const sendPasswordResetOtp = async (to: string, otp: string, name: string
   await sendEmail(to, subject, text, html);
 };
 
+/**
+ * Send booking confirmation email with an iCal attachment.
+ * Apple Mail, Outlook, and Gmail all show "Add to Calendar" inline.
+ */
+const sendBookingConfirmationEmail = async (params: {
+  to: string;
+  studentName: string;
+  reference: string;
+  lessonType: string;
+  instructorName: string;
+  scheduledAt: Date;
+  durationMins: number;
+  totalAmount: number;
+  icsContent: string;
+}) => {
+  const dateStr = params.scheduledAt.toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+  const timeStr = params.scheduledAt.toLocaleTimeString('en-GB', {
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  const subject = `Booking Confirmed — ${params.reference}`;
+  const text = `Hi ${params.studentName},\n\nYour driving lesson is confirmed.\n\nReference: ${params.reference}\nDate: ${dateStr} at ${timeStr}\nInstructor: ${params.instructorName}\nDuration: ${params.durationMins / 60}hr\nAmount: £${params.totalAmount.toFixed(2)}\n\nThe attached .ics file will add this lesson to your calendar.`;
+
+  const html = renderEmailLayout({
+    title: 'Your lesson is confirmed!',
+    intro: `Hi ${escapeHtml(params.studentName)}, your booking is all set.`,
+    bodyHtml: `
+      <table style="width:100%;border-collapse:collapse;margin:12px 0;">
+        <tr><td style="padding:6px 0;color:#6B7280;width:40%;">Reference</td><td style="padding:6px 0;font-weight:700;">${escapeHtml(params.reference)}</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Date</td><td style="padding:6px 0;">${escapeHtml(dateStr)}</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Time</td><td style="padding:6px 0;">${escapeHtml(timeStr)}</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Instructor</td><td style="padding:6px 0;">${escapeHtml(params.instructorName)}</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Duration</td><td style="padding:6px 0;">${params.durationMins / 60}hr</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Amount paid</td><td style="padding:6px 0;font-weight:700;">£${params.totalAmount.toFixed(2)}</td></tr>
+      </table>
+      <p style="margin:16px 0 0;font-size:13px;color:#6B7280;">The attached file will add this lesson to Apple Calendar, Google Calendar, or Outlook automatically.</p>
+    `,
+    footnote: 'To cancel or reschedule, please log in to your student dashboard.',
+  });
+
+  const mail = await getTransporter();
+  await mail.transporter.sendMail({
+    from: mail.from,
+    to: params.to,
+    subject,
+    text,
+    html,
+    attachments: [
+      {
+        filename: `lesson-${params.reference}.ics`,
+        content: params.icsContent,
+        contentType: 'text/calendar; method=REQUEST; charset=utf-8',
+      },
+    ],
+  });
+};
+
 const sendAdminNotificationEmail = async (
   subject: string,
   details: Record<string, string | number | boolean | null | undefined>
@@ -560,6 +619,7 @@ export default {
   sendEmailVerificationOtp,
   sendPasswordResetOtp,
   sendAdminNotificationEmail,
+  sendBookingConfirmationEmail,
   verifySmtpConnection,
   checkEmailServiceHealth,
   transporter,
