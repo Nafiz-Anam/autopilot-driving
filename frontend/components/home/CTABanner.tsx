@@ -79,7 +79,7 @@ export function CTABanner() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/booking"
-              className="group flex items-center gap-2.5 px-9 py-4 bg-white text-[#E8200A] font-bold rounded-full text-base transition-all duration-200 hover:bg-[#FFF5F5]"
+              className="group flex items-center justify-center gap-2.5 w-full sm:w-auto px-9 py-4 bg-white text-[#E8200A] font-bold rounded-full text-base transition-all duration-200 hover:bg-[#FFF5F5]"
               style={{
                 boxShadow: "0 4px 20px rgba(0,0,0,0.2), 0 1px 4px rgba(0,0,0,0.15)",
               }}
@@ -93,7 +93,7 @@ export function CTABanner() {
 
             <a
               href="tel:07944722168"
-              className="flex items-center gap-2.5 px-9 py-4 border-2 border-white/30 text-white font-semibold rounded-full text-base hover:border-white/60 hover:bg-white/10 transition-all duration-200"
+              className="flex items-center justify-center gap-2.5 w-full sm:w-auto px-9 py-4 border-2 border-white/30 text-white font-semibold rounded-full text-base hover:border-white/60 hover:bg-white/10 transition-all duration-200"
             >
               <Phone size={16} />
               07944 722168

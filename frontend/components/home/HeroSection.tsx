@@ -73,7 +73,7 @@ export function HeroSection() {
               Learn to Drive
               <br />
               with{" "}
-              <span className="relative inline-flex h-[1.15em] overflow-hidden align-bottom min-w-[9ch] md:min-w-[10ch] lg:min-w-[12ch]">
+              <span className="relative inline-flex h-[1.15em] overflow-hidden align-bottom min-w-[12ch] md:min-w-[12ch] lg:min-w-[13ch]">
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={wordIndex}
