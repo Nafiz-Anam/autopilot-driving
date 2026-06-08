@@ -36,7 +36,7 @@ export function PageHero({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="text-[#FF5500] uppercase tracking-widest text-sm font-medium mb-4"
+            className={cn("uppercase tracking-widest text-sm font-medium mb-4", dark ? "text-[#FF5500]" : "text-white/80")}
           >
             {eyebrow}
           </motion.p>
