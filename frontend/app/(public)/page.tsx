@@ -17,7 +17,7 @@ export const metadata: Metadata = {
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
       name: "AutoPilot Driving School",
-      telephone: "+447944722168",
+      telephone: "+447450556963",
       email: "info@autopilotdrivingschool.co.uk",
       url: "https://autopilotdrivingschool.co.uk",
       address: {

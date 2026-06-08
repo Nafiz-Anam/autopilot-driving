@@ -134,11 +134,11 @@ export function Navbar() {
             {/* Desktop right actions */}
             <div className="hidden lg:flex items-center gap-3">
               <a
-                href="tel:07944722168"
+                href="tel:07450556963"
                 className="flex items-center gap-1.5 text-sm font-medium text-[#6B6B6B] hover:text-[#E8200A] transition-colors"
               >
                 <Phone size={14} />
-                07944 722168
+                07450 556 963
               </a>
               {session ? (
                 <Link

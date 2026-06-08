@@ -116,9 +116,9 @@ export function Footer() {
             <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Get in Touch</h3>
             <ul className="space-y-3">
               <li>
-                <a href="tel:07944722168" className="flex items-start gap-2.5 text-[#6B6B6B] hover:text-[#FF5500] transition-colors text-sm">
+                <a href="tel:07450556963" className="flex items-start gap-2.5 text-[#6B6B6B] hover:text-[#FF5500] transition-colors text-sm">
                   <Phone size={16} className="mt-0.5 flex-shrink-0" />
-                  07944 722168
+                  07450 556 963
                 </a>
               </li>
               <li>

@@ -92,11 +92,11 @@ export function CTABanner() {
             </Link>
 
             <a
-              href="tel:07944722168"
+              href="tel:07450556963"
               className="flex items-center justify-center gap-2.5 w-full sm:w-auto px-9 py-4 border-2 border-white/30 text-white font-semibold rounded-full text-base hover:border-white/60 hover:bg-white/10 transition-all duration-200"
             >
               <Phone size={16} />
-              07944 722168
+              07450 556 963
             </a>
           </div>
 
