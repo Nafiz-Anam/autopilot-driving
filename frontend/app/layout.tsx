@@ -20,7 +20,6 @@ export const metadata: Metadata = {
   icons: {
     icon: "/autopilot-driving-icon.png",
     shortcut: "/autopilot-driving-icon.png",
-    apple: "/autopilot-driving-icon.png",
   },
 };
 
