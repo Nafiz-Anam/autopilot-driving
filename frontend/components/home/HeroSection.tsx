@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Users, Award, ChevronDown } from "lucide-react";
-import { PostcodeSearch } from "@/components/shared/PostcodeSearch";
 import { LiveManualHourPrice } from "@/components/pricing/LiveManualHourPrice";
 import { DrivingScene } from "./DrivingScene";
 
@@ -105,15 +104,6 @@ export function HeroSection() {
               Find a DVSA-approved instructor near you and book your first
               lesson in under 60 seconds.
             </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.35 }}
-              className="max-w-md mb-8"
-            >
-              <PostcodeSearch redirectTo="/booking" />
-            </motion.div>
 
             {/* Trust bar */}
             <motion.div
