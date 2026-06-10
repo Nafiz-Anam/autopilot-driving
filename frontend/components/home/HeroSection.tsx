@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Users, Award, ChevronDown } from "lucide-react";
+import { Star, Users, Award } from "lucide-react";
 import { LiveManualHourPrice } from "@/components/pricing/LiveManualHourPrice";
 import { DrivingScene } from "./DrivingScene";
 
@@ -72,7 +72,7 @@ export function HeroSection() {
               Learn to Drive
               <br />
               with{" "}
-              <span className="relative inline-flex h-[1.15em] overflow-hidden align-bottom min-w-[12ch] md:min-w-[12ch] lg:min-w-[13ch]">
+              <span className="relative inline-flex h-[1em] overflow-hidden align-bottom leading-none min-w-[12ch] md:min-w-[12ch] lg:min-w-[13ch]">
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={wordIndex}
@@ -316,23 +316,6 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* Scroll cue */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.8, duration: 0.6 }}
-        className="relative z-10 pb-7 flex flex-col items-center gap-1.5"
-      >
-        <span className="text-[10px] uppercase tracking-[0.2em] text-[#BBBBBB] font-medium">
-          Scroll
-        </span>
-        <motion.div
-          animate={{ y: [0, 5, 0] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <ChevronDown size={14} className="text-[#BBBBBB]" />
-        </motion.div>
-      </motion.div>
     </section>
   );
 }
