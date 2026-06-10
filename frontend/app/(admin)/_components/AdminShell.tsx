@@ -19,7 +19,6 @@ import {
   PoundSterling,
   ChevronRight,
   ChevronDown,
-  Bell,
   Menu,
   X,
   LogOut,
@@ -192,14 +191,6 @@ function TopHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          className="relative p-2 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors"
-          aria-label="Notifications"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-red rounded-full" />
-        </button>
-
         {/* User dropdown */}
         <div className="relative">
           <button
