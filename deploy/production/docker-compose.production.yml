@@ -108,16 +108,32 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
+      # bare domain — HTTPS
       - "traefik.http.routers.autopilot-web-prod.rule=Host(`autopilotdrivingschool.co.uk`)"
       - "traefik.http.routers.autopilot-web-prod.entrypoints=websecure"
       - "traefik.http.routers.autopilot-web-prod.tls.certresolver=le"
       - "traefik.http.routers.autopilot-web-prod.service=autopilot-web-prod"
       - "traefik.http.services.autopilot-web-prod.loadbalancer.server.port=3008"
+      # bare domain — HTTP → HTTPS
       - "traefik.http.routers.autopilot-web-prod-http.rule=Host(`autopilotdrivingschool.co.uk`)"
       - "traefik.http.routers.autopilot-web-prod-http.entrypoints=web"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
       - "traefik.http.routers.autopilot-web-prod-http.middlewares=redirect-to-https"
+      # www — HTTPS → redirect to bare domain
+      - "traefik.http.routers.autopilot-web-prod-www.rule=Host(`www.autopilotdrivingschool.co.uk`)"
+      - "traefik.http.routers.autopilot-web-prod-www.entrypoints=websecure"
+      - "traefik.http.routers.autopilot-web-prod-www.tls.certresolver=le"
+      - "traefik.http.routers.autopilot-web-prod-www.middlewares=www-to-bare@docker"
+      - "traefik.http.routers.autopilot-web-prod-www.service=autopilot-web-prod"
+      # www — HTTP → HTTPS
+      - "traefik.http.routers.autopilot-web-prod-www-http.rule=Host(`www.autopilotdrivingschool.co.uk`)"
+      - "traefik.http.routers.autopilot-web-prod-www-http.entrypoints=web"
+      - "traefik.http.routers.autopilot-web-prod-www-http.middlewares=redirect-to-https"
+      # www → bare domain middleware
+      - "traefik.http.middlewares.www-to-bare.redirectregex.regex=^https://www\\.autopilotdrivingschool\\.co\\.uk/(.*)"
+      - "traefik.http.middlewares.www-to-bare.redirectregex.replacement=https://autopilotdrivingschool.co.uk/$${1}"
+      - "traefik.http.middlewares.www-to-bare.redirectregex.permanent=true"
 
 volumes:
   postgres_prod_data:
