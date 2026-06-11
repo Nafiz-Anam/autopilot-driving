@@ -2,12 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, CalendarPlus, InboxIcon, RotateCcw, X, CalendarClock } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, InboxIcon, X, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
-
-type BookingStatus = "CONFIRMED" | "COMPLETED" | "CANCELLED" | "PENDING" | "NO_SHOW";
 
 interface PendingReschedule {
   id: string;
@@ -24,24 +22,20 @@ interface Booking {
   transmission: string;
   scheduledAt: string;
   durationMins: number;
-  status: BookingStatus;
+  status: string;
   paymentStatus: string;
   totalAmount: number;
-  instructor: {
-    user: { name: string | null; image: string | null };
-    rating: number;
-    areas: string[];
-  };
+  notes: string | null;
+  student: { id: string; name: string | null; email: string };
   pendingReschedule?: PendingReschedule | null;
 }
 
 const STATUS_TABS = [
-  { value: "ALL",       label: "All" },
+  { value: "", label: "All" },
+  { value: "PENDING", label: "Pending" },
   { value: "CONFIRMED", label: "Confirmed" },
-  { value: "PENDING",   label: "Pending" },
   { value: "COMPLETED", label: "Completed" },
   { value: "CANCELLED", label: "Cancelled" },
-  { value: "NO_SHOW",   label: "No Show" },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
@@ -61,11 +55,11 @@ const PAYMENT_CONFIG: Record<string, string> = {
 
 const LESSON_TYPE_LABELS: Record<string, string> = {
   MANUAL: "Manual", AUTOMATIC: "Auto", INTENSIVE: "Intensive",
-  MOTORWAY: "Motorway", PASS_PLUS: "Pass Plus", REFRESHER: "Refresher",
+  MOTORWAY: "Motorway", PASS_PLUS: "Pass Plus", REFRESHER: "Refresher", THEORY: "Theory",
 };
 
-const CANCEL_REASONS = ["Change of plans", "Illness", "Emergency", "Found another instructor", "Other"];
-const RESCHEDULE_REASONS = ["Personal commitment", "Illness", "Travel", "Emergency", "Other"];
+const CANCEL_REASONS = ["Personal emergency", "Illness", "Vehicle breakdown", "Weather conditions", "Double booking", "Other"];
+const RESCHEDULE_REASONS = ["Personal emergency", "Illness", "Vehicle issue", "Weather conditions", "Scheduling conflict", "Other"];
 
 const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } } };
 const itemVariants = { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
@@ -86,33 +80,28 @@ function toLocalDatetimeValue(iso: string) {
 }
 
 // ── Cancel Modal ──────────────────────────────────────────────────────────────
-function CancelModal({
-  booking, onClose, onCancelled,
-}: { booking: Booking; onClose: () => void; onCancelled: (id: string) => void }) {
+function CancelModal({ booking, onClose, onCancelled }: {
+  booking: Booking; onClose: () => void; onCancelled: (id: string) => void;
+}) {
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
+  const [acknowledged, setAcknowledged] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
   const hrs = hoursUntil(booking.scheduledAt);
-  const refundLabel =
-    hrs >= 48 ? { label: "Full refund eligible", cls: "bg-green-50 border-green-200 text-green-800" } :
-    hrs >= 24 ? { label: "50% refund eligible", cls: "bg-yellow-50 border-yellow-200 text-yellow-800" } :
-    { label: "No refund — lesson is within 24 hours", cls: "bg-red-50 border-red-200 text-brand-red" };
-
-  const refundAmount =
-    hrs >= 48 ? Number(booking.totalAmount).toFixed(2) :
-    hrs >= 24 ? (Number(booking.totalAmount) * 0.5).toFixed(2) :
-    "0.00";
+  const isLate = hrs < 24;
 
   async function submit() {
+    if (!reason) { setErr("Please select a reason."); return; }
+    if (!acknowledged) { setErr("Please acknowledge the cancellation policy."); return; }
     setSaving(true);
     try {
       const headers = await getNextAuthBridgeHeaders();
-      const res = await fetch(backendApiUrl(`/bookings/${booking.id}`), {
+      const res = await fetch(backendApiUrl(`/instructor/bookings/${booking.id}/cancel`), {
         method: "PATCH",
         headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "cancel", reason, notes }),
+        body: JSON.stringify({ reason, notes: notes || undefined }),
       });
       if (res.ok) {
         onCancelled(booking.id);
@@ -129,47 +118,49 @@ function CancelModal({
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-2xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
-          <h3 className="font-bold text-brand-black text-lg">Cancel Booking</h3>
+          <h3 className="font-bold text-brand-black text-lg">Cancel This Lesson</h3>
           <button onClick={onClose} className="text-brand-muted hover:text-brand-black"><X className="w-5 h-5" /></button>
         </div>
         <div className="px-6 py-5 space-y-4">
-          {/* Refund policy banner */}
-          <div className={cn("border rounded-xl px-4 py-3 text-sm font-semibold", refundLabel.cls)}>
-            {refundLabel.label}
-            {Number(refundAmount) > 0 && (
-              <p className="font-normal text-xs mt-0.5">You will receive £{refundAmount} back</p>
-            )}
-          </div>
-
+          {isLate && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-orange-800">
+              Late cancellation — this is within 24 hours of the lesson. This will be recorded against your reliability rating.
+            </div>
+          )}
           <div className="bg-brand-surface rounded-xl p-3 text-sm">
-            <p className="font-semibold text-brand-black">{booking.instructor.user.name ?? "Instructor"}</p>
+            <p className="font-semibold text-brand-black">{booking.student.name ?? booking.student.email}</p>
             <p className="text-brand-muted text-xs">{formatDate(booking.scheduledAt)} at {formatTime(booking.scheduledAt)}</p>
           </div>
-
           <div>
-            <label className="text-xs font-semibold text-brand-black mb-1.5 block">Reason <span className="text-brand-muted font-normal">(optional)</span></label>
+            <label className="text-xs font-semibold text-brand-black mb-1.5 block">Reason <span className="text-brand-red">*</span></label>
             <select value={reason} onChange={(e) => setReason(e.target.value)}
               className="w-full border border-brand-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red/30">
               <option value="">Select a reason</option>
               {CANCEL_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
-
           <div>
-            <label className="text-xs font-semibold text-brand-black mb-1.5 block">Additional notes <span className="text-brand-muted font-normal">(optional)</span></label>
+            <label className="text-xs font-semibold text-brand-black mb-1.5 block">Notes <span className="text-brand-muted font-normal">(optional)</span></label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
               className="w-full border border-brand-border rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-red/30"
-              placeholder="Anything else to add?" />
+              placeholder="Any additional context for the student..." />
           </div>
+          <label className="flex items-start gap-3 p-3 bg-brand-surface rounded-xl border border-brand-border cursor-pointer">
+            <input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)}
+              className="w-4 h-4 mt-0.5 accent-brand-red shrink-0" />
+            <p className="text-xs text-brand-black">
+              I understand this cancellation will be recorded against my profile and the student will be notified immediately.
+            </p>
+          </label>
           {err && <p className="text-xs text-brand-red">{err}</p>}
         </div>
         <div className="px-6 py-4 border-t border-brand-border flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-brand-muted hover:text-brand-black transition-colors">
-            Keep Booking
+            Go Back
           </button>
           <button onClick={submit} disabled={saving}
             className="px-4 py-2 bg-brand-red text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
-            {saving ? "Cancelling…" : hrs >= 48 ? "Cancel & Request Refund" : hrs >= 24 ? "Cancel (50% Refund)" : "Cancel Booking"}
+            {saving ? "Cancelling…" : "Cancel Lesson"}
           </button>
         </div>
       </motion.div>
@@ -178,9 +169,9 @@ function CancelModal({
 }
 
 // ── Reschedule Request Modal ──────────────────────────────────────────────────
-function RescheduleModal({
-  booking, onClose, onRequested,
-}: { booking: Booking; onClose: () => void; onRequested: () => void }) {
+function RescheduleModal({ booking, onClose, onRequested }: {
+  booking: Booking; onClose: () => void; onRequested: () => void;
+}) {
   const [newDateTime, setNewDateTime] = useState(toLocalDatetimeValue(booking.scheduledAt));
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
@@ -193,7 +184,7 @@ function RescheduleModal({
     setSaving(true);
     try {
       const headers = await getNextAuthBridgeHeaders();
-      const res = await fetch(backendApiUrl(`/bookings/${booking.id}/reschedule`), {
+      const res = await fetch(backendApiUrl(`/instructor/bookings/${booking.id}/reschedule`), {
         method: "POST",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -222,10 +213,10 @@ function RescheduleModal({
         </div>
         <div className="px-6 py-5 space-y-4">
           <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5 text-xs text-blue-700">
-            Your instructor will be notified and can accept or decline the new time.
+            The student will be notified and can accept or decline the new time. The lesson is not affected until they respond.
           </div>
           <div className="bg-brand-surface rounded-xl p-3 text-sm">
-            <p className="font-semibold text-brand-black">{booking.instructor.user.name ?? "Instructor"}</p>
+            <p className="font-semibold text-brand-black">{booking.student.name ?? booking.student.email}</p>
             <p className="text-brand-muted text-xs">Currently: {formatDate(booking.scheduledAt)} at {formatTime(booking.scheduledAt)}</p>
           </div>
           <div>
@@ -245,7 +236,7 @@ function RescheduleModal({
             <label className="text-xs font-semibold text-brand-black mb-1.5 block">Notes <span className="text-brand-muted font-normal">(optional)</span></label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
               className="w-full border border-brand-border rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-red/30"
-              placeholder="Any additional context..." />
+              placeholder="Any additional context for the student..." />
           </div>
           {err && <p className="text-xs text-brand-red">{err}</p>}
         </div>
@@ -263,25 +254,33 @@ function RescheduleModal({
   );
 }
 
-export default function StudentBookingsPage() {
+export default function InstructorBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("ALL");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [cancelBooking, setCancelBooking] = useState<Booking | null>(null);
   const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
 
   const fetchBookings = useCallback(async () => {
+    setLoading(true);
     try {
+      const params = new URLSearchParams({ page: String(page) });
+      if (statusFilter) params.set("status", statusFilter);
       const headers = await getNextAuthBridgeHeaders();
-      const res = await fetch(backendApiUrl("/bookings"), { headers });
+      const res = await fetch(backendApiUrl(`/instructor/bookings?${params}`), { headers });
       if (res.ok) {
         const data = await res.json();
         setBookings(data.data ?? []);
+        setTotal(data.total ?? 0);
+        setTotalPages(data.totalPages ?? 1);
       }
-    } catch { /* keep empty on error */ }
+    } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, []);
+  }, [page, statusFilter]);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
@@ -289,7 +288,7 @@ export default function StudentBookingsPage() {
     setUpdatingId(booking.id);
     try {
       const headers = await getNextAuthBridgeHeaders();
-      const res = await fetch(backendApiUrl(`/bookings/${booking.id}/reschedule`), {
+      const res = await fetch(backendApiUrl(`/instructor/bookings/${booking.id}/reschedule`), {
         method: "PATCH",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ requestId, accept }),
@@ -299,23 +298,19 @@ export default function StudentBookingsPage() {
     finally { setUpdatingId(null); }
   }
 
-  const filtered = statusFilter === "ALL"
-    ? bookings
-    : bookings.filter((b) => b.status === statusFilter);
-
   return (
     <>
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
         <motion.div variants={itemVariants} className="mb-6 flex items-center gap-3">
           <h2 className="text-2xl font-extrabold text-brand-black">My Bookings</h2>
           <span className="inline-flex items-center gap-1.5 bg-red-50 border border-red-100 text-brand-red rounded-xl px-3 py-1.5 text-sm font-bold">
-            <CalendarDays className="w-4 h-4" />{bookings.length}
+            <CalendarDays className="w-4 h-4" />{total}
           </span>
         </motion.div>
 
         <motion.div variants={itemVariants} className="flex gap-1 flex-wrap mb-6">
           {STATUS_TABS.map((tab) => (
-            <button key={tab.value} onClick={() => setStatusFilter(tab.value)}
+            <button key={tab.value} onClick={() => { setStatusFilter(tab.value); setPage(1); }}
               className={cn("px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
                 statusFilter === tab.value ? "bg-brand-black text-white" : "text-brand-muted hover:text-brand-black")}>
               {tab.label}
@@ -329,15 +324,15 @@ export default function StudentBookingsPage() {
               <thead>
                 <tr className="bg-brand-surface border-b border-brand-border">
                   {[
-                    { label: "Reference",   cls: "" },
-                    { label: "Instructor",  cls: "hidden md:table-cell" },
+                    { label: "Reference", cls: "" },
+                    { label: "Student",   cls: "" },
                     { label: "Date & Time", cls: "hidden lg:table-cell" },
-                    { label: "Type",        cls: "hidden md:table-cell" },
-                    { label: "Duration",    cls: "hidden lg:table-cell" },
-                    { label: "Amount",      cls: "hidden lg:table-cell" },
-                    { label: "Payment",     cls: "hidden sm:table-cell" },
-                    { label: "Status",      cls: "" },
-                    { label: "Actions",     cls: "text-right" },
+                    { label: "Type",       cls: "hidden md:table-cell" },
+                    { label: "Duration",   cls: "hidden lg:table-cell" },
+                    { label: "Amount",     cls: "hidden lg:table-cell" },
+                    { label: "Payment",    cls: "hidden sm:table-cell" },
+                    { label: "Status",     cls: "" },
+                    { label: "Actions",    cls: "text-right" },
                   ].map((h) => (
                     <th key={h.label} className={cn("px-5 py-3.5 text-left text-xs font-semibold text-brand-muted uppercase tracking-wide", h.cls)}>
                       {h.label}
@@ -347,33 +342,29 @@ export default function StudentBookingsPage() {
               </thead>
               <tbody className="divide-y divide-brand-border">
                 {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
+                  Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
                       {Array.from({ length: 9 }).map((_, j) => (
                         <td key={j} className="px-5 py-4"><div className="h-3 bg-gray-100 rounded w-full max-w-[72px]" /></td>
                       ))}
                     </tr>
                   ))
-                ) : filtered.length === 0 ? (
+                ) : bookings.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-5 py-16 text-center">
                       <InboxIcon className="w-10 h-10 text-brand-border mx-auto mb-3" />
-                      <p className="text-brand-muted text-sm">
-                        {statusFilter !== "ALL" ? `No ${statusFilter.toLowerCase()} bookings found` : "No bookings yet — book a lesson to get started!"}
-                      </p>
+                      <p className="text-brand-muted text-sm">No bookings found</p>
                     </td>
                   </tr>
-                ) : filtered.map((booking) => {
+                ) : bookings.map((booking) => {
                   const sc = STATUS_CONFIG[booking.status] ?? { label: booking.status, classes: "bg-gray-100 text-brand-muted border border-gray-200" };
                   const pc = PAYMENT_CONFIG[booking.paymentStatus] ?? "bg-gray-100 text-brand-muted border border-gray-200";
                   const typeLabel = LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType;
-                  const isActive = booking.status === "CONFIRMED" || booking.status === "PENDING";
-                  const hrs = hoursUntil(booking.scheduledAt);
-                  const canCancel = isActive && hrs >= 24;
+                  const isActive = ["PENDING", "CONFIRMED"].includes(booking.status);
                   const busy = updatingId === booking.id;
                   const pr = booking.pendingReschedule;
-                  // A reschedule requested by the instructor is "action required" for the student
-                  const actionRequired = pr && pr.requestedByRole === "INSTRUCTOR";
+                  // Reschedule requested by the student is "action required" for the instructor
+                  const actionRequired = pr && pr.requestedByRole === "STUDENT";
 
                   return (
                     <tr key={booking.id} className={cn("hover:bg-brand-surface/50 transition-colors", busy && "opacity-60")}>
@@ -387,8 +378,9 @@ export default function StudentBookingsPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-brand-black hidden md:table-cell">
-                        {booking.instructor.user.name ?? "—"}
+                      <td className="px-5 py-3.5">
+                        <p className="font-semibold text-brand-black text-sm leading-tight">{booking.student.name ?? "—"}</p>
+                        <p className="text-xs text-brand-muted">{booking.student.email}</p>
                       </td>
                       <td className="px-5 py-3.5 hidden lg:table-cell">
                         <p className="text-sm text-brand-black whitespace-nowrap">{formatDate(booking.scheduledAt)}</p>
@@ -402,7 +394,9 @@ export default function StudentBookingsPage() {
                         £{Number(booking.totalAmount).toFixed(2)}
                       </td>
                       <td className="px-5 py-3.5 hidden sm:table-cell">
-                        <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", pc)}>{booking.paymentStatus.replace("_", " ")}</span>
+                        <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", pc)}>
+                          {booking.paymentStatus.replace("_", " ")}
+                        </span>
                       </td>
                       <td className="px-5 py-3.5">
                         <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", sc.classes)}>{sc.label}</span>
@@ -414,15 +408,11 @@ export default function StudentBookingsPage() {
                               <span className="text-[10px] text-amber-700 font-medium hidden sm:block">
                                 → {formatDate(pr.proposedDateTime)}
                               </span>
-                              <button
-                                onClick={() => handleRescheduleResponse(booking, pr.id, true)}
-                                disabled={busy}
+                              <button onClick={() => handleRescheduleResponse(booking, pr.id, true)} disabled={busy}
                                 className="text-xs px-2 py-1 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">
                                 Accept
                               </button>
-                              <button
-                                onClick={() => handleRescheduleResponse(booking, pr.id, false)}
-                                disabled={busy}
+                              <button onClick={() => handleRescheduleResponse(booking, pr.id, false)} disabled={busy}
                                 className="text-xs px-2 py-1 border border-red-200 text-brand-red rounded-lg font-semibold hover:bg-red-50 transition-colors disabled:opacity-50">
                                 Decline
                               </button>
@@ -430,39 +420,15 @@ export default function StudentBookingsPage() {
                           )}
                           {isActive && !actionRequired && (
                             <>
-                              <button
-                                onClick={() => {
-                                  const dt = new Date(booking.scheduledAt);
-                                  const end = new Date(dt.getTime() + booking.durationMins * 60000);
-                                  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-                                  window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(booking.lessonType)}&dates=${fmt(dt)}/${fmt(end)}`, "_blank");
-                                }}
-                                className="flex items-center gap-1 text-xs font-medium text-brand-muted border border-brand-border px-2.5 py-1 rounded-lg hover:bg-brand-surface transition-colors"
-                              >
-                                <CalendarPlus className="w-3 h-3" />
-                                <span className="hidden sm:inline">Calendar</span>
-                              </button>
                               <button onClick={() => setRescheduleBooking(booking)}
                                 className="text-xs px-2.5 py-1 border border-brand-border text-brand-muted rounded-lg font-medium hover:bg-brand-surface hover:text-brand-black transition-colors">
                                 Reschedule
                               </button>
-                              {canCancel ? (
-                                <button onClick={() => setCancelBooking(booking)}
-                                  className="text-xs px-2.5 py-1 border border-red-200 text-brand-red rounded-lg font-medium hover:bg-red-50 transition-colors">
-                                  Cancel
-                                </button>
-                              ) : (
-                                <span title="Cannot cancel within 24 hours of lesson"
-                                  className="text-xs px-2.5 py-1 border border-brand-border text-brand-border rounded-lg font-medium opacity-50 cursor-not-allowed">
-                                  Cancel
-                                </span>
-                              )}
+                              <button onClick={() => setCancelBooking(booking)}
+                                className="text-xs px-2.5 py-1 border border-red-200 text-brand-red rounded-lg font-medium hover:bg-red-50 transition-colors">
+                                Cancel
+                              </button>
                             </>
-                          )}
-                          {booking.status === "COMPLETED" && (
-                            <a href="/book" className="flex items-center gap-1 text-xs font-semibold text-brand-red border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-50 transition-colors">
-                              <RotateCcw className="w-3 h-3" />Book Again
-                            </a>
                           )}
                         </div>
                       </td>
@@ -472,6 +438,21 @@ export default function StudentBookingsPage() {
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="px-5 py-4 border-t border-brand-border flex items-center justify-between">
+              <p className="text-xs text-brand-muted">Page {page} of {totalPages} · {total} total</p>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                  className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors disabled:opacity-40">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                  className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors disabled:opacity-40">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </motion.div>
       </motion.div>
 
@@ -481,7 +462,7 @@ export default function StudentBookingsPage() {
             booking={cancelBooking}
             onClose={() => setCancelBooking(null)}
             onCancelled={(id) => {
-              setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: "CANCELLED" as BookingStatus } : b));
+              setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: "CANCELLED" } : b));
               setCancelBooking(null);
             }}
           />

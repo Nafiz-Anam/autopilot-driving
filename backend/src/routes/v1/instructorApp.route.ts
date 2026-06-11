@@ -9,11 +9,17 @@ router.use(nextAuthBridge(), loadDrivingSchoolUser(), requireDrivingRoles('INSTR
 
 router.get('/profile', instructorAppController.getProfile);
 router.put('/profile', instructorAppController.putProfile);
+router.post('/profile/password', instructorAppController.changePassword);
 
 router.get('/schedule', instructorAppController.getSchedule);
 router.post('/schedule', instructorAppController.postSchedule);
 
 router.get('/students', instructorAppController.getStudents);
 router.get('/stats', instructorAppController.getStats);
+
+router.get('/bookings', instructorAppController.getMyBookings);
+router.patch('/bookings/:id/cancel', instructorAppController.cancelMyBooking);
+router.post('/bookings/:id/reschedule', instructorAppController.postReschedule);
+router.patch('/bookings/:id/reschedule', instructorAppController.patchReschedule);
 
 export default router;

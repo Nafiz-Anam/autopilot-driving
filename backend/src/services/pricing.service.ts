@@ -21,7 +21,7 @@ const listActivePricingCategories = async () => {
     `SELECT id, "lessonType", slug, "displayName", description, "sortOrder", "isActive"
      FROM "LessonPricingCategory"
      WHERE "isActive" = true
-     ORDER BY "sortOrder" ASC, "displayName" ASC`
+     ORDER BY "createdAt" ASC`
   );
   const byCategory = new Map();
   for (const cat of rows) {
@@ -50,7 +50,7 @@ const listActivePricingCategories = async () => {
             "footerNote", badge, "isPopular", "sortOrder"
      FROM "LessonPricingPackage"
      WHERE "isActive" = true
-     ORDER BY "categoryId" ASC, "sortOrder" ASC, name ASC`
+     ORDER BY "categoryId" ASC, "createdAt" ASC`
   );
 
   for (const p of pkgs) {
@@ -118,7 +118,7 @@ const listPackagesForLessonType = async (lessonType: string) => {
             "footerNote", badge, "isPopular", "sortOrder", "isActive"
      FROM "LessonPricingPackage"
      WHERE "isActive" = true AND "categoryId" = $1
-     ORDER BY "sortOrder" ASC, name ASC`,
+     ORDER BY "createdAt" ASC`,
     category.id
   );
 

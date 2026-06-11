@@ -73,34 +73,31 @@ const updateInstructorProfileByUserId = async (
   const values: unknown[] = [];
   let idx = 1;
 
-  if (body.bio !== undefined) {
-    setClauses.push(`bio = $${idx}`);
-    values.push(body.bio);
-    idx += 1;
-  }
-  if (body.pricePerHour !== undefined) {
-    setClauses.push(`"pricePerHour" = $${idx}`);
-    values.push(body.pricePerHour);
-    idx += 1;
-  }
-  if (body.areas !== undefined) {
-    setClauses.push(`areas = $${idx}`);
-    values.push(body.areas);
-    idx += 1;
-  }
-  if (body.transmission !== undefined) {
-    setClauses.push(`transmission = $${idx}`);
-    values.push(body.transmission);
-    idx += 1;
-  }
+  if (body.bio !== undefined) { setClauses.push(`bio = $${idx}`); values.push(body.bio); idx++; }
+  if (body.pricePerHour !== undefined) { setClauses.push(`"pricePerHour" = $${idx}`); values.push(body.pricePerHour); idx++; }
+  if (body.areas !== undefined) { setClauses.push(`areas = $${idx}`); values.push(body.areas); idx++; }
+  if (body.transmission !== undefined) { setClauses.push(`transmission = $${idx}`); values.push(body.transmission); idx++; }
+  if (body.yearsExp !== undefined) { setClauses.push(`"yearsExp" = $${idx}`); values.push(body.yearsExp); idx++; }
+  if (body.licenceNumber !== undefined) { setClauses.push(`"licenceNumber" = $${idx}`); values.push(body.licenceNumber); idx++; }
+  if (body.isFemale !== undefined) { setClauses.push(`"isFemale" = $${idx}`); values.push(body.isFemale); idx++; }
 
   if (setClauses.length > 0) {
     await prisma.$executeRawUnsafe(
-      `UPDATE "Instructor"
-       SET ${setClauses.join(', ')}, "updatedAt" = NOW()
-       WHERE id = $${idx}`,
+      `UPDATE "Instructor" SET ${setClauses.join(', ')}, "updatedAt" = NOW() WHERE id = $${idx}`,
       ...values,
       instructor.id
+    );
+  }
+
+  if (body.name !== undefined || body.phone !== undefined) {
+    const userSet: string[] = [];
+    const userVals: unknown[] = [];
+    let ui = 1;
+    if (body.name !== undefined) { userSet.push(`name = $${ui}`); userVals.push(body.name); ui++; }
+    if (body.phone !== undefined) { userSet.push(`phone = $${ui}`); userVals.push(body.phone); ui++; }
+    await prisma.$executeRawUnsafe(
+      `UPDATE users SET ${userSet.join(', ')}, "updatedAt" = NOW() WHERE id = $${ui}`,
+      ...userVals, userId
     );
   }
 
@@ -404,6 +401,146 @@ const getInstructorStatsByUserId = async (userId: string) => {
   };
 };
 
+const PAGE_SIZE = 20;
+
+// Fetch pending reschedule requests for a set of booking IDs
+async function fetchPendingReschedules(bookingIds: string[]) {
+  if (!bookingIds.length) return {} as Record<string, {
+    id: string; requestedByRole: string; requesterName: string | null;
+    proposedDateTime: Date; reason: string | null;
+  }>;
+  try {
+    const placeholders = bookingIds.map((_, i) => `$${i + 1}`).join(', ');
+    const rows = await prisma.$queryRawUnsafe<
+      Array<{
+        id: string; bookingId: string; requestedByRole: string;
+        requesterName: string | null; proposedDateTime: Date; reason: string | null;
+      }>
+    >(
+      `SELECT r.id, r."bookingId", r."requestedByRole",
+              u.name AS "requesterName", r."proposedDateTime", r.reason
+       FROM "RescheduleRequest" r
+       LEFT JOIN users u ON u.id = r."requestedByUserId"
+       WHERE r."bookingId" IN (${placeholders}) AND r.status = 'PENDING'
+       ORDER BY r."createdAt" DESC`,
+      ...bookingIds
+    );
+    const map: Record<string, (typeof rows)[0]> = {};
+    for (const r of rows) { if (!map[r.bookingId]) map[r.bookingId] = r; }
+    return map;
+  } catch { return {}; }
+}
+
+const listMyBookings = async (
+  userId: string,
+  params: { status?: string; page?: number }
+) => {
+  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+    userId
+  );
+  const instructor = instructorRows[0];
+  if (!instructor) return { data: [], total: 0, page: 1, totalPages: 0 };
+
+  const page = Math.max(1, params.page ?? 1);
+  const offset = (page - 1) * PAGE_SIZE;
+  const validStatuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'];
+  const statusFilter = validStatuses.includes(params.status ?? '') ? (params.status ?? null) : null;
+
+  const totalRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
+    `SELECT COUNT(*)::int AS total FROM "Booking" b
+     WHERE b."instructorId" = $1 AND ($2::text IS NULL OR b.status::text = $2)`,
+    instructor.id, statusFilter
+  );
+  const total = totalRows[0]?.total ?? 0;
+
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{
+      id: string; reference: string; lessonType: string; transmission: string;
+      scheduledAt: Date; durationMins: number; status: string; paymentStatus: string;
+      totalAmount: string; notes: string | null;
+      studentId: string; studentName: string | null; studentEmail: string;
+    }>
+  >(
+    `SELECT b.id, b.reference, b."lessonType"::text AS "lessonType", b.transmission,
+            b."scheduledAt", b."durationMins", b.status::text AS status,
+            b."paymentStatus"::text AS "paymentStatus", b."totalAmount"::text AS "totalAmount", b.notes,
+            s.id AS "studentId", s.name AS "studentName", s.email AS "studentEmail"
+     FROM "Booking" b
+     INNER JOIN users s ON s.id = b."studentId"
+     WHERE b."instructorId" = $1 AND ($2::text IS NULL OR b.status::text = $2)
+     ORDER BY b."scheduledAt" DESC
+     OFFSET $3 LIMIT $4`,
+    instructor.id, statusFilter, offset, PAGE_SIZE
+  );
+
+  const bookings = rows.map((b) => ({
+    id: b.id, reference: b.reference, lessonType: b.lessonType,
+    transmission: b.transmission, scheduledAt: b.scheduledAt.toISOString(),
+    durationMins: b.durationMins, status: b.status, paymentStatus: b.paymentStatus,
+    totalAmount: Number(b.totalAmount), notes: b.notes,
+    student: { id: b.studentId, name: b.studentName, email: b.studentEmail },
+    pendingReschedule: null as null | {
+      id: string; requestedByRole: string; requesterName: string | null;
+      proposedDateTime: string; reason: string | null;
+    },
+  }));
+
+  const pending = await fetchPendingReschedules(bookings.map((b) => b.id));
+  for (const b of bookings) {
+    const r = pending[b.id];
+    if (r) {
+      b.pendingReschedule = {
+        id: r.id, requestedByRole: r.requestedByRole, requesterName: r.requesterName,
+        proposedDateTime: r.proposedDateTime.toISOString(), reason: r.reason,
+      };
+    }
+  }
+
+  return { data: bookings, total, page, totalPages: Math.ceil(total / PAGE_SIZE) };
+};
+
+const cancelMyBooking = async (
+  bookingId: string,
+  userId: string,
+  reason: string,
+  notes?: string
+) => {
+  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+    userId
+  );
+  const instructor = instructorRows[0];
+  if (!instructor) return { error: 'NOT_FOUND' as const };
+
+  const bookingRows = await prisma.$queryRawUnsafe<
+    Array<{ id: string; instructorId: string; status: string }>
+  >(
+    `SELECT id, "instructorId", status::text AS status FROM "Booking" WHERE id = $1 LIMIT 1`,
+    bookingId
+  );
+  const booking = bookingRows[0];
+  if (!booking) return { error: 'NOT_FOUND' as const };
+  if (booking.instructorId !== instructor.id) return { error: 'FORBIDDEN' as const };
+  if (!['PENDING', 'CONFIRMED'].includes(booking.status)) return { error: 'BAD_STATE' as const };
+
+  const cancelNotes = [reason, notes].filter(Boolean).join(' — ') || null;
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE "Booking" SET status = 'CANCELLED', notes = COALESCE($2::text, notes), "updatedAt" = NOW() WHERE id = $1`,
+    bookingId, cancelNotes
+  );
+
+  try {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "RescheduleRequest" SET status = 'CANCELLED', "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'`,
+      bookingId
+    );
+  } catch { /* ignore */ }
+
+  return { data: { id: bookingId, status: 'CANCELLED' as const } };
+};
+
 export default {
   getInstructorProfileByUserId,
   updateInstructorProfileByUserId,
@@ -411,4 +548,6 @@ export default {
   replaceInstructorScheduleByUserId,
   getInstructorStudentsByUserId,
   getInstructorStatsByUserId,
+  listMyBookings,
+  cancelMyBooking,
 };

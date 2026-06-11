@@ -29,9 +29,9 @@ const DAYS = [
   "Sunday",
 ] as const;
 
-const HOURS = Array.from({ length: 11 }, (_, i) =>
-  String(i + 8).padStart(2, "0") + ":00"
-); // 08:00 – 18:00
+const HOURS = Array.from({ length: 18 }, (_, i) =>
+  String(i + 6).padStart(2, "0") + ":00"
+); // 06:00 – 23:00
 
 const DAY_TO_INDEX: Record<string, number> = {
   Monday: 1,
@@ -61,7 +61,7 @@ function buildDefaultGrid(): AvailabilityGrid {
       const key = `${day}-${hour}`;
       const h = parseInt(hour);
       const isWeekend = day === "Sunday";
-      grid[key] = !isWeekend && h >= 8 && h < 18 ? "available" : "unavailable";
+      grid[key] = !isWeekend && h >= 8 && h < 21 ? "available" : "unavailable";
     }
   }
   return grid;

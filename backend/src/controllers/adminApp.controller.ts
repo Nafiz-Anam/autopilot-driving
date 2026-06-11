@@ -107,6 +107,24 @@ const deleteUserById = catchAsync(async (req: Request, res: Response) => {
   return res.status(httpStatus.OK).send({ success: true });
 });
 
+const postUsers = catchAsync(async (req: Request, res: Response) => {
+  const { name, email, phone, password, role } = req.body as any;
+  if (!name || !email || !password) {
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'name, email and password are required' });
+  }
+  const data = await adminAppService.createUser({ name, email, phone: phone ?? null, password, role });
+  return res.status(httpStatus.CREATED).send({ data });
+});
+
+const patchUserById = catchAsync(async (req: Request, res: Response) => {
+  const { name, email, phone, role } = req.body as any;
+  const data = await adminAppService.updateUserById(pid(req), { name, email, phone, role });
+  if (!data) {
+    return res.status(httpStatus.NOT_FOUND).send({ error: 'User not found' });
+  }
+  return res.status(httpStatus.OK).send({ data });
+});
+
 const getApplications = catchAsync(async (req: Request, res: Response) => {
   const data = await adminAppService.listApplications({
     status: String(req.query.status ?? ''),
@@ -263,6 +281,44 @@ const patchInstructorById = catchAsync(async (req: Request, res: Response) => {
   if (!data) {
     return res.status(httpStatus.NOT_FOUND).send({ error: 'Instructor not found' });
   }
+  return res.status(httpStatus.OK).send({ data });
+});
+
+const postInstructors = catchAsync(async (req: Request, res: Response) => {
+  const { name, email, phone, password, bio, pricePerHour, transmission, yearsExp, licenceNumber, isFemale, areas, isActive } = req.body as any;
+  if (!name || !email || !password) {
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'name, email and password are required' });
+  }
+  const data = await adminAppService.createInstructor({
+    name, email, phone: phone ?? null, password,
+    bio: bio ?? null,
+    pricePerHour: Number(pricePerHour) || 0,
+    transmission: Array.isArray(transmission) ? transmission : [],
+    yearsExp: Number(yearsExp) || 0,
+    licenceNumber: licenceNumber ?? null,
+    isFemale: Boolean(isFemale),
+    areas: Array.isArray(areas) ? areas : [],
+    isActive: isActive !== false,
+  });
+  return res.status(httpStatus.CREATED).send({ data });
+});
+
+const deleteInstructorById = catchAsync(async (req: Request, res: Response) => {
+  await adminAppService.deleteInstructorById(pid(req));
+  return res.status(httpStatus.OK).send({ success: true });
+});
+
+const getInstructorSchedule = catchAsync(async (req: Request, res: Response) => {
+  const data = await adminAppService.getInstructorScheduleById(pid(req));
+  if (data === null) return res.status(httpStatus.NOT_FOUND).send({ error: 'Instructor not found' });
+  return res.status(httpStatus.OK).send({ data });
+});
+
+const postInstructorSchedule = catchAsync(async (req: Request, res: Response) => {
+  const slots = req.body?.slots;
+  if (!Array.isArray(slots)) return res.status(httpStatus.BAD_REQUEST).send({ error: 'slots array required' });
+  const data = await adminAppService.updateInstructorScheduleById(pid(req), slots);
+  if (data === null) return res.status(httpStatus.NOT_FOUND).send({ error: 'Instructor not found' });
   return res.status(httpStatus.OK).send({ data });
 });
 
@@ -440,7 +496,9 @@ export default {
   patchBookingById,
   getUsers,
   patchUsers,
+  postUsers,
   getUserById,
+  patchUserById,
   deleteUserById,
   getApplications,
   patchApplications,
@@ -459,6 +517,10 @@ export default {
   patchInstructors,
   getInstructorById,
   patchInstructorById,
+  postInstructors,
+  deleteInstructorById,
+  getInstructorSchedule,
+  postInstructorSchedule,
   getPricingCategories,
   patchPricingCategoryById,
   postPricingPackages,

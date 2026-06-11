@@ -205,6 +205,24 @@ const createTheoryProgress = async (
   );
 };
 
+const getTheoryQuestions = async (limit = 10) => {
+  const rows = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT id, category, question, options, "correctIndex", explanation
+     FROM "TheoryQuestion"
+     ORDER BY RANDOM()
+     LIMIT $1`,
+    limit
+  );
+  return rows.map((r) => ({
+    id: r.id as string,
+    category: r.category as string,
+    question: r.question as string,
+    options: Array.isArray(r.options) ? r.options : JSON.parse(r.options as string),
+    correct: r.correctIndex as number,
+    explanation: (r.explanation ?? '') as string,
+  }));
+};
+
 export default {
   getProfile,
   updateProfile,
@@ -212,4 +230,5 @@ export default {
   getStats,
   getTheoryProgress,
   createTheoryProgress,
+  getTheoryQuestions,
 };

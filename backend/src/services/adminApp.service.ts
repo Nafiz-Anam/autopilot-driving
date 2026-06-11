@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
@@ -350,20 +351,32 @@ const getBookingById = async (id: string) => {
 
 const patchBookingById = async (
   id: string,
-  payload: { status?: string; paymentStatus?: string; notes?: string | null }
+  payload: { status?: string; paymentStatus?: string; notes?: string | null; scheduledAt?: string | null }
 ) => {
   await prisma.$executeRawUnsafe(
     `UPDATE "Booking"
      SET status = COALESCE($2::"BookingStatus", status),
          "paymentStatus" = COALESCE($3::"PaymentStatus", "paymentStatus"),
          notes = COALESCE($4::text, notes),
+         "scheduledAt" = COALESCE($5::timestamp, "scheduledAt"),
          "updatedAt" = NOW()
      WHERE id = $1`,
     id,
     payload.status ?? null,
     payload.paymentStatus ?? null,
-    payload.notes === undefined ? null : payload.notes
+    payload.notes === undefined ? null : payload.notes,
+    payload.scheduledAt ?? null
   );
+
+  // Cancel any pending reschedule requests when cancelling or directly rescheduling
+  if (payload.status === 'CANCELLED' || payload.scheduledAt) {
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "RescheduleRequest" SET status = 'CANCELLED', "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'`,
+        id
+      );
+    } catch { /* RescheduleRequest table may not exist yet */ }
+  }
 
   const row = await getBookingById(id);
   return row;
@@ -885,8 +898,35 @@ const patchInstructorById = async (
     areas?: string[];
     transmission?: string[];
     isFemale?: boolean;
+    licenceNumber?: string | null;
+    name?: string;
+    email?: string;
+    phone?: string | null;
   }
 ) => {
+  // Update user fields if provided
+  if (payload.name !== undefined || payload.email !== undefined || payload.phone !== undefined) {
+    const userRows = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT "userId" FROM "Instructor" WHERE id = $1`,
+      id
+    );
+    const userId = userRows[0]?.userId;
+    if (userId) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE users
+         SET name = COALESCE($2, name),
+             email = COALESCE($3, email),
+             phone = COALESCE($4, phone),
+             "updatedAt" = NOW()
+         WHERE id = $1`,
+        userId,
+        payload.name?.trim() ?? null,
+        payload.email?.trim().toLowerCase() ?? null,
+        payload.phone ?? null
+      );
+    }
+  }
+
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `UPDATE "Instructor"
      SET "isActive" = COALESCE($2, "isActive"),
@@ -897,7 +937,8 @@ const patchInstructorById = async (
          "yearsExp" = COALESCE($7::int, "yearsExp"),
          areas = COALESCE($8::text[], areas),
          transmission = COALESCE($9::text[], transmission),
-         "isFemale" = COALESCE($10, "isFemale")
+         "isFemale" = COALESCE($10, "isFemale"),
+         "licenceNumber" = COALESCE($11::text, "licenceNumber")
      WHERE id = $1
      RETURNING *`,
     id,
@@ -909,7 +950,8 @@ const patchInstructorById = async (
     typeof payload.yearsExp === 'number' ? payload.yearsExp : null,
     Array.isArray(payload.areas) ? payload.areas : null,
     Array.isArray(payload.transmission) ? payload.transmission : null,
-    typeof payload.isFemale === 'boolean' ? payload.isFemale : null
+    typeof payload.isFemale === 'boolean' ? payload.isFemale : null,
+    payload.licenceNumber === undefined ? null : payload.licenceNumber
   );
   return rows[0] ?? null;
 };
@@ -1027,14 +1069,14 @@ const listPricingCategories = async () => {
   const categories = await prisma.$queryRawUnsafe<any[]>(
     `SELECT id, "lessonType"::text AS "lessonType", slug, "displayName", description, "sortOrder", "isActive"
      FROM "LessonPricingCategory"
-     ORDER BY "sortOrder" ASC`
+     ORDER BY "createdAt" ASC`
   );
   const packages = await prisma.$queryRawUnsafe<any[]>(
     `SELECT id, "categoryId", slug, name, hours, lessons,
             price::text AS price, "pricePerHour"::text AS "pricePerHour",
             savings::text AS savings, "footerNote", badge, "isPopular", "sortOrder", "isActive"
      FROM "LessonPricingPackage"
-     ORDER BY "sortOrder" ASC`
+     ORDER BY "createdAt" ASC`
   );
 
   const pkgByCategory = new Map<string, any[]>();
@@ -1527,6 +1569,127 @@ const deleteTheoryById = async (id: string) => {
   return true;
 };
 
+const createUser = async (payload: {
+  name: string;
+  email: string;
+  phone?: string | null;
+  password: string;
+  role?: string;
+}) => {
+  const role = VALID_USER_ROLES.includes(payload.role as any) ? payload.role : 'USER';
+  const passwordHash = await bcrypt.hash(payload.password, 10);
+  const id = uuidv4();
+  const rows = await prisma.$queryRawUnsafe<any[]>(
+    `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, $4, $5, $6::"BackendUserRole", true, NOW(), NOW())
+     RETURNING id, name, email, role::text AS role, phone, "createdAt"`,
+    id, payload.name.trim(), payload.email.trim().toLowerCase(),
+    payload.phone ?? null, passwordHash, role
+  );
+  return rows[0];
+};
+
+const updateUserById = async (id: string, payload: {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  role?: string;
+}) => {
+  const role = payload.role && VALID_USER_ROLES.includes(payload.role as any) ? payload.role : null;
+  const rows = await prisma.$queryRawUnsafe<any[]>(
+    `UPDATE users
+     SET name = COALESCE($2, name),
+         email = COALESCE($3, email),
+         phone = COALESCE($4, phone),
+         role = COALESCE($5::"BackendUserRole", role),
+         "updatedAt" = NOW()
+     WHERE id = $1
+     RETURNING id, name, email, role::text AS role, phone, "createdAt", "updatedAt"`,
+    id,
+    payload.name?.trim() ?? null,
+    payload.email?.trim().toLowerCase() ?? null,
+    payload.phone ?? null,
+    role
+  );
+  return rows[0] ?? null;
+};
+
+const createInstructor = async (payload: {
+  name: string;
+  email: string;
+  phone?: string | null;
+  password: string;
+  bio?: string | null;
+  pricePerHour: number;
+  transmission: string[];
+  yearsExp: number;
+  licenceNumber?: string | null;
+  isFemale: boolean;
+  areas: string[];
+  isActive: boolean;
+}) => {
+  const passwordHash = await bcrypt.hash(payload.password, 10);
+  const userId = uuidv4();
+  const instructorId = uuidv4();
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, $4, $5, 'USER'::"BackendUserRole", true, NOW(), NOW())`,
+    userId, payload.name.trim(), payload.email.trim().toLowerCase(), payload.phone ?? null, passwordHash
+  );
+  const rows = await prisma.$queryRawUnsafe<any[]>(
+    `INSERT INTO "Instructor" (id, "userId", bio, "pricePerHour", transmission, "yearsExp", "licenceNumber", "isFemale", areas, "isActive", rating, "reviewCount", "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, $4::decimal, $5::text[], $6, $7, $8, $9::text[], $10, 0, 0, NOW(), NOW())
+     RETURNING id`,
+    instructorId, userId, payload.bio ?? null, payload.pricePerHour, payload.transmission,
+    payload.yearsExp, payload.licenceNumber ?? null, payload.isFemale, payload.areas, payload.isActive
+  );
+  return rows[0];
+};
+
+const deleteInstructorById = async (id: string) => {
+  await prisma.$executeRawUnsafe(`DELETE FROM "Instructor" WHERE id = $1`, id);
+  return true;
+};
+
+const getInstructorScheduleById = async (instructorId: string) => {
+  const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM "Instructor" WHERE id = $1 LIMIT 1`,
+    instructorId
+  );
+  if (!rows[0]) return null;
+
+  return prisma.$queryRawUnsafe<Array<Record<string, unknown>>>(
+    `SELECT "dayOfWeek", "startTime"::text, "endTime"::text, "isAvailable"
+     FROM "Availability"
+     WHERE "instructorId" = $1
+     ORDER BY "dayOfWeek" ASC, "startTime" ASC`,
+    instructorId
+  );
+};
+
+const updateInstructorScheduleById = async (
+  instructorId: string,
+  slots: Array<{ dayOfWeek: number; startTime: string; endTime: string; isAvailable: boolean }>
+) => {
+  const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM "Instructor" WHERE id = $1 LIMIT 1`,
+    instructorId
+  );
+  if (!rows[0]) return null;
+
+  await prisma.$executeRawUnsafe(`DELETE FROM "Availability" WHERE "instructorId" = $1`, instructorId);
+
+  for (const slot of slots) {
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "Availability" (id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable", "createdAt", "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, $3::time, $4::time, $5, NOW(), NOW())`,
+      instructorId, slot.dayOfWeek, slot.startTime, slot.endTime, slot.isAvailable
+    );
+  }
+
+  return { success: true, count: slots.length };
+};
+
 export default {
   VALID_BOOKING_STATUSES,
   VALID_PAYMENT_STATUSES,
@@ -1541,6 +1704,8 @@ export default {
   listUsers,
   updateUserRole,
   getUserById,
+  createUser,
+  updateUserById,
   deleteUserById,
   listApplications,
   updateApplicationStatus,
@@ -1557,6 +1722,10 @@ export default {
   listInstructors,
   patchInstructorById,
   getInstructorById,
+  createInstructor,
+  deleteInstructorById,
+  getInstructorScheduleById,
+  updateInstructorScheduleById,
   listPricingCategories,
   patchPricingCategory,
   createPricingPackage,

@@ -11,9 +11,9 @@ import {
   Car,
   Shield,
   MapPin,
-  Gauge,
   FlaskConical,
   Trophy,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
@@ -67,141 +67,6 @@ function normalizeCategoryId(value: string): string {
   return value.toLowerCase().replace(/\s+/g, "-");
 }
 
-const mockQuestions: Question[] = [
-  {
-    id: "q1",
-    category: "road-signs",
-    question: "What does a red circular road sign mean?",
-    options: [
-      "Warning of a hazard ahead",
-      "Mandatory prohibition — you must NOT do this",
-      "Gives information to drivers",
-      "Advisory speed recommendation",
-    ],
-    correct: 1,
-    explanation:
-      "Red circular signs are mandatory prohibitions — they tell you what you MUST NOT do, such as 'No Entry' or speed limits.",
-  },
-  {
-    id: "q2",
-    category: "rules",
-    question:
-      "What is the national speed limit on a single carriageway road for a car?",
-    options: ["50 mph", "60 mph", "70 mph", "80 mph"],
-    correct: 1,
-    explanation:
-      "The national speed limit on a single carriageway road for cars and motorcycles is 60 mph.",
-  },
-  {
-    id: "q3",
-    category: "rules",
-    question: "When MUST you use your headlights?",
-    options: [
-      "During sunset only",
-      "When visibility is seriously reduced",
-      "Between 11pm and 6am only",
-      "Only on motorways at night",
-    ],
-    correct: 1,
-    explanation:
-      "You must use headlights when visibility is seriously reduced — generally when you cannot see for more than 100 metres.",
-  },
-  {
-    id: "q4",
-    category: "safety",
-    question: "What is the minimum tread depth for car tyres?",
-    options: ["1.0mm", "1.6mm", "2.0mm", "2.5mm"],
-    correct: 1,
-    explanation:
-      "The legal minimum tread depth for car tyres is 1.6mm across the central three-quarters of the tyre, around its entire circumference.",
-  },
-  {
-    id: "q5",
-    category: "hazards",
-    question:
-      "You are about to overtake a cyclist. How much space should you leave?",
-    options: [
-      "0.5 metres",
-      "1 metre",
-      "1.5 metres",
-      "At least 1.5 metres — more at higher speeds",
-    ],
-    correct: 3,
-    explanation:
-      "The Highway Code recommends leaving at least 1.5 metres when overtaking a cyclist at low speeds, and more at higher speeds.",
-  },
-  {
-    id: "q6",
-    category: "handling",
-    question: "What is the two-second rule used for?",
-    options: [
-      "Checking mirrors before a manoeuvre",
-      "Maintaining a safe following distance",
-      "Timing traffic light changes",
-      "Estimating braking distance at night",
-    ],
-    correct: 1,
-    explanation:
-      "The two-second rule helps you maintain a safe following distance from the vehicle ahead in normal conditions. In wet conditions, double it to four seconds.",
-  },
-  {
-    id: "q7",
-    category: "road-signs",
-    question: "A triangular road sign is used to indicate what?",
-    options: [
-      "An instruction you must obey",
-      "Information for drivers",
-      "A warning of a hazard ahead",
-      "The end of a restriction",
-    ],
-    correct: 2,
-    explanation:
-      "Triangular signs with a red border warn drivers of a hazard or potential danger ahead.",
-  },
-  {
-    id: "q8",
-    category: "rules",
-    question: "At a crossroads with no road markings, who has priority?",
-    options: [
-      "The vehicle on the right always has priority",
-      "The largest vehicle has priority",
-      "No vehicle has automatic priority",
-      "The vehicle that arrives first has priority",
-    ],
-    correct: 2,
-    explanation:
-      "At an unmarked crossroads, no vehicle has automatic priority. All drivers should proceed with caution and give way as needed.",
-  },
-  {
-    id: "q9",
-    category: "safety",
-    question: "When should you use your hazard warning lights?",
-    options: [
-      "When parking on double yellow lines",
-      "When your vehicle is a temporary obstruction to warn other drivers",
-      "Whenever it is raining heavily",
-      "When driving slowly in fog",
-    ],
-    correct: 1,
-    explanation:
-      "Hazard warning lights should be used when your vehicle is a temporary obstruction — for example, if you break down on a motorway hard shoulder.",
-  },
-  {
-    id: "q10",
-    category: "handling",
-    question: "What does aquaplaning mean?",
-    options: [
-      "Driving too fast around a corner",
-      "When a layer of water prevents tyre contact with the road",
-      "Skidding on ice",
-      "Losing steering on a gravel road",
-    ],
-    correct: 1,
-    explanation:
-      "Aquaplaning occurs when a layer of water builds up between the tyres and the road, causing a loss of traction. Reduce speed in wet conditions to prevent it.",
-  },
-];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function ProgressBar({
   value,
@@ -232,20 +97,22 @@ function ProgressBar({
 // ─── Mock Test Component ─────────────────────────────────────────────────────
 function MockTest({
   categories,
+  questions,
   onClose,
   onComplete,
 }: {
   categories: Category[];
+  questions: Question[];
   onClose: () => void;
   onComplete: () => void;
 }) {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>(
-    Array(mockQuestions.length).fill(null)
+    Array(questions.length).fill(null)
   );
   const [showResult, setShowResult] = useState(false);
 
-  const q = mockQuestions[current];
+  const q = questions[current];
   const userAnswer = answers[current];
 
   async function handleSelect(idx: number) {
@@ -254,14 +121,13 @@ function MockTest({
     next[current] = idx;
     setAnswers(next);
 
-    // POST progress for this answer (use index as dummy questionId)
     try {
       const headers = await getNextAuthBridgeHeaders();
       await fetch(backendApiUrl("/student/theory/progress"), {
         method: "POST",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({
-          questionId: `mock-${current}`,
+          questionId: q.id,
           isCorrect: idx === q.correct,
         }),
       });
@@ -271,7 +137,7 @@ function MockTest({
   }
 
   function handleNext() {
-    if (current < mockQuestions.length - 1) {
+    if (current < questions.length - 1) {
       setCurrent((c) => c + 1);
     } else {
       setShowResult(true);
@@ -280,10 +146,25 @@ function MockTest({
   }
 
   const score = answers.filter(
-    (a, i) => a === mockQuestions[i].correct
+    (a, i) => a !== null && a === questions[i]?.correct
   ).length;
-  const passed = score / mockQuestions.length >= 0.86;
-  const percent = Math.round((score / mockQuestions.length) * 100);
+  const passed = questions.length > 0 && score / questions.length >= 0.86;
+  const percent = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
+
+  if (!q) {
+    return (
+      <div className="p-8 flex flex-col items-center gap-4 text-brand-muted">
+        <AlertTriangle className="w-8 h-8 text-brand-orange" />
+        <p className="text-sm">No questions available. Please try again.</p>
+        <button
+          onClick={onClose}
+          className="px-6 py-2.5 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200"
+        >
+          Back to Training
+        </button>
+      </div>
+    );
+  }
 
   if (showResult) {
     return (
@@ -317,7 +198,7 @@ function MockTest({
           <p className="text-brand-muted text-sm mb-1">
             You scored{" "}
             <strong className="text-brand-black">
-              {score}/{mockQuestions.length}
+              {score}/{questions.length}
             </strong>{" "}
             correct
           </p>
@@ -364,7 +245,7 @@ function MockTest({
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => {
-              setAnswers(Array(mockQuestions.length).fill(null));
+              setAnswers(Array(questions.length).fill(null));
               setCurrent(0);
               setShowResult(false);
             }}
@@ -392,7 +273,7 @@ function MockTest({
           <span className="text-sm font-semibold text-brand-black">
             Question {current + 1}{" "}
             <span className="text-brand-muted font-normal">
-              of {mockQuestions.length}
+              of {questions.length}
             </span>
           </span>
         </div>
@@ -409,14 +290,14 @@ function MockTest({
         <div
           className="h-full bg-brand-red rounded-full transition-all duration-300"
           style={{
-            width: `${(current / mockQuestions.length) * 100}%`,
+            width: `${(current / questions.length) * 100}%`,
           }}
         />
       </div>
 
       {/* Category pill */}
       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-red bg-red-50 px-2.5 py-1 rounded-full mb-4">
-        {categories.find((c) => c.id === q.category)?.name ?? q.category}
+        {categories.find((c) => c.id === normalizeCategoryId(q.category))?.name ?? q.category}
       </span>
 
       <AnimatePresence mode="wait">
@@ -492,7 +373,7 @@ function MockTest({
           onClick={handleNext}
           className="mt-5 w-full py-3 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200"
         >
-          {current < mockQuestions.length - 1
+          {current < questions.length - 1
             ? "Next Question →"
             : "See My Results"}
         </motion.button>
@@ -505,6 +386,8 @@ function MockTest({
 export default function StudentTheoryPage() {
   useAppSession();
   const [testOpen, setTestOpen] = useState(false);
+  const [testQuestions, setTestQuestions] = useState<Question[]>([]);
+  const [testLoading, setTestLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
 
   const fetchProgress = useCallback(async () => {
@@ -540,6 +423,24 @@ export default function StudentTheoryPage() {
     } catch {
       // keep defaults on error
     }
+  }, []);
+
+  const openTest = useCallback(async () => {
+    setTestLoading(true);
+    try {
+      const headers = await getNextAuthBridgeHeaders();
+      const res = await fetch(backendApiUrl("/student/theory/questions?limit=10"), { headers });
+      if (res.ok) {
+        const data = await res.json();
+        const qs: Question[] = data.data ?? [];
+        setTestQuestions(qs);
+      }
+    } catch {
+      // keep any existing questions
+    } finally {
+      setTestLoading(false);
+    }
+    setTestOpen(true);
   }, []);
 
   useEffect(() => {
@@ -589,8 +490,10 @@ export default function StudentTheoryPage() {
           >
             <MockTest
               categories={categories}
+              questions={testQuestions}
               onClose={() => {
                 setTestOpen(false);
+                setTestQuestions([]);
                 fetchProgress();
               }}
               onComplete={() => {
@@ -682,9 +585,13 @@ export default function StudentTheoryPage() {
                   </div>
 
                   <button
-                    onClick={() => setTestOpen(true)}
-                    className="mt-auto w-full py-2 text-xs font-semibold text-brand-red border border-red-200 rounded-lg hover:bg-brand-red hover:text-white hover:border-brand-red transition-all duration-200"
+                    onClick={openTest}
+                    disabled={testLoading}
+                    className="mt-auto w-full py-2 text-xs font-semibold text-brand-red border border-red-200 rounded-lg hover:bg-brand-red hover:text-white hover:border-brand-red transition-all duration-200 disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-1.5"
                   >
+                    {testLoading ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : null}
                     Practice {cat.name}
                   </button>
                 </motion.div>
@@ -711,9 +618,13 @@ export default function StudentTheoryPage() {
                   simulate passing the DVSA theory test.
                 </p>
                 <button
-                  onClick={() => setTestOpen(true)}
-                  className="px-8 py-3 bg-brand-red text-white rounded-xl font-bold hover:bg-brand-orange transition-colors duration-200 shadow-lg shadow-red-900/30"
+                  onClick={openTest}
+                  disabled={testLoading}
+                  className="px-8 py-3 bg-brand-red text-white rounded-xl font-bold hover:bg-brand-orange transition-colors duration-200 shadow-lg shadow-red-900/30 disabled:opacity-50 disabled:cursor-wait inline-flex items-center gap-2"
                 >
+                  {testLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : null}
                   Start Mock Test &rarr;
                 </button>
               </div>

@@ -14,7 +14,6 @@ import {
   LogOut,
   ChevronRight,
   ChevronDown,
-  Bell,
   Menu,
   X,
 } from "lucide-react";
@@ -37,8 +36,10 @@ const studentNav: NavItem[] = [
 
 const instructorNav: NavItem[] = [
   { href: "/instructor/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/instructor/bookings", label: "My Bookings", icon: CalendarDays },
   { href: "/instructor/schedule", label: "Schedule", icon: Clock },
   { href: "/instructor/students", label: "My Students", icon: Users },
+  { href: "/instructor/profile", label: "Profile", icon: User },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -47,8 +48,10 @@ const pageTitles: Record<string, string> = {
   "/student/theory": "Theory Training",
   "/student/profile": "Profile",
   "/instructor/dashboard": "Dashboard",
+  "/instructor/bookings": "My Bookings",
   "/instructor/schedule": "My Schedule",
   "/instructor/students": "My Students",
+  "/instructor/profile": "My Profile",
 };
 
 function SidebarContent({
@@ -186,7 +189,7 @@ function TopHeader({ onMenuClick }: { onMenuClick: () => void }) {
         .slice(0, 2)
     : "U";
   const role = (session?.user as { role?: string })?.role ?? "STUDENT";
-  const profileHref = role === "INSTRUCTOR" ? "/instructor/dashboard" : "/student/profile";
+  const profileHref = role === "INSTRUCTOR" ? "/instructor/profile" : "/student/profile";
 
   return (
     <header className="h-16 bg-white border-b border-brand-border px-6 flex items-center justify-between sticky top-0 z-20">
@@ -201,14 +204,6 @@ function TopHeader({ onMenuClick }: { onMenuClick: () => void }) {
         <h1 className="text-lg font-bold text-brand-black">{title}</h1>
       </div>
       <div className="flex items-center gap-2">
-        <button
-          className="relative p-2 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors"
-          aria-label="Notifications"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-red rounded-full" />
-        </button>
-
         {/* Profile dropdown */}
         <div className="relative">
           <button

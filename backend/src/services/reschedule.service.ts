@@ -1,0 +1,159 @@
+import { v4 as uuidv4 } from 'uuid';
+import prisma from '../client';
+
+type Role = 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
+
+const createRequest = async (params: {
+  bookingId: string;
+  requestedByUserId: string;
+  requestedByRole: Role;
+  proposedDateTime: string;
+  reason: string;
+  notes?: string;
+}) => {
+  const bookings = await prisma.$queryRawUnsafe<
+    Array<{ id: string; status: string; studentId: string; instructorId: string }>
+  >(
+    `SELECT id, status::text AS status, "studentId", "instructorId" FROM "Booking" WHERE id = $1 LIMIT 1`,
+    params.bookingId
+  );
+  const booking = bookings[0];
+  if (!booking) return { error: 'NOT_FOUND' as const };
+  if (!['PENDING', 'CONFIRMED'].includes(booking.status)) return { error: 'BAD_STATE' as const };
+
+  // Cancel any existing PENDING reschedule requests for this booking
+  try {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "RescheduleRequest" SET status = 'CANCELLED', "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'`,
+      params.bookingId
+    );
+  } catch { /* table may not exist */ }
+
+  // Admin always reschedules directly — no approval needed
+  if (params.requestedByRole === 'ADMIN') {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Booking" SET "scheduledAt" = $2::timestamp, notes = COALESCE($3::text, notes), "updatedAt" = NOW() WHERE id = $1`,
+      params.bookingId,
+      params.proposedDateTime,
+      params.notes ?? null
+    );
+    return { data: { type: 'DIRECT' as const, bookingId: params.bookingId } };
+  }
+
+  const id = uuidv4();
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO "RescheduleRequest"
+       (id, "bookingId", "requestedByUserId", "requestedByRole", "proposedDateTime", reason, notes, status, "createdAt", "updatedAt")
+     VALUES ($1, $2, $3, $4, $5::timestamp, $6, $7, 'PENDING', NOW(), NOW())`,
+    id,
+    params.bookingId,
+    params.requestedByUserId,
+    params.requestedByRole,
+    params.proposedDateTime,
+    params.reason,
+    params.notes ?? null
+  );
+
+  return { data: { type: 'REQUEST' as const, requestId: id } };
+};
+
+const respondToRequest = async (params: {
+  requestId: string;
+  respondedByUserId: string;
+  respondedByRole: Role;
+  accept: boolean;
+}) => {
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{
+      id: string;
+      bookingId: string;
+      requestedByRole: string;
+      requestedByUserId: string;
+      proposedDateTime: Date;
+      status: string;
+    }>
+  >(
+    `SELECT id, "bookingId", "requestedByRole", "requestedByUserId", "proposedDateTime", status::text AS status
+     FROM "RescheduleRequest" WHERE id = $1 LIMIT 1`,
+    params.requestId
+  );
+  const req = rows[0];
+  if (!req) return { error: 'NOT_FOUND' as const };
+  if (req.status !== 'PENDING') return { error: 'BAD_STATE' as const };
+
+  // Responder must be the other party (not the requester's role)
+  const isAuthorised =
+    (req.requestedByRole === 'STUDENT' && params.respondedByRole === 'INSTRUCTOR') ||
+    (req.requestedByRole === 'INSTRUCTOR' && params.respondedByRole === 'STUDENT') ||
+    params.respondedByRole === 'ADMIN';
+  if (!isAuthorised) return { error: 'FORBIDDEN' as const };
+
+  const newStatus = params.accept ? 'ACCEPTED' : 'DECLINED';
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE "RescheduleRequest"
+     SET status = $2::"RescheduleStatus", "respondedAt" = NOW(), "respondedByUserId" = $3, "updatedAt" = NOW()
+     WHERE id = $1`,
+    params.requestId,
+    newStatus,
+    params.respondedByUserId
+  );
+
+  if (params.accept) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Booking" SET "scheduledAt" = $2::timestamp, "updatedAt" = NOW() WHERE id = $1`,
+      req.bookingId,
+      req.proposedDateTime.toISOString()
+    );
+  }
+
+  return {
+    data: { requestId: params.requestId, status: newStatus, bookingId: req.bookingId },
+  };
+};
+
+const getPendingForBooking = async (bookingId: string) => {
+  try {
+    const rows = await prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        requestedByRole: string;
+        requestedByUserId: string;
+        requesterName: string | null;
+        proposedDateTime: Date;
+        reason: string | null;
+        notes: string | null;
+        createdAt: Date;
+      }>
+    >(
+      `SELECT r.id, r."requestedByRole", r."requestedByUserId",
+              u.name AS "requesterName",
+              r."proposedDateTime", r.reason, r.notes, r."createdAt"
+       FROM "RescheduleRequest" r
+       LEFT JOIN users u ON u.id = r."requestedByUserId"
+       WHERE r."bookingId" = $1 AND r.status = 'PENDING'
+       ORDER BY r."createdAt" DESC LIMIT 1`,
+      bookingId
+    );
+    if (!rows[0]) return null;
+    const r = rows[0];
+    return {
+      id: r.id,
+      requestedByRole: r.requestedByRole,
+      requestedByUserId: r.requestedByUserId,
+      requesterName: r.requesterName,
+      proposedDateTime: r.proposedDateTime.toISOString(),
+      reason: r.reason,
+      notes: r.notes,
+      createdAt: r.createdAt.toISOString(),
+    };
+  } catch {
+    return null;
+  }
+};
+
+export default {
+  createRequest,
+  respondToRequest,
+  getPendingForBooking,
+};

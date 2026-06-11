@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import catchAsync from '../utils/catchAsync';
 import bookingService from '../services/booking.service';
+import rescheduleService from '../services/reschedule.service';
 import { createBookingBodySchema, cancelBookingBodySchema } from '../validations/booking.validation';
 
 const listMine = catchAsync(async (req: Request, res: Response) => {
@@ -96,7 +97,9 @@ const cancelMine = catchAsync(async (req: Request, res: Response) => {
     return res.status(httpStatus.BAD_REQUEST).send({ error: 'Invalid action' });
   }
 
-  const result = await bookingService.cancelForStudent(bookingId, studentId);
+  const { reason, notes } = req.body as { reason?: string; notes?: string };
+
+  const result = await bookingService.cancelForStudent(bookingId, studentId, reason, notes);
 
   if ('error' in result) {
     switch (result.error) {
@@ -118,9 +121,73 @@ const cancelMine = catchAsync(async (req: Request, res: Response) => {
   res.status(httpStatus.OK).send({ data: result.data });
 });
 
+const postReschedule = catchAsync(async (req: Request, res: Response) => {
+  const studentId = req.appUserId! as string;
+  const bookingId = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
+  const proposedDateTime: string | undefined = req.body?.proposedDateTime;
+  const reason: string | undefined = req.body?.reason;
+  const notes: string | undefined = req.body?.notes;
+
+  if (!proposedDateTime || !reason) {
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'proposedDateTime and reason are required' });
+  }
+
+  const result = await bookingService.createRescheduleRequest(bookingId, studentId, {
+    proposedDateTime,
+    reason,
+    notes,
+  });
+
+  if ('error' in result) {
+    const code =
+      result.error === 'NOT_FOUND' ? httpStatus.NOT_FOUND :
+      result.error === 'FORBIDDEN' ? httpStatus.FORBIDDEN :
+      httpStatus.BAD_REQUEST;
+    return res.status(code).send({ error: result.error });
+  }
+
+  res.status(httpStatus.OK).send({ success: true, data: result.data });
+});
+
+const patchReschedule = catchAsync(async (req: Request, res: Response) => {
+  const studentId = req.appUserId! as string;
+  const bookingId = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
+  const requestId: string | undefined = req.body?.requestId;
+  const accept: boolean | undefined = req.body?.accept;
+
+  if (!requestId || accept === undefined) {
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'requestId and accept are required' });
+  }
+
+  // Verify the student owns the booking for this reschedule request
+  const ownership = await bookingService.respondToRescheduleRequest(requestId, studentId);
+  if ('error' in ownership) {
+    return res.status(httpStatus.FORBIDDEN).send({ error: 'Forbidden' });
+  }
+
+  const result = await rescheduleService.respondToRequest({
+    requestId,
+    respondedByUserId: studentId,
+    respondedByRole: 'STUDENT',
+    accept: Boolean(accept),
+  });
+
+  if ('error' in result) {
+    const code =
+      result.error === 'NOT_FOUND' ? httpStatus.NOT_FOUND :
+      result.error === 'FORBIDDEN' ? httpStatus.FORBIDDEN :
+      httpStatus.BAD_REQUEST;
+    return res.status(code).send({ error: result.error });
+  }
+
+  res.status(httpStatus.OK).send({ success: true, data: result.data });
+});
+
 export default {
   listMine,
   createMine,
   getAvailability,
   cancelMine,
+  postReschedule,
+  patchReschedule,
 };

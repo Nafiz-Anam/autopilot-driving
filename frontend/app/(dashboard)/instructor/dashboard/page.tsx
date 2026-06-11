@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import {
   CalendarDays,
   PoundSterling,
-  Star,
   Users,
   TrendingUp,
   MapPin,
@@ -38,48 +37,10 @@ interface ApiUpcomingLesson {
 interface ApiStats {
   lessonsThisWeek: number;
   earningsThisMonth: number;
-  avgRating: number;
   totalStudents: number;
   todayLessons: ApiTodayLesson[];
   upcomingLessons: ApiUpcomingLesson[];
 }
-
-interface Review {
-  id: string;
-  student: string;
-  initials: string;
-  stars: number;
-  text: string;
-  date: string;
-}
-
-// ─── Mock reviews (no API yet) ────────────────────────────────────────────────
-const reviews: Review[] = [
-  {
-    id: "r1",
-    student: "Amy Johnson",
-    initials: "AJ",
-    stars: 5,
-    text: "James is an absolutely brilliant instructor. He's patient, clear, and genuinely cares about your progress. Passed first time!",
-    date: "18 Apr 2025",
-  },
-  {
-    id: "r2",
-    student: "Daniel Brown",
-    initials: "DB",
-    stars: 5,
-    text: "Can't recommend James enough. He always explained exactly why I needed to do something, which made everything stick. Fantastic teacher.",
-    date: "10 Apr 2025",
-  },
-  {
-    id: "r3",
-    student: "Priya Patel",
-    initials: "PP",
-    stars: 4,
-    text: "Very professional and encouraging. Always on time and well prepared for each lesson. I feel my confidence has really grown.",
-    date: "2 Apr 2025",
-  },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const TIMELINE_START = 8;
@@ -215,23 +176,7 @@ function StatCard({
   );
 }
 
-function StarRow({ count }: { count: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star
-          key={i}
-          className={cn(
-            "w-3.5 h-3.5",
-            i < count
-              ? "text-yellow-400 fill-yellow-400"
-              : "text-brand-border fill-brand-border"
-          )}
-        />
-      ))}
-    </div>
-  );
-}
+
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function InstructorDashboard() {
@@ -276,7 +221,6 @@ export default function InstructorDashboard() {
   const upcomingLessons = apiStats?.upcomingLessons ?? [];
   const lessonsThisWeek = apiStats?.lessonsThisWeek ?? 0;
   const earningsThisMonth = apiStats?.earningsThisMonth ?? 0;
-  const avgRating = apiStats?.avgRating ?? 0;
   const totalStudents = apiStats?.totalStudents ?? 0;
 
   return (
@@ -314,12 +258,6 @@ export default function InstructorDashboard() {
           label="This Month"
           value={`£${earningsThisMonth.toFixed(0)}`}
           sub="earnings"
-        />
-        <StatCard
-          icon={Star}
-          label="Avg Rating"
-          value={avgRating.toFixed(1)}
-          sub="from reviews"
         />
         <StatCard
           icon={Users}
@@ -505,36 +443,6 @@ export default function InstructorDashboard() {
         )}
       </motion.div>
 
-      {/* ── Recent reviews ── */}
-      <motion.div variants={itemVariants}>
-        <h3 className="font-bold text-brand-black mb-4">Recent Reviews</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {reviews.map((r) => (
-            <div
-              key={r.id}
-              className="bg-white rounded-2xl border border-brand-border shadow-sm p-5 flex flex-col gap-3"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red text-xs font-bold shrink-0">
-                  {r.initials}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-brand-black leading-tight">
-                    {r.student}
-                  </p>
-                  <p className="text-[11px] text-brand-muted">{r.date}</p>
-                </div>
-                <div className="ml-auto">
-                  <StarRow count={r.stars} />
-                </div>
-              </div>
-              <p className="text-sm text-brand-muted leading-relaxed">
-                &ldquo;{r.text}&rdquo;
-              </p>
-            </div>
-          ))}
-        </div>
-      </motion.div>
     </motion.div>
   );
 }

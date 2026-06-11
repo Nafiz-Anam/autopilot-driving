@@ -74,6 +74,12 @@ const createTheoryProgress = catchAsync(async (req: Request, res: Response) => {
   return res.status(httpStatus.OK).send({ success: true });
 });
 
+const getTheoryQuestions = catchAsync(async (req: Request, res: Response) => {
+  const limit = Math.min(Number(req.query.limit) || 10, 50);
+  const questions = await studentAppService.getTheoryQuestions(limit);
+  return res.status(httpStatus.OK).send({ data: questions });
+});
+
 export default {
   getProfile,
   updateProfile,
@@ -81,4 +87,5 @@ export default {
   getStats,
   getTheoryProgress,
   createTheoryProgress,
+  getTheoryQuestions,
 };

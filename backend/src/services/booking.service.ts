@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
 import pricingService from './pricing.service';
 import { generateBookingReference } from '../utils/bookingReference';
+import rescheduleService from './reschedule.service';
 
 const ALL_SLOTS = [
   '08:00',
@@ -15,6 +16,40 @@ const ALL_SLOTS = [
   '16:00',
   '17:00',
 ];
+
+// Fetch pending reschedule requests for a set of booking IDs
+async function fetchPendingReschedules(bookingIds: string[]) {
+  if (!bookingIds.length) return {};
+  try {
+    const placeholders = bookingIds.map((_, i) => `$${i + 1}`).join(', ');
+    const rows = await prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        bookingId: string;
+        requestedByRole: string;
+        requestedByUserId: string;
+        requesterName: string | null;
+        proposedDateTime: Date;
+        reason: string | null;
+      }>
+    >(
+      `SELECT r.id, r."bookingId", r."requestedByRole", r."requestedByUserId",
+              u.name AS "requesterName", r."proposedDateTime", r.reason
+       FROM "RescheduleRequest" r
+       LEFT JOIN users u ON u.id = r."requestedByUserId"
+       WHERE r."bookingId" IN (${placeholders}) AND r.status = 'PENDING'
+       ORDER BY r."createdAt" DESC`,
+      ...bookingIds
+    );
+    const map: Record<string, (typeof rows)[0]> = {};
+    for (const r of rows) {
+      if (!map[r.bookingId]) map[r.bookingId] = r;
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
 
 const listForStudent = async (studentId: string) => {
   const rows = await prisma.$queryRawUnsafe<
@@ -46,7 +81,7 @@ const listForStudent = async (studentId: string) => {
     studentId
   );
 
-  return rows.map((b) => ({
+  const bookings = rows.map((b) => ({
     id: b.id,
     reference: b.reference,
     lessonType: b.lessonType,
@@ -65,7 +100,30 @@ const listForStudent = async (studentId: string) => {
           ? [b.instructor_areas]
           : [],
     },
+    pendingReschedule: null as null | {
+      id: string;
+      requestedByRole: string;
+      requesterName: string | null;
+      proposedDateTime: string;
+      reason: string | null;
+    },
   }));
+
+  const pending = await fetchPendingReschedules(bookings.map((b) => b.id));
+  for (const b of bookings) {
+    const r = pending[b.id];
+    if (r) {
+      b.pendingReschedule = {
+        id: r.id,
+        requestedByRole: r.requestedByRole,
+        requesterName: r.requesterName,
+        proposedDateTime: r.proposedDateTime.toISOString(),
+        reason: r.reason,
+      };
+    }
+  }
+
+  return bookings;
 };
 
 type CreateBookingInput = {
@@ -126,16 +184,23 @@ const createForStudent = async (input: CreateBookingInput) => {
   };
 };
 
-const cancelForStudent = async (bookingId: string, studentId: string) => {
+const cancelForStudent = async (
+  bookingId: string,
+  studentId: string,
+  reason?: string,
+  notes?: string
+) => {
   const rows = await prisma.$queryRawUnsafe<
     Array<{
       id: string;
       studentId: string;
       status: string;
       scheduledAt: Date;
+      paymentStatus: string;
+      totalAmount: string;
     }>
   >(
-    `SELECT id, "studentId", status, "scheduledAt" FROM "Booking" WHERE id = $1 LIMIT 1`,
+    `SELECT id, "studentId", status, "scheduledAt", "paymentStatus", "totalAmount"::text AS "totalAmount" FROM "Booking" WHERE id = $1 LIMIT 1`,
     bookingId
   );
   const booking = rows[0];
@@ -153,13 +218,94 @@ const cancelForStudent = async (bookingId: string, studentId: string) => {
     return { error: 'WITHIN_24H' as const };
   }
 
+  // Determine refund eligibility
+  const refundType =
+    hoursUntilLesson >= 48 ? 'FULL' :
+    hoursUntilLesson >= 24 ? 'PARTIAL' :
+    'NONE';
+
+  const cancelNotes = [reason, notes].filter(Boolean).join(' — ') || null;
+
+  // Determine payment status on cancel
+  let newPaymentStatus: string | null = null;
+  if (booking.paymentStatus === 'PAID') {
+    if (refundType === 'FULL') newPaymentStatus = 'REFUNDED';
+    else if (refundType === 'PARTIAL') newPaymentStatus = 'PARTIAL_REFUND';
+  }
+
   await prisma.$executeRawUnsafe(
-    `UPDATE "Booking" SET status = 'CANCELLED', "updatedAt" = $2::timestamp WHERE id = $1`,
+    `UPDATE "Booking"
+     SET status = 'CANCELLED',
+         "paymentStatus" = COALESCE($3::"PaymentStatus", "paymentStatus"),
+         notes = COALESCE($4::text, notes),
+         "updatedAt" = $2::timestamp
+     WHERE id = $1`,
     bookingId,
-    new Date().toISOString()
+    new Date().toISOString(),
+    newPaymentStatus,
+    cancelNotes
   );
 
-  return { data: { id: bookingId, status: 'CANCELLED' as const } };
+  // Cancel any pending reschedule requests
+  try {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "RescheduleRequest" SET status = 'CANCELLED', "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'`,
+      bookingId
+    );
+  } catch { /* RescheduleRequest table may not exist */ }
+
+  return {
+    data: {
+      id: bookingId,
+      status: 'CANCELLED' as const,
+      refundType,
+      newPaymentStatus: newPaymentStatus ?? booking.paymentStatus,
+    },
+  };
+};
+
+const createRescheduleRequest = async (
+  bookingId: string,
+  studentId: string,
+  params: { proposedDateTime: string; reason: string; notes?: string }
+) => {
+  // Verify ownership
+  const rows = await prisma.$queryRawUnsafe<Array<{ studentId: string }>>(
+    `SELECT "studentId" FROM "Booking" WHERE id = $1 LIMIT 1`,
+    bookingId
+  );
+  if (!rows[0]) return { error: 'NOT_FOUND' as const };
+  if (rows[0].studentId !== studentId) return { error: 'FORBIDDEN' as const };
+
+  return rescheduleService.createRequest({
+    bookingId,
+    requestedByUserId: studentId,
+    requestedByRole: 'STUDENT',
+    proposedDateTime: params.proposedDateTime,
+    reason: params.reason,
+    notes: params.notes,
+  });
+};
+
+const respondToRescheduleRequest = async (
+  requestId: string,
+  studentId: string
+) => {
+  // Validate the request belongs to a booking owned by this student
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{ bookingId: string; requestedByRole: string }>
+  >(
+    `SELECT rr."bookingId", rr."requestedByRole"
+     FROM "RescheduleRequest" rr
+     INNER JOIN "Booking" b ON b.id = rr."bookingId"
+     WHERE rr.id = $1 AND b."studentId" = $2
+     LIMIT 1`,
+    requestId,
+    studentId
+  );
+  if (!rows[0]) return { error: 'FORBIDDEN' as const };
+
+  return { data: rows[0] };
 };
 
 const getAvailability = async (instructorId: string, startDateStr: string, endDateStr: string) => {
@@ -214,5 +360,7 @@ export default {
   listForStudent,
   createForStudent,
   cancelForStudent,
+  createRescheduleRequest,
+  respondToRescheduleRequest,
   getAvailability,
 };

@@ -15,8 +15,10 @@ router.get('/bookings/:id', adminAppController.getBookingById);
 router.patch('/bookings/:id', adminAppController.patchBookingById);
 
 router.get('/users', adminAppController.getUsers);
+router.post('/users', adminAppController.postUsers);
 router.patch('/users', adminAppController.patchUsers);
 router.get('/users/:id', adminAppController.getUserById);
+router.patch('/users/:id', adminAppController.patchUserById);
 router.delete('/users/:id', adminAppController.deleteUserById);
 
 router.get('/applications', adminAppController.getApplications);
@@ -38,9 +40,13 @@ router.post('/coupons', adminAppController.postCoupons);
 router.patch('/coupons/:id', adminAppController.patchCouponById);
 
 router.get('/instructors', adminAppController.getInstructors);
+router.post('/instructors', adminAppController.postInstructors);
 router.patch('/instructors', adminAppController.patchInstructors);
 router.get('/instructors/:id', adminAppController.getInstructorById);
 router.patch('/instructors/:id', adminAppController.patchInstructorById);
+router.delete('/instructors/:id', adminAppController.deleteInstructorById);
+router.get('/instructors/:id/schedule', adminAppController.getInstructorSchedule);
+router.post('/instructors/:id/schedule', adminAppController.postInstructorSchedule);
 
 router.get('/pricing/categories', adminAppController.getPricingCategories);
 router.patch('/pricing/categories/:id', adminAppController.patchPricingCategoryById);

@@ -9,5 +9,7 @@ router.get('/availability', bookingController.getAvailability);
 router.get('/', nextAuthBridge(), loadDrivingSchoolUser(), bookingController.listMine);
 router.post('/', nextAuthBridge(), loadDrivingSchoolUser(), bookingController.createMine);
 router.patch('/:id', nextAuthBridge(), loadDrivingSchoolUser(), bookingController.cancelMine);
+router.post('/:id/reschedule', nextAuthBridge(), loadDrivingSchoolUser(), bookingController.postReschedule);
+router.patch('/:id/reschedule', nextAuthBridge(), loadDrivingSchoolUser(), bookingController.patchReschedule);
 
 export default router;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Eye, EyeOff, AlertTriangle, X, Loader2 } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
@@ -17,13 +17,6 @@ interface PasswordForm {
   current: string;
   next: string;
   confirm: string;
-}
-
-interface NotifPrefs {
-  emailBookings: boolean;
-  emailReminders: boolean;
-  smsReminders: boolean;
-  smsPromotions: boolean;
 }
 
 interface SidebarStats {
@@ -74,43 +67,6 @@ function FormField({
         )}
       />
       {hint && <p className="text-xs text-brand-muted mt-1">{hint}</p>}
-    </div>
-  );
-}
-
-function ToggleSwitch({
-  checked,
-  onChange,
-  label,
-  description,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-  description: string;
-}) {
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-brand-border last:border-0">
-      <div>
-        <p className="text-sm font-medium text-brand-black">{label}</p>
-        <p className="text-xs text-brand-muted mt-0.5">{description}</p>
-      </div>
-      <button
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative w-10 h-6 rounded-full transition-colors duration-200 shrink-0 focus:outline-none focus:ring-2 focus:ring-brand-red focus:ring-offset-2",
-          checked ? "bg-brand-red" : "bg-brand-border"
-        )}
-      >
-        <span
-          className={cn(
-            "absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200",
-            checked ? "translate-x-4" : "translate-x-0"
-          )}
-        />
-      </button>
     </div>
   );
 }
@@ -246,13 +202,6 @@ export default function StudentProfilePage() {
 
   const [passwords, setPasswords] = useState<PasswordForm>({ current: "", next: "", confirm: "" });
 
-  const [notifs, setNotifs] = useState<NotifPrefs>({
-    emailBookings: true,
-    emailReminders: true,
-    smsReminders: true,
-    smsPromotions: false,
-  });
-
   useEffect(() => {
     async function loadProfileAndStats() {
       try {
@@ -372,15 +321,9 @@ export default function StudentProfilePage() {
         {/* Avatar card */}
         <motion.div variants={itemVariants} className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-6 flex flex-col items-center text-center">
-            <div className="relative mb-4 group cursor-pointer">
-              <div className="w-24 h-24 rounded-full bg-linear-to-br from-brand-red to-brand-orange flex items-center justify-center text-white text-3xl font-extrabold shadow-lg">
-                {initials}
-              </div>
-              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <Camera className="w-5 h-5 text-white" />
-              </div>
+            <div className="w-24 h-24 rounded-full bg-linear-to-br from-brand-red to-brand-orange flex items-center justify-center text-white text-3xl font-extrabold shadow-lg mb-4">
+              {initials}
             </div>
-            <p className="text-xs text-brand-muted mb-4">Click to upload a photo</p>
 
             <p className="font-bold text-brand-black text-lg leading-tight">{profile.name || "Your Name"}</p>
             <p className="text-xs text-brand-muted mt-0.5">{profile.email}</p>
@@ -532,36 +475,6 @@ export default function StudentProfilePage() {
                 </AnimatePresence>
               </div>
             </form>
-          </motion.div>
-
-          {/* Notification preferences */}
-          <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm p-6">
-            <h3 className="font-bold text-brand-black mb-1">Notification Preferences</h3>
-            <p className="text-xs text-brand-muted mb-4">Control how we contact you about your lessons.</p>
-            <ToggleSwitch
-              checked={notifs.emailBookings}
-              onChange={(v) => setNotifs((n) => ({ ...n, emailBookings: v }))}
-              label="Email — Booking confirmations"
-              description="Receive email receipts when you book or cancel a lesson"
-            />
-            <ToggleSwitch
-              checked={notifs.emailReminders}
-              onChange={(v) => setNotifs((n) => ({ ...n, emailReminders: v }))}
-              label="Email — Lesson reminders"
-              description="24-hour reminder before each upcoming lesson"
-            />
-            <ToggleSwitch
-              checked={notifs.smsReminders}
-              onChange={(v) => setNotifs((n) => ({ ...n, smsReminders: v }))}
-              label="SMS — Lesson reminders"
-              description="Text message 2 hours before your lesson"
-            />
-            <ToggleSwitch
-              checked={notifs.smsPromotions}
-              onChange={(v) => setNotifs((n) => ({ ...n, smsPromotions: v }))}
-              label="SMS — Promotions &amp; offers"
-              description="Occasional offers and news from AutoPilot"
-            />
           </motion.div>
 
           {/* Danger zone */}

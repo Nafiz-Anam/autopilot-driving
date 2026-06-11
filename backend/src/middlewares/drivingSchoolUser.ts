@@ -18,13 +18,6 @@ declare global {
   }
 }
 
-const mapBackendRoleToDrivingRole = (role: string): DrivingSchoolRole => {
-  if (role === 'ADMIN') return 'ADMIN';
-  // Current auth-core schema does not store STUDENT/INSTRUCTOR roles directly.
-  // Keep app-session compatible by mapping non-admin users to STUDENT for now.
-  return 'STUDENT';
-};
-
 /** After `nextAuthBridge`, loads the app user row from Prisma. */
 const loadDrivingSchoolUser =
   () => async (req: Request, res: Response, next: NextFunction) => {
@@ -40,9 +33,18 @@ const loadDrivingSchoolUser =
       if (!u) {
         return next(new ApiError(httpStatus.UNAUTHORIZED, 'User not found'));
       }
+
+      let drivingRole: DrivingSchoolRole = 'STUDENT';
+      if (u.role === 'ADMIN') {
+        drivingRole = 'ADMIN';
+      } else {
+        const instructorProfile = await prisma.instructor.findUnique({ where: { userId: id }, select: { id: true } });
+        if (instructorProfile) drivingRole = 'INSTRUCTOR';
+      }
+
       req.drivingUser = {
         id: u.id,
-        role: mapBackendRoleToDrivingRole(u.role),
+        role: drivingRole,
         name: u.name,
         email: u.email,
       };

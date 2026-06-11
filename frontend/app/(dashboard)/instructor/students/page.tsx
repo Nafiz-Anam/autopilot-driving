@@ -7,7 +7,6 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
-  MessageSquare,
   Users,
   CalendarDays,
   Check,
@@ -202,10 +201,6 @@ function StudentPanel({ student }: { student: Student }) {
             </div>
           </div>
 
-          <button className="flex items-center gap-2 px-4 py-2.5 border border-brand-border rounded-xl text-sm font-medium text-brand-black hover:bg-brand-surface transition-colors w-fit">
-            <MessageSquare className="w-4 h-4 text-brand-red" />
-            Send Message
-          </button>
         </div>
       </div>
     </motion.div>

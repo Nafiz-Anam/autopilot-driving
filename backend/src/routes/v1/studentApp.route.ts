@@ -17,6 +17,11 @@ router.post('/profile/password', studentAppController.changePassword);
 
 router.get('/stats', requireDrivingRoles('STUDENT'), studentAppController.getStats);
 router.get(
+  '/theory/questions',
+  requireDrivingRoles('STUDENT'),
+  studentAppController.getTheoryQuestions
+);
+router.get(
   '/theory/progress',
   requireDrivingRoles('STUDENT'),
   studentAppController.getTheoryProgress
