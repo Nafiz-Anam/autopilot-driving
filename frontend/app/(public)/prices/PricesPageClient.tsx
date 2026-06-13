@@ -163,9 +163,50 @@ function LessonCard({
 
 /* ─── Sections ──────────────────────────────────────────── */
 
+const ENQUIRY_MAP: Record<string, string> = {
+  manual: "manual_lessons",
+  automatic: "automatic_lessons",
+  intensive: "intensive_course",
+  "pass-plus": "other",
+};
+
 function CallbackForm() {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [enquiry, setEnquiry] = useState("");
   const [callTime, setCallTime] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!name.trim()) { setError("Please enter your name."); return; }
+    if (!phone.trim()) { setError("Please enter your phone number."); return; }
+    setLoading(true);
+    try {
+      const res = await fetch(backendApiUrl("/public/contact"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          enquiryType: enquiry ? (ENQUIRY_MAP[enquiry] ?? "callback_request") : "callback_request",
+          callTime: callTime || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? "Something went wrong. Please try again.");
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <motion.div
@@ -180,44 +221,68 @@ function CallbackForm() {
         </div>
         <span className="font-bold text-brand-black">We can call you</span>
       </div>
-      <div className="space-y-3">
-        <input
-          type="text"
-          placeholder="Name"
-          className="w-full border border-brand-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-red transition-colors"
-        />
-        <input
-          type="tel"
-          placeholder="Phone number"
-          className="w-full border border-brand-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-red transition-colors"
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <Select value={enquiry} onValueChange={(v) => setEnquiry(v ?? "")}>
-            <SelectTrigger className="w-full h-[46px] rounded-xl border border-brand-border px-4 text-sm data-placeholder:text-brand-muted">
-              <SelectValue placeholder="Enquiring about?" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} align="start" sideOffset={6}>
-              <SelectItem value="manual">Manual lessons</SelectItem>
-              <SelectItem value="automatic">Automatic lessons</SelectItem>
-              <SelectItem value="intensive">Intensive course</SelectItem>
-              <SelectItem value="pass-plus">Pass Plus</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={callTime} onValueChange={(v) => setCallTime(v ?? "")}>
-            <SelectTrigger className="w-full h-[46px] rounded-xl border border-brand-border px-4 text-sm data-placeholder:text-brand-muted">
-              <SelectValue placeholder="Best time to call?" />
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} align="start" sideOffset={6}>
-              <SelectItem value="morning">Morning (9–12)</SelectItem>
-              <SelectItem value="afternoon">Afternoon (12–5)</SelectItem>
-              <SelectItem value="evening">Evening (5–8)</SelectItem>
-            </SelectContent>
-          </Select>
+      {submitted ? (
+        <div className="flex flex-col items-center gap-3 py-6 text-center">
+          <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
+            <CheckCircle className="w-6 h-6 text-white" />
+          </div>
+          <p className="font-bold text-brand-black">We will call you soon!</p>
+          <p className="text-sm text-brand-muted">One of our team will be in touch during your preferred time.</p>
         </div>
-        <button className="w-full bg-brand-red hover:bg-brand-orange text-white font-bold py-3 rounded-xl transition-colors duration-200">
-          Request callback →
-        </button>
-      </div>
+      ) : (
+        <form onSubmit={handleSubmit} noValidate className="space-y-3">
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full border border-brand-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-red transition-colors"
+          />
+          <input
+            type="tel"
+            placeholder="Phone number"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full border border-brand-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-red transition-colors"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Select value={enquiry} onValueChange={(v) => setEnquiry(v ?? "")}>
+              <SelectTrigger className="w-full h-[46px] rounded-xl border border-brand-border px-4 text-sm data-placeholder:text-brand-muted">
+                <SelectValue placeholder="Enquiring about?" />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false} align="start" sideOffset={6}>
+                <SelectItem value="manual">Manual lessons</SelectItem>
+                <SelectItem value="automatic">Automatic lessons</SelectItem>
+                <SelectItem value="intensive">Intensive course</SelectItem>
+                <SelectItem value="pass-plus">Pass Plus</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={callTime} onValueChange={(v) => setCallTime(v ?? "")}>
+              <SelectTrigger className="w-full h-[46px] rounded-xl border border-brand-border px-4 text-sm data-placeholder:text-brand-muted">
+                <SelectValue placeholder="Best time to call?" />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false} align="start" sideOffset={6}>
+                <SelectItem value="Morning (9–12)">Morning (9–12)</SelectItem>
+                <SelectItem value="Afternoon (12–5)">Afternoon (12–5)</SelectItem>
+                <SelectItem value="Evening (5–8)">Evening (5–8)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-brand-red hover:bg-brand-orange disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
+          >
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : "Request callback →"}
+          </button>
+        </form>
+      )}
     </motion.div>
   );
 }

@@ -1637,8 +1637,8 @@ const createInstructor = async (payload: {
     userId, payload.name.trim(), payload.email.trim().toLowerCase(), payload.phone ?? null, passwordHash
   );
   const rows = await prisma.$queryRawUnsafe<any[]>(
-    `INSERT INTO "Instructor" (id, "userId", bio, "pricePerHour", transmission, "yearsExp", "licenceNumber", "isFemale", areas, "isActive", rating, "reviewCount", "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, $4::decimal, $5::text[], $6, $7, $8, $9::text[], $10, 0, 0, NOW(), NOW())
+    `INSERT INTO "Instructor" (id, "userId", bio, "pricePerHour", transmission, "yearsExp", "licenceNumber", "isFemale", areas, "isActive", rating, "reviewCount", "createdAt")
+     VALUES ($1, $2, $3, $4::decimal, $5::text[], $6, $7, $8, $9::text[], $10, 0, 0, NOW())
      RETURNING id`,
     instructorId, userId, payload.bio ?? null, payload.pricePerHour, payload.transmission,
     payload.yearsExp, payload.licenceNumber ?? null, payload.isFemale, payload.areas, payload.isActive

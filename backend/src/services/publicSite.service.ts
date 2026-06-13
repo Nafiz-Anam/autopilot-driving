@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import prisma from '../client';
 import emailService from './email.service';
@@ -29,14 +30,15 @@ const applySchema = z.object({
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name required'),
-  phone: z.string().regex(/^(\+44|0)7\d{9}$/, 'Enter a valid UK mobile number'),
-  postcode: z.string().min(3, 'Postcode required'),
+  phone: z.string().regex(/^(\+44|0)[\d\s]{9,12}$/, 'Enter a valid UK phone number'),
+  postcode: z.string().min(3, 'Postcode required').optional(),
   enquiryType: z.enum([
     'manual_lessons',
     'automatic_lessons',
     'intensive_course',
     'refresher',
     'become_instructor',
+    'callback_request',
     'other',
   ]),
   callTime: z.string().optional(),
@@ -296,13 +298,15 @@ const createInstructorApplication = async (payload: unknown) => {
     message,
   } = parsed.data;
 
+  const id = randomUUID();
   const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
     `INSERT INTO "InstructorApplication" (
-      "fullName", email, phone, postcode, "hasFullLicence", "yearsExperience", "trainingStarted", message, status
+      id, "fullName", email, phone, postcode, "hasFullLicence", "yearsExperience", "trainingStarted", message, status
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, 'pending'
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending'
     )
     RETURNING id`,
+    id,
     fullName,
     email,
     phone,
@@ -342,10 +346,12 @@ const createContactSubmission = async (payload: unknown, ip: string) => {
 
   const { name, phone, postcode, enquiryType, callTime, message } = parsed.data;
 
+  const id = randomUUID();
   const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
-    `INSERT INTO "ContactSubmission" (name, phone, postcode, "enquiryType", "callTime", message)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO "ContactSubmission" (id, name, phone, postcode, "enquiryType", "callTime", message)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING id`,
+    id,
     name,
     phone,
     postcode,
@@ -602,7 +608,7 @@ const getPricingCategories = async () => {
             savings::text AS savings, "footerNote", badge, "isPopular", "sortOrder", "isActive"
      FROM "LessonPricingPackage"
      WHERE "isActive" = true
-     ORDER BY "sortOrder" ASC`
+     ORDER BY "pricePerHour" ASC NULLS LAST, "sortOrder" ASC`
   );
 
   const data = categories.map(c => ({
