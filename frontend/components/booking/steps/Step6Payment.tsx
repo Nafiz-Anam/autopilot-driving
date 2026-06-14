@@ -17,6 +17,7 @@ import { BookingSummary } from "@/components/booking/BookingSummary";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
+import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 
 /* ── Inner payment form (inside <Elements>) ─────────────────── */
 function PaymentForm({
@@ -438,15 +439,18 @@ export function Step6Payment() {
             )}
           </div>
 
-          <button
-            onClick={prevStep}
-            className={cn(
-              "mt-5 px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm",
-              "hover:border-brand-red hover:text-brand-red transition-colors duration-200"
-            )}
-          >
-            ← Back
-          </button>
+          <div className="flex items-center justify-between mt-5 w-full">
+            <button
+              onClick={prevStep}
+              className={cn(
+                "px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm",
+                "hover:border-brand-red hover:text-brand-red transition-colors duration-200"
+              )}
+            >
+              ← Back
+            </button>
+            <CancelBookingButton className="ml-0" />
+          </div>
         </div>
 
         {/* ── Right: sticky summary ── */}

@@ -21,8 +21,6 @@ interface AreaFormData {
   postcodePrefix: string;
   description: string;
   isActive: boolean;
-  latitude?: number;
-  longitude?: number;
 }
 
 const emptyForm = (): AreaFormData => ({
@@ -30,8 +28,6 @@ const emptyForm = (): AreaFormData => ({
   postcodePrefix: "",
   description: "",
   isActive: true,
-  latitude: undefined,
-  longitude: undefined,
 });
 
 const containerVariants = {
@@ -62,8 +58,6 @@ function AreaModal({
           postcodePrefix: initial.postcodePrefix,
           description: initial.description || "",
           isActive: initial.isActive,
-          latitude: initial.latitude,
-          longitude: initial.longitude,
         }
       : emptyForm()
   );
@@ -76,8 +70,6 @@ function AreaModal({
         postcodePrefix: initial.postcodePrefix,
         description: initial.description || "",
         isActive: initial.isActive,
-        latitude: initial.latitude,
-        longitude: initial.longitude,
       });
     } else {
       setForm(emptyForm());
@@ -152,35 +144,6 @@ function AreaModal({
                 placeholder="e.g. SL1"
                 className="w-full px-4 py-2.5 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-brand-black mb-1.5">
-                  Latitude <span className="text-brand-muted font-normal">(optional)</span>
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={form.latitude ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value ? parseFloat(e.target.value) : undefined }))}
-                  placeholder="51.5074"
-                  className="w-full px-4 py-2.5 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-brand-black mb-1.5">
-                  Longitude <span className="text-brand-muted font-normal">(optional)</span>
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={form.longitude ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value ? parseFloat(e.target.value) : undefined }))}
-                  placeholder="-0.1278"
-                  className="w-full px-4 py-2.5 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
-                />
-              </div>
             </div>
 
             <div>
@@ -393,19 +356,15 @@ export default function AdminAreasPage() {
                 </button>
               </div>
 
-              {/* Postcode prefix & Coords */}
+              {/* Postcode prefix & map pin status */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-brand-muted">
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 shrink-0" />
                   <span className="font-mono text-xs">{area.postcodePrefix}</span>
                 </div>
-                {(area.latitude || area.longitude) && (
-                  <div className="flex items-center gap-1.5 opacity-60">
-                    <span className="text-[10px] font-mono">
-                      {area.latitude?.toFixed(4)}, {area.longitude?.toFixed(4)}
-                    </span>
-                  </div>
-                )}
+                <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", area.latitude ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-600")}>
+                  {area.latitude ? "📍 On map" : "No coords"}
+                </span>
               </div>
 
               {/* Description */}

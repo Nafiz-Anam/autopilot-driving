@@ -63,8 +63,8 @@ export default function ContactPageClient() {
               </div>
               <div>
                 <p className="text-xs text-brand-muted uppercase tracking-wide mb-1">Phone</p>
-                <a href="tel:+441234567890" className="font-bold text-brand-black hover:text-brand-red transition-colors">
-                  01234 567 890
+                <a href="tel:07450556963" className="font-bold text-brand-black hover:text-brand-red transition-colors">
+                  07450 556 963
                 </a>
               </div>
             </div>
@@ -76,8 +76,8 @@ export default function ContactPageClient() {
               </div>
               <div>
                 <p className="text-xs text-brand-muted uppercase tracking-wide mb-1">Email</p>
-                <a href="mailto:hello@autopilotdriving.co.uk" className="font-bold text-brand-black hover:text-brand-red transition-colors">
-                  hello@autopilotdriving.co.uk
+                <a href="mailto:contact@autopilotdrivingschool.co.uk" className="font-bold text-brand-black hover:text-brand-red transition-colors">
+                  contact@autopilotdrivingschool.co.uk
                 </a>
               </div>
             </div>

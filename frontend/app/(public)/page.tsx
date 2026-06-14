@@ -18,7 +18,7 @@ export const metadata: Metadata = {
       "@type": "LocalBusiness",
       name: "AutoPilot Driving School",
       telephone: "+447450556963",
-      email: "info@autopilotdrivingschool.co.uk",
+      email: "contact@autopilotdrivingschool.co.uk",
       url: "https://autopilotdrivingschool.co.uk",
       address: {
         "@type": "PostalAddress",

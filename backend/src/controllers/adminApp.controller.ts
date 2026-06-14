@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import catchAsync from '../utils/catchAsync';
 import adminAppService from '../services/adminApp.service';
+import { geocodePostcode } from '../utils/geocodePostcode';
 
 /** Express 5 `req.params.id` can be `string | string[]`. */
 const pid = (req: Request) => {
@@ -174,23 +175,41 @@ const getAreas = catchAsync(async (_req: Request, res: Response) => {
 });
 
 const postAreas = catchAsync(async (req: Request, res: Response) => {
-  const { name, postcodePrefix, description, latitude, longitude, isActive } = req.body as {
+  const { name, postcodePrefix, description, isActive } = req.body as {
     name?: string;
     postcodePrefix?: string;
     description?: string;
-    latitude?: number;
-    longitude?: number;
     isActive?: boolean;
   };
   if (!name || !postcodePrefix) {
     return res.status(httpStatus.BAD_REQUEST).send({ error: 'name and postcodePrefix are required' });
   }
-  const data = await adminAppService.createArea({ name, postcodePrefix, description, latitude, longitude, isActive });
+  const geo = await geocodePostcode(postcodePrefix);
+  const data = await adminAppService.createArea({
+    name,
+    postcodePrefix,
+    description,
+    latitude: geo?.lat,
+    longitude: geo?.lng,
+    isActive,
+  });
   return res.status(httpStatus.CREATED).send({ data });
 });
 
 const patchAreaById = catchAsync(async (req: Request, res: Response) => {
-  const data = await adminAppService.updateAreaById(pid(req), req.body ?? {});
+  const body = (req.body ?? {}) as {
+    name?: string;
+    postcodePrefix?: string;
+    description?: string;
+    isActive?: boolean;
+  };
+  let lat: number | undefined;
+  let lng: number | undefined;
+  if (body.postcodePrefix) {
+    const geo = await geocodePostcode(body.postcodePrefix);
+    if (geo) { lat = geo.lat; lng = geo.lng; }
+  }
+  const data = await adminAppService.updateAreaById(pid(req), { ...body, latitude: lat, longitude: lng });
   if (!data) {
     return res.status(httpStatus.NOT_FOUND).send({ error: 'Area not found' });
   }

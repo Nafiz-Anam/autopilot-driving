@@ -2,18 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-const COVERAGE_LOCATIONS = [
-  { name: "Slough", postcode: "SL1", coords: [51.5105, -0.595] as [number, number] },
-  { name: "Windsor", postcode: "SL4", coords: [51.4839, -0.6044] as [number, number] },
-  { name: "Maidenhead", postcode: "SL6", coords: [51.5229, -0.7199] as [number, number] },
-  { name: "Reading", postcode: "RG1", coords: [51.4543, -0.9781] as [number, number] },
-  { name: "Wokingham", postcode: "RG40", coords: [51.4112, -0.8339] as [number, number] },
-  { name: "Bracknell", postcode: "RG12", coords: [51.416, -0.75] as [number, number] },
-  { name: "Staines", postcode: "TW18", coords: [51.4322, -0.5045] as [number, number] },
-  { name: "Feltham", postcode: "TW13", coords: [51.4479, -0.4088] as [number, number] },
-  { name: "Hounslow", postcode: "TW3", coords: [51.4681, -0.3613] as [number, number] },
-];
-
 type LeafletMapInstance = {
   remove: () => void;
   fitBounds: (bounds: [number, number][]) => void;
@@ -98,31 +86,12 @@ export default function CoverageLeafletMap({ areas }: { areas: any[] }) {
         const markers: [number, number][] = [];
 
         areas.forEach((area) => {
-          let coords: [number, number] | null = null;
-
-          // 1. Use database coordinates if available
-          if (area.latitude != null && area.longitude != null) {
-            coords = [area.latitude, area.longitude];
-          }
-
-          // 2. Fallback to hardcoded lookup
-          if (!coords) {
-            const match = COVERAGE_LOCATIONS.find(
-              (loc) =>
-                loc.name.toLowerCase() === area.name.toLowerCase() ||
-                area.postcodePrefix.toUpperCase().startsWith(loc.postcode.toUpperCase())
-            );
-            if (match) {
-              coords = match.coords;
-            }
-          }
-
-          if (coords) {
-            window.L?.marker(coords).addTo(map).bindPopup(
-              `<strong>${area.name}</strong><br />Postcode area: ${area.postcodePrefix}`
-            );
-            markers.push(coords);
-          }
+          if (area.latitude == null || area.longitude == null) return;
+          const coords: [number, number] = [area.latitude, area.longitude];
+          window.L?.marker(coords).addTo(map).bindPopup(
+            `<strong>${area.name}</strong><br />Postcode area: ${area.postcodePrefix}`
+          );
+          markers.push(coords);
         });
 
         if (markers.length > 0) {

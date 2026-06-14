@@ -5,6 +5,7 @@ import { Car, Zap, Rocket, RefreshCw, Award, BookOpen, Check } from "lucide-reac
 import { useBookingStore } from "@/store/bookingStore";
 import type { LessonType } from "@/types";
 import { cn } from "@/lib/utils";
+import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 
 const LESSON_TYPES: {
   id: LessonType;
@@ -132,23 +133,26 @@ export function Step1LessonType() {
       </motion.div>
 
       {/* Continue button — slides in after selection */}
-      <AnimatePresence>
-        {lessonType && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.25 }}
-          >
-            <button
-              onClick={nextStep}
-              className="w-full sm:w-auto px-10 py-3.5 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30"
+      <div className="flex items-center justify-between w-full">
+        <AnimatePresence>
+          {lessonType && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.25 }}
             >
-              Continue →
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <button
+                onClick={nextStep}
+                className="px-10 py-3.5 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30"
+              >
+                Continue →
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <CancelBookingButton className="ml-0" />
+      </div>
     </div>
   );
 }

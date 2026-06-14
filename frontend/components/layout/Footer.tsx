@@ -70,13 +70,13 @@ export function Footer() {
             <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Company</h3>
             <ul className="space-y-2.5">
               {[
-                { label: "About Us", href: "/about" },
-                { label: "Prices", href: "/prices" },
+{ label: "Prices", href: "/prices" },
                 { label: "Areas We Cover", href: "/areas" },
                 { label: "Become an Instructor", href: "/become-an-instructor" },
                 { label: "Contact", href: "/contact" },
                 { label: "Privacy Policy", href: "/privacy" },
                 { label: "Terms & Conditions", href: "/terms" },
+                { label: "Refund Policy", href: "/refund" },
               ].map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="text-[#6B6B6B] hover:text-[#FF5500] text-sm transition-colors">
@@ -122,9 +122,9 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="mailto:info@autopilotdrivingschool.co.uk" className="flex items-start gap-2.5 text-[#6B6B6B] hover:text-[#FF5500] transition-colors text-sm">
+                <a href="mailto:contact@autopilotdrivingschool.co.uk" className="flex items-start gap-2.5 text-[#6B6B6B] hover:text-[#FF5500] transition-colors text-sm">
                   <Mail size={16} className="mt-0.5 flex-shrink-0" />
-                  info@autopilotdrivingschool.co.uk
+                  contact@autopilotdrivingschool.co.uk
                 </a>
               </li>
               <li className="flex items-start gap-2.5 text-[#6B6B6B] text-sm">
@@ -145,7 +145,15 @@ export function Footer() {
       <div className="border-t border-[#1A1A1A]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[#6B6B6B] text-xs">
-            © {currentYear} AutoPilot Driving School. All rights reserved.
+            © {currentYear} AutoPilot Driving School. All rights reserved. Developed by{" "}
+            <a
+              href="https://agiloit.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#FF5500] hover:text-white transition-colors"
+            >
+              Agilo IT
+            </a>
           </p>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 text-xs text-[#6B6B6B] bg-[#1A1A1A] px-3 py-1.5 rounded-full border border-[#2A2A2A]">

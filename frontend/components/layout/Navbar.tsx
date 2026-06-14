@@ -9,7 +9,7 @@ import { ChevronDown, Menu, X, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
 
-const learnLinks = [
+const learnLinks: { label: string; href: string; divider?: boolean }[] = [
   { label: "Automatic & Manual", href: "/learn-to-drive/automatic-manual" },
   { label: "Intensive Courses", href: "/learn-to-drive/intensive-courses" },
   { label: "Refresher Lessons", href: "/learn-to-drive/refresher-lessons" },
@@ -18,6 +18,7 @@ const learnLinks = [
   { label: "Theory Training", href: "/learn-to-drive/theory-training" },
   { label: "Mock Test", href: "/learn-to-drive/mock-test" },
   { label: "Motorway", href: "/learn-to-drive/motorway" },
+  { label: "Gift Vouchers 🎁", href: "/booking/gift-voucher", divider: true },
 ];
 
 const navLinks = [
@@ -97,18 +98,20 @@ export function Navbar() {
                       className="absolute top-full left-0 mt-2 w-56 bg-white border border-[#E5E5E5] rounded-xl shadow-lg overflow-hidden"
                     >
                       {learnLinks.map((link) => (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          className={cn(
-                            "block px-4 py-3 text-sm font-medium transition-colors hover:bg-[#F5F5F5] hover:text-[#E8200A]",
-                            pathname === link.href
-                              ? "text-[#E8200A] bg-[#FFF5F5]"
-                              : "text-[#0D0D0D]"
-                          )}
-                        >
-                          {link.label}
-                        </Link>
+                        <div key={link.href}>
+                          {link.divider && <div className="border-t border-[#E5E5E5] my-1" />}
+                          <Link
+                            href={link.href}
+                            className={cn(
+                              "block px-4 py-3 text-sm font-medium transition-colors hover:bg-[#F5F5F5] hover:text-[#E8200A]",
+                              pathname === link.href
+                                ? "text-[#E8200A] bg-[#FFF5F5]"
+                                : "text-[#0D0D0D]"
+                            )}
+                          >
+                            {link.label}
+                          </Link>
+                        </div>
                       ))}
                     </motion.div>
                   )}
@@ -219,13 +222,15 @@ export function Navbar() {
                     className="overflow-hidden"
                   >
                     {learnLinks.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className="block pl-4 py-2.5 text-brand-muted hover:text-brand-orange text-base font-medium border-l border-[#2A2A2A] transition-colors"
-                      >
-                        {link.label}
-                      </Link>
+                      <div key={link.href}>
+                        {link.divider && <div className="border-t border-[#2A2A2A] my-1 ml-4" />}
+                        <Link
+                          href={link.href}
+                          className="block pl-4 py-2.5 text-brand-muted hover:text-brand-orange text-base font-medium border-l border-[#2A2A2A] transition-colors"
+                        >
+                          {link.label}
+                        </Link>
+                      </div>
                     ))}
                   </motion.div>
                 )}
