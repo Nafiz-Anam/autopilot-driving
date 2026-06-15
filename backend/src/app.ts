@@ -95,8 +95,8 @@ const corsOptions: cors.CorsOptions = {
 };
 
 app.use(cors(corsOptions));
-// Pre-flight for all routes
-app.options('*', cors(corsOptions));
+// Pre-flight for all routes (Express 5 requires named wildcard)
+app.options('/{*path}', cors(corsOptions));
 
 // ── Stripe webhooks — raw body BEFORE express.json() ─────────────────────────
 app.post(
