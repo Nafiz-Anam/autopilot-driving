@@ -21,6 +21,7 @@ const createUser = async (userBody: any) => {
       ...userBody,
       password: hashedPassword,
       isActive: true,
+      role: userBody.role ?? 'USER',
     },
   });
   return user;
