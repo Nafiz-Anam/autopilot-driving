@@ -65,7 +65,7 @@ class ProgressiveRateLimitService {
     // Registration - strict
     this.configs.set('registration', {
       baseWindowMs: 60 * 60 * 1000, // 1 hour
-      baseMaxRequests: config.env === 'production' ? 3 : 5,
+      baseMaxRequests: config.env === 'production' ? 10 : 20,
       maxPenaltyMultiplier: 6, // Max 6x penalty
       penaltyIncrementMs: 15 * 60 * 1000, // 15 minutes penalty per violation
       resetAfterMs: 2 * 60 * 60 * 1000, // Reset after 2 hours
@@ -162,7 +162,7 @@ class ProgressiveRateLimitService {
       }
 
       // Calculate reset time
-      const resetTime = new Date(windowStart + effectiveWindowMs);
+      const resetTime = new Date(parseInt(windowStart) + effectiveWindowMs);
 
       // Update Redis with new values
       await this.redis.hset(key, {
