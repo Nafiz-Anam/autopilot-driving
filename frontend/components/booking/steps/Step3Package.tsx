@@ -39,8 +39,7 @@ export function Step3Package() {
 
     axios
       .get<{ success: boolean; data?: PublicPricingPackage[] }>(
-        backendApiUrl(`/pricing/packages?lessonType=${lessonType}`),
-        { headers: { "Cache-Control": "no-store" } }
+        backendApiUrl(`/pricing/packages?lessonType=${lessonType}`)
       )
       .then(({ data }) => {
         if (cancelled) return;
