@@ -65,7 +65,7 @@ class ProgressiveRateLimitService {
     // Registration - strict
     this.configs.set('registration', {
       baseWindowMs: 60 * 60 * 1000, // 1 hour
-      baseMaxRequests: config.env === 'production' ? 10 : 20,
+      baseMaxRequests: config.env === 'production' ? 30 : 100,
       maxPenaltyMultiplier: 6, // Max 6x penalty
       penaltyIncrementMs: 15 * 60 * 1000, // 15 minutes penalty per violation
       resetAfterMs: 2 * 60 * 60 * 1000, // Reset after 2 hours

@@ -37,10 +37,10 @@ export const passwordResetLimiter = rateLimit({
 });
 
 // ── Registration ──────────────────────────────────────────────────────────────
-// 10 per hour
+// 30 per hour
 export const registrationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: prod ? 10 : 50,
+  max: prod ? 30 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: ipUa,
