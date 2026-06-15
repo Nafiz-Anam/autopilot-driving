@@ -120,10 +120,12 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 /* ── Main component ─────────────────────────────────────────── */
 export function Step5StudentDetails() {
   const { data: session } = useAppSession();
+  const { login } = useAppAuth();
   const { setStudentDetails, nextStep, prevStep } = useBookingStore();
   const [tab, setTab] = useState<"new" | "existing">("new");
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const {
     register,
@@ -204,14 +206,10 @@ export function Step5StudentDetails() {
   }
 
   /* ── Guest flow ── */
-  const { login } = useAppAuth();
-  const [submitError, setSubmitError] = useState("");
-
   async function onSubmit(data: StudentDetailsInput) {
     setSubmitError("");
-    const registerRes = await fetch(
-      backendApiUrl("/auth/register"),
-      {
+    try {
+      const registerRes = await fetch(backendApiUrl("/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -220,15 +218,18 @@ export function Step5StudentDetails() {
           password: data.password,
         }),
         credentials: "omit",
+      });
+      if (!registerRes.ok) {
+        const json = await registerRes.json().catch(() => ({})) as { error?: { message?: string }; message?: string };
+        const msg = json?.error?.message ?? json?.message ?? "";
+        if (!msg.toLowerCase().includes("already")) {
+          setSubmitError(msg || "Could not create account. Please try again.");
+          return;
+        }
       }
-    );
-    if (!registerRes.ok) {
-      const json = await registerRes.json().catch(() => ({})) as { error?: { message?: string }; message?: string };
-      const msg = json?.error?.message ?? json?.message ?? "";
-      if (!msg.toLowerCase().includes("already")) {
-        setSubmitError(msg || "Could not create account. Please try again.");
-        return;
-      }
+    } catch {
+      setSubmitError("Network error — please check your connection and try again.");
+      return;
     }
     const loginResult = await login(data.email, data.password);
     if (!loginResult.ok) {
