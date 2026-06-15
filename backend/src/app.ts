@@ -62,25 +62,40 @@ app.use(helmet({
 }));
 app.use(securityHeaders);
 
-// ── CORS — only allow the frontend origin ────────────────────────────────────
-const allowedOrigins = (
-  process.env.ALLOWED_ORIGINS ?? config.clientUrl
-).split(',').map((o) => o.trim()).filter(Boolean);
+// ── CORS ──────────────────────────────────────────────────────────────────────
+// Build whitelist from ALLOWED_ORIGINS, falling back to NEXT_PUBLIC_APP_URL
+// then CLIENT_URL so it works in production without manual env var setup.
+const _rawOrigins = [
+  process.env.ALLOWED_ORIGINS,
+  process.env.NEXT_PUBLIC_APP_URL,
+  config.clientUrl,
+]
+  .filter(Boolean)
+  .join(',');
 
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      // Allow server-to-server (no Origin header) and whitelisted origins
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      cb(new Error(`CORS: origin '${origin}' not allowed`));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature'],
-    optionsSuccessStatus: 200,
-  })
-);
-app.options('*', cors());
+const allowedOrigins = _rawOrigins
+  .split(',')
+  .map((o) => o.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, cb) => {
+    // No origin = server-to-server call — always allow
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    // Log and reject — use null, false (not an Error) to avoid 500s
+    logger.warn(`CORS blocked: ${origin}`);
+    cb(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature'],
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+// Pre-flight for all routes
+app.options('*', cors(corsOptions));
 
 // ── Stripe webhooks — raw body BEFORE express.json() ─────────────────────────
 app.post(
