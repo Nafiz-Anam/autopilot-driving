@@ -23,6 +23,8 @@ import publicSiteRoute from './publicSite.route';
 import studentAppRoute from './studentApp.route';
 import instructorAppRoute from './instructorApp.route';
 import adminAppRoute from './adminApp.route';
+import calendarRoute from './calendar.route';
+import googleCalendarRoute from './googleCalendar.route';
 import config from '../../config/config';
 
 const router = express.Router();
@@ -119,6 +121,14 @@ const defaultRoutes = [
   {
     path: '/admin',
     route: adminAppRoute,
+  },
+  {
+    path: '/calendar',
+    route: calendarRoute,
+  },
+  {
+    path: '/integrations/google-calendar',
+    route: googleCalendarRoute,
   },
 ];
 

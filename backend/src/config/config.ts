@@ -29,6 +29,10 @@ const envVarsSchema = z.object({
   NEXTAUTH_BRIDGE_SECRET: z.string().optional(),
   GOOGLE_PLACES_API_KEY: z.string().optional(),
   GOOGLE_PLACE_ID: z.string().optional(),
+  GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
+  GOOGLE_CALENDAR_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CALENDAR_REDIRECT_URI: z.string().optional(),
+  INTEGRATION_ENCRYPTION_KEY: z.string().optional(),
 });
 
 let envVars: z.infer<typeof envVarsSchema>;
@@ -77,7 +81,13 @@ const config = {
   google: {
     placesApiKey: envVars.GOOGLE_PLACES_API_KEY,
     placeId: envVars.GOOGLE_PLACE_ID,
+    calendar: {
+      clientId: envVars.GOOGLE_CALENDAR_CLIENT_ID ?? '',
+      clientSecret: envVars.GOOGLE_CALENDAR_CLIENT_SECRET ?? '',
+      redirectUri: envVars.GOOGLE_CALENDAR_REDIRECT_URI ?? '',
+    },
   },
+  integrationEncryptionKey: envVars.INTEGRATION_ENCRYPTION_KEY ?? envVars.JWT_SECRET,
 };
 
 export default config;

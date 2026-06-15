@@ -2,6 +2,9 @@ import type Stripe from 'stripe';
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
+import emailService from './email.service';
+import icalService from './ical.service';
+import googleCalendarService from './googleCalendar.service';
 
 /**
  * Idempotent: marks booking paid / confirmed from a succeeded PaymentIntent.
@@ -34,6 +37,71 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
   );
 
   if (!updatedRows.length) return;
+
+  // Send confirmation email with .ics calendar attachment (fire-and-forget)
+  try {
+    const rows = await prisma.$queryRawUnsafe<
+      Array<{
+        reference: string;
+        lessonType: string;
+        scheduledAt: Date;
+        durationMins: number;
+        totalAmount: string;
+        studentId: string;
+        studentName: string | null;
+        studentEmail: string;
+        instructorName: string | null;
+      }>
+    >(
+      `SELECT b.reference, b."lessonType", b."scheduledAt", b."durationMins", b."totalAmount"::text,
+              b."studentId",
+              su.name AS "studentName", su.email AS "studentEmail",
+              iu.name AS "instructorName"
+       FROM "Booking" b
+       INNER JOIN users su ON su.id = b."studentId"
+       LEFT  JOIN "Instructor" i ON i.id = b."instructorId"
+       LEFT  JOIN users iu ON iu.id = i."userId"
+       WHERE b.id = $1 LIMIT 1`,
+      bookingId
+    );
+    const row = rows[0];
+    if (row) {
+      const icsContent = icalService.generateBookingIcs({
+        bookingId,
+        reference: row.reference,
+        studentName: row.studentName ?? 'Student',
+        studentEmail: row.studentEmail,
+        instructorName: row.instructorName ?? 'Your Instructor',
+        lessonType: row.lessonType,
+        scheduledAt: new Date(row.scheduledAt),
+        durationMins: row.durationMins,
+        totalAmount: Number(row.totalAmount),
+      });
+      await emailService.sendBookingConfirmationEmail({
+        to: row.studentEmail,
+        studentName: row.studentName ?? 'Student',
+        reference: row.reference,
+        lessonType: row.lessonType,
+        instructorName: row.instructorName ?? 'Your Instructor',
+        scheduledAt: new Date(row.scheduledAt),
+        durationMins: row.durationMins,
+        totalAmount: Number(row.totalAmount),
+        icsContent,
+      });
+
+      // Auto-add to Google Calendar if student has connected their account
+      googleCalendarService.createCalendarEvent(row.studentId, {
+        bookingId,
+        reference: row.reference,
+        lessonType: row.lessonType,
+        instructorName: row.instructorName ?? 'AutoPilot Instructor',
+        scheduledAt: new Date(row.scheduledAt),
+        durationMins: row.durationMins,
+      }).catch(() => { /* non-critical */ });
+    }
+  } catch {
+    // Email/calendar failure must not break payment finalization
+  }
 
   if (vCode && d > 0) {
     const vrows = await prisma.$queryRawUnsafe<Array<{ balance: string }>>(

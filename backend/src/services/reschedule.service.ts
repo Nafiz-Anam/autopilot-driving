@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
+import googleCalendarService from './googleCalendar.service';
 
 type Role = 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
 
@@ -105,6 +106,30 @@ const respondToRequest = async (params: {
       req.bookingId,
       req.proposedDateTime.toISOString()
     );
+
+    // Update Google Calendar event with new time (fire-and-forget)
+    const bookingRows = await prisma.$queryRawUnsafe<
+      Array<{ studentId: string; reference: string; lessonType: string; durationMins: number; instructorName: string | null }>
+    >(
+      `SELECT b."studentId", b.reference, b."lessonType", b."durationMins",
+              u.name AS "instructorName"
+       FROM "Booking" b
+       LEFT JOIN "Instructor" i ON i.id = b."instructorId"
+       LEFT JOIN users u ON u.id = i."userId"
+       WHERE b.id = $1 LIMIT 1`,
+      req.bookingId
+    );
+    const bRow = bookingRows[0];
+    if (bRow) {
+      googleCalendarService.updateCalendarEvent(bRow.studentId, {
+        bookingId: req.bookingId,
+        reference: bRow.reference,
+        lessonType: bRow.lessonType,
+        instructorName: bRow.instructorName ?? 'AutoPilot Instructor',
+        scheduledAt: new Date(req.proposedDateTime),
+        durationMins: bRow.durationMins,
+      }).catch(() => {});
+    }
   }
 
   return {

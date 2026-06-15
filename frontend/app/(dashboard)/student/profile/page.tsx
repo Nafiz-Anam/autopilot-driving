@@ -6,6 +6,8 @@ import { Eye, EyeOff, AlertTriangle, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
+import { CalendarSubscribeCard } from "@/components/shared/CalendarSubscribeCard";
+import { GoogleCalendarConnect } from "@/components/shared/GoogleCalendarConnect";
 
 interface ProfileForm {
   name: string;
@@ -346,6 +348,12 @@ export default function StudentProfilePage() {
               </div>
             </div>
           </div>
+        </motion.div>
+
+        {/* Calendar integrations */}
+        <motion.div variants={itemVariants} className="lg:col-span-1 space-y-4">
+          <GoogleCalendarConnect />
+          <CalendarSubscribeCard role="student" />
         </motion.div>
 
         {/* Forms */}

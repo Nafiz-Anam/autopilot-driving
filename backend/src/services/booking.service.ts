@@ -4,6 +4,8 @@ import prisma from '../client';
 import pricingService from './pricing.service';
 import { generateBookingReference } from '../utils/bookingReference';
 import rescheduleService from './reschedule.service';
+import refundService from './refund.service';
+import googleCalendarService from './googleCalendar.service';
 
 const ALL_SLOTS = [
   '08:00',
@@ -184,23 +186,17 @@ const createForStudent = async (input: CreateBookingInput) => {
   };
 };
 
-const cancelForStudent = async (
-  bookingId: string,
-  studentId: string,
-  reason?: string,
-  notes?: string
-) => {
+const cancelForStudent = async (bookingId: string, studentId: string, reason: string) => {
   const rows = await prisma.$queryRawUnsafe<
     Array<{
       id: string;
       studentId: string;
       status: string;
-      scheduledAt: Date;
       paymentStatus: string;
-      totalAmount: string;
+      scheduledAt: Date;
     }>
   >(
-    `SELECT id, "studentId", status, "scheduledAt", "paymentStatus", "totalAmount"::text AS "totalAmount" FROM "Booking" WHERE id = $1 LIMIT 1`,
+    `SELECT id, "studentId", status, "paymentStatus", "scheduledAt" FROM "Booking" WHERE id = $1 LIMIT 1`,
     bookingId
   );
   const booking = rows[0];
@@ -213,37 +209,17 @@ const cancelForStudent = async (
   if (booking.status !== 'CONFIRMED' && booking.status !== 'PENDING') {
     return { error: 'BAD_STATE' as const };
   }
+
   const hoursUntilLesson = (booking.scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60);
-  if (hoursUntilLesson < 24) {
-    return { error: 'WITHIN_24H' as const };
-  }
-
-  // Determine refund eligibility
-  const refundType =
-    hoursUntilLesson >= 48 ? 'FULL' :
-    hoursUntilLesson >= 24 ? 'PARTIAL' :
-    'NONE';
-
-  const cancelNotes = [reason, notes].filter(Boolean).join(' — ') || null;
-
-  // Determine payment status on cancel
-  let newPaymentStatus: string | null = null;
-  if (booking.paymentStatus === 'PAID') {
-    if (refundType === 'FULL') newPaymentStatus = 'REFUNDED';
-    else if (refundType === 'PARTIAL') newPaymentStatus = 'PARTIAL_REFUND';
-  }
+  const eligibleForRefund = hoursUntilLesson >= 24;
 
   await prisma.$executeRawUnsafe(
     `UPDATE "Booking"
-     SET status = 'CANCELLED',
-         "paymentStatus" = COALESCE($3::"PaymentStatus", "paymentStatus"),
-         notes = COALESCE($4::text, notes),
-         "updatedAt" = $2::timestamp
+     SET status = 'CANCELLED', "cancellationReason" = $2, "updatedAt" = $3::timestamp
      WHERE id = $1`,
     bookingId,
-    new Date().toISOString(),
-    newPaymentStatus,
-    cancelNotes
+    reason,
+    new Date().toISOString()
   );
 
   // Cancel any pending reschedule requests
@@ -254,12 +230,24 @@ const cancelForStudent = async (
     );
   } catch { /* RescheduleRequest table may not exist */ }
 
+  // Issue full Stripe refund if cancelled more than 24h before lesson
+  let refundResult: { refunded: boolean; stripeRefundId?: string } = { refunded: false };
+  if (eligibleForRefund && booking.paymentStatus === 'PAID') {
+    const result = await refundService.issueRefundForBooking(bookingId);
+    if (result.refunded) {
+      refundResult = { refunded: true, stripeRefundId: result.stripeRefundId };
+    }
+  }
+
+  // Remove from Google Calendar (fire-and-forget)
+  googleCalendarService.deleteCalendarEvent(studentId, bookingId).catch(() => {});
+
   return {
     data: {
       id: bookingId,
       status: 'CANCELLED' as const,
-      refundType,
-      newPaymentStatus: newPaymentStatus ?? booking.paymentStatus,
+      refund: refundResult,
+      noRefundReason: !eligibleForRefund ? 'Cancelled within 24 hours of lesson — no refund issued' : undefined,
     },
   };
 };
@@ -269,7 +257,6 @@ const createRescheduleRequest = async (
   studentId: string,
   params: { proposedDateTime: string; reason: string; notes?: string }
 ) => {
-  // Verify ownership
   const rows = await prisma.$queryRawUnsafe<Array<{ studentId: string }>>(
     `SELECT "studentId" FROM "Booking" WHERE id = $1 LIMIT 1`,
     bookingId
@@ -291,7 +278,6 @@ const respondToRescheduleRequest = async (
   requestId: string,
   studentId: string
 ) => {
-  // Validate the request belongs to a booking owned by this student
   const rows = await prisma.$queryRawUnsafe<
     Array<{ bookingId: string; requestedByRole: string }>
   >(

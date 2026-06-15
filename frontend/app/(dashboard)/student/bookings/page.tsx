@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, CalendarPlus, InboxIcon, RotateCcw, X, CalendarClock } from "lucide-react";
+import { CalendarDays, CalendarPlus, InboxIcon, RotateCcw, X, CalendarClock, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
@@ -95,15 +95,11 @@ function CancelModal({
   const [err, setErr] = useState("");
 
   const hrs = hoursUntil(booking.scheduledAt);
-  const refundLabel =
-    hrs >= 48 ? { label: "Full refund eligible", cls: "bg-green-50 border-green-200 text-green-800" } :
-    hrs >= 24 ? { label: "50% refund eligible", cls: "bg-yellow-50 border-yellow-200 text-yellow-800" } :
-    { label: "No refund — lesson is within 24 hours", cls: "bg-red-50 border-red-200 text-brand-red" };
-
-  const refundAmount =
-    hrs >= 48 ? Number(booking.totalAmount).toFixed(2) :
-    hrs >= 24 ? (Number(booking.totalAmount) * 0.5).toFixed(2) :
-    "0.00";
+  const eligibleForRefund = hrs >= 24;
+  const refundLabel = eligibleForRefund
+    ? { label: "Full refund eligible", cls: "bg-green-50 border-green-200 text-green-800" }
+    : { label: "No refund — lesson is within 24 hours", cls: "bg-red-50 border-red-200 text-brand-red" };
+  const refundAmount = eligibleForRefund ? Number(booking.totalAmount).toFixed(2) : "0.00";
 
   async function submit() {
     setSaving(true);
@@ -169,7 +165,7 @@ function CancelModal({
           </button>
           <button onClick={submit} disabled={saving}
             className="px-4 py-2 bg-brand-red text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
-            {saving ? "Cancelling…" : hrs >= 48 ? "Cancel & Request Refund" : hrs >= 24 ? "Cancel (50% Refund)" : "Cancel Booking"}
+            {saving ? "Cancelling…" : eligibleForRefund ? "Cancel & Get Full Refund" : "Cancel Booking (No Refund)"}
           </button>
         </div>
       </motion.div>
@@ -368,11 +364,8 @@ export default function StudentBookingsPage() {
                   const pc = PAYMENT_CONFIG[booking.paymentStatus] ?? "bg-gray-100 text-brand-muted border border-gray-200";
                   const typeLabel = LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType;
                   const isActive = booking.status === "CONFIRMED" || booking.status === "PENDING";
-                  const hrs = hoursUntil(booking.scheduledAt);
-                  const canCancel = isActive && hrs >= 24;
                   const busy = updatingId === booking.id;
                   const pr = booking.pendingReschedule;
-                  // A reschedule requested by the instructor is "action required" for the student
                   const actionRequired = pr && pr.requestedByRole === "INSTRUCTOR";
 
                   return (
@@ -446,17 +439,10 @@ export default function StudentBookingsPage() {
                                 className="text-xs px-2.5 py-1 border border-brand-border text-brand-muted rounded-lg font-medium hover:bg-brand-surface hover:text-brand-black transition-colors">
                                 Reschedule
                               </button>
-                              {canCancel ? (
-                                <button onClick={() => setCancelBooking(booking)}
-                                  className="text-xs px-2.5 py-1 border border-red-200 text-brand-red rounded-lg font-medium hover:bg-red-50 transition-colors">
-                                  Cancel
-                                </button>
-                              ) : (
-                                <span title="Cannot cancel within 24 hours of lesson"
-                                  className="text-xs px-2.5 py-1 border border-brand-border text-brand-border rounded-lg font-medium opacity-50 cursor-not-allowed">
-                                  Cancel
-                                </span>
-                              )}
+                              <button onClick={() => setCancelBooking(booking)}
+                                className="text-xs px-2.5 py-1 border border-red-200 text-brand-red rounded-lg font-medium hover:bg-red-50 transition-colors">
+                                Cancel
+                              </button>
                             </>
                           )}
                           {booking.status === "COMPLETED" && (
