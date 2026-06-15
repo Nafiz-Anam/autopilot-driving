@@ -1020,14 +1020,51 @@ async function seedDrivingSchoolTables() {
         ('smtp_pass', 'demo_pass', NOW()),
         ('email_from', 'noreply@autopilot.demo', NOW()),
         ('email_admin', 'admin@autopilot.demo', NOW())
-      ON CONFLICT (key) DO UPDATE SET
-        value = EXCLUDED.value,
-        "updatedAt" = NOW()
+      ON CONFLICT (key) DO NOTHING
     `);
   }
 }
 
+async function seedProductionAdmin() {
+  const email = process.env.SEED_ADMIN_EMAIL || 'admin@autopilotdrivingschool.co.uk';
+  const password = process.env.SEED_ADMIN_PASSWORD || 'ChangeMe@123';
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await prisma.user.upsert({
+    where: { email },
+    update: {},
+    create: {
+      email,
+      name: 'Admin',
+      role: 'ADMIN',
+      password: passwordHash,
+      isEmailVerified: true,
+      country: 'UK',
+      city: 'Slough',
+    },
+  });
+  console.log(`✅ Production admin seeded: ${email}`);
+}
+
 async function main() {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  const existing = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+
+  if (isProduction) {
+    if (existing) {
+      console.log('✅ Admin already exists — skipping production seed.');
+      return;
+    }
+    await ensureDrivingSchoolSchema();
+    await seedProductionAdmin();
+    return;
+  }
+
+  if (existing) {
+    console.log('✅ Admin user already exists — skipping seed.');
+    return;
+  }
   console.log('🌱 Seeding demo data...');
   await ensureDrivingSchoolSchema();
   await seedAuthCore();
