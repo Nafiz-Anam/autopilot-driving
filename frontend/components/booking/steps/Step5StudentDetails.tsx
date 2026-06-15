@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Eye, EyeOff, UserCheck, LogIn } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import { studentDetailsSchema, type StudentDetailsInput } from "@/lib/validations/booking.schema";
+import { backendApiUrl } from "@/lib/backend-api";
 import { cn } from "@/lib/utils";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 
@@ -203,7 +204,37 @@ export function Step5StudentDetails() {
   }
 
   /* ── Guest flow ── */
-  function onSubmit(data: StudentDetailsInput) {
+  const { login } = useAppAuth();
+  const [submitError, setSubmitError] = useState("");
+
+  async function onSubmit(data: StudentDetailsInput) {
+    setSubmitError("");
+    const registerRes = await fetch(
+      backendApiUrl("/auth/register"),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${data.firstName} ${data.lastName}`.trim(),
+          email: data.email,
+          password: data.password,
+        }),
+        credentials: "omit",
+      }
+    );
+    if (!registerRes.ok) {
+      const json = await registerRes.json().catch(() => ({})) as { error?: { message?: string }; message?: string };
+      const msg = json?.error?.message ?? json?.message ?? "";
+      if (!msg.toLowerCase().includes("already")) {
+        setSubmitError(msg || "Could not create account. Please try again.");
+        return;
+      }
+    }
+    const loginResult = await login(data.email, data.password);
+    if (!loginResult.ok) {
+      setSubmitError(loginResult.error ?? "Login failed after registration. Please try signing in.");
+      return;
+    }
     setStudentDetails({
       firstName: data.firstName,
       lastName: data.lastName,
@@ -414,6 +445,12 @@ export function Step5StudentDetails() {
                   )}
                 </AnimatePresence>
               </div>
+
+              {submitError && (
+                <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                  {submitError}
+                </p>
+              )}
 
               {/* Buttons */}
               <div className="flex items-center justify-between pt-2 w-full">
