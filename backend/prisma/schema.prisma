@@ -667,6 +667,7 @@ model InstructorApplication {
 model ContactSubmission {
   id          String   @id
   name        String
+  email       String?
   phone       String?
   postcode    String?
   enquiryType String?  @map("enquiryType")
@@ -767,7 +768,8 @@ model Booking {
   voucherCode      String?   @map("voucherCode")
   couponCode       String?   @map("couponCode")
   discountAmount   Decimal?  @db.Decimal(10, 2) @map("discountAmount")
-  notes            String?
+  notes                String?
+  cancellationReason   String?   @map("cancellationReason")
   createdAt        DateTime  @default(now()) @map("createdAt")
   updatedAt        DateTime  @updatedAt @map("updatedAt")
   student          User        @relation("BookingStudent", fields: [studentId], references: [id], onDelete: Cascade)

@@ -6,6 +6,7 @@ import logger from './config/logger';
 import tokenCleanupService from './services/tokenCleanup.service';
 import { initializeWebSocket } from './controllers/websocket.controller';
 import { initializeTracing } from './utils/tracing';
+import googleCalendarService from './services/googleCalendar.service';
 
 // Initialize OpenTelemetry tracing
 initializeTracing();
@@ -31,6 +32,11 @@ prisma
 
       // Schedule token cleanup to run every 15 minutes
       tokenCleanupService.scheduleTokenCleanup(15);
+
+      // Ensure Google Calendar integration table exists
+      googleCalendarService.ensureIntegrationTable().catch((e) =>
+        logger.warn('Could not create UserIntegration table', { error: e?.message })
+      );
     });
   })
   .catch((error: Error) => {

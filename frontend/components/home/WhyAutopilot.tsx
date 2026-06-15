@@ -2,8 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { GraduationCap, Calendar, Smartphone, Trophy, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { GraduationCap, Calendar, Smartphone, Trophy } from "lucide-react";
 
 const features = [
   {
@@ -69,22 +68,6 @@ export function WhyAutopilot() {
             </motion.h2>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 16 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.4, delay: 0.2 }}
-          >
-            <Link
-              href="/about"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0D0D0D] hover:text-[#E8200A] transition-colors duration-200 group"
-            >
-              About us
-              <ArrowRight
-                size={14}
-                className="group-hover:translate-x-1 transition-transform duration-200"
-              />
-            </Link>
-          </motion.div>
         </div>
 
         {/* Cards grid — 2×2 */}

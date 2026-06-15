@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { FloatingButtons } from "@/components/shared/FloatingButtons";
+import { CookieConsent } from "@/components/shared/CookieConsent";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <main className="flex-1">{children}</main>
       <Footer />
       <FloatingButtons />
+      <CookieConsent />
     </>
   );
 }

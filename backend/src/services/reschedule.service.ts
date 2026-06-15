@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
+import googleCalendarService from './googleCalendar.service';
+import emailService from './email.service';
 
 type Role = 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
 
@@ -54,6 +56,57 @@ const createRequest = async (params: {
     params.notes ?? null
   );
 
+  // Notify the other party (fire-and-forget)
+  void (async () => {
+    try {
+      const details = await prisma.$queryRawUnsafe<Array<{
+        scheduledAt: Date;
+        studentName: string; studentEmail: string;
+        instructorName: string | null; instructorEmail: string | null;
+        reference: string;
+      }>>(
+        `SELECT b."scheduledAt", b.reference,
+                su.name AS "studentName", su.email AS "studentEmail",
+                iu.name AS "instructorName", iu.email AS "instructorEmail"
+         FROM "Booking" b
+         INNER JOIN users su ON su.id = b."studentId"
+         LEFT JOIN "Instructor" inst ON inst.id = b."instructorId"
+         LEFT JOIN users iu ON iu.id = inst."userId"
+         WHERE b.id = $1 LIMIT 1`,
+        params.bookingId
+      );
+      const d = details[0];
+      if (!d) return;
+
+      const proposedDate = new Date(params.proposedDateTime);
+      const requesterName = params.requestedByRole === 'STUDENT' ? d.studentName : (d.instructorName ?? 'Instructor');
+
+      if (params.requestedByRole === 'STUDENT' && d.instructorEmail) {
+        await emailService.sendRescheduleRequestEmail({
+          to: d.instructorEmail,
+          recipientName: d.instructorName ?? 'Instructor',
+          requesterName: d.studentName,
+          requesterRole: 'student',
+          reference: d.reference,
+          currentDate: new Date(d.scheduledAt),
+          proposedDate,
+          reason: params.reason,
+        });
+      } else if (params.requestedByRole === 'INSTRUCTOR') {
+        await emailService.sendRescheduleRequestEmail({
+          to: d.studentEmail,
+          recipientName: d.studentName,
+          requesterName: d.instructorName ?? 'Instructor',
+          requesterRole: 'instructor',
+          reference: d.reference,
+          currentDate: new Date(d.scheduledAt),
+          proposedDate,
+          reason: params.reason,
+        });
+      }
+    } catch { /* non-critical */ }
+  })();
+
   return { data: { type: 'REQUEST' as const, requestId: id } };
 };
 
@@ -105,7 +158,77 @@ const respondToRequest = async (params: {
       req.bookingId,
       req.proposedDateTime.toISOString()
     );
+
+    // Update Google Calendar event with new time (fire-and-forget)
+    const bookingRows = await prisma.$queryRawUnsafe<
+      Array<{ studentId: string; reference: string; lessonType: string; durationMins: number; instructorName: string | null }>
+    >(
+      `SELECT b."studentId", b.reference, b."lessonType", b."durationMins",
+              u.name AS "instructorName"
+       FROM "Booking" b
+       LEFT JOIN "Instructor" i ON i.id = b."instructorId"
+       LEFT JOIN users u ON u.id = i."userId"
+       WHERE b.id = $1 LIMIT 1`,
+      req.bookingId
+    );
+    const bRow = bookingRows[0];
+    if (bRow) {
+      googleCalendarService.updateCalendarEvent(bRow.studentId, {
+        bookingId: req.bookingId,
+        reference: bRow.reference,
+        lessonType: bRow.lessonType,
+        instructorName: bRow.instructorName ?? 'AutoPilot Instructor',
+        scheduledAt: new Date(req.proposedDateTime),
+        durationMins: bRow.durationMins,
+      }).catch(() => {});
+    }
   }
+
+  // Send accepted/declined email to the requester (fire-and-forget)
+  void (async () => {
+    try {
+      const details = await prisma.$queryRawUnsafe<Array<{
+        scheduledAt: Date; reference: string;
+        studentName: string; studentEmail: string;
+        instructorName: string | null; instructorEmail: string | null;
+        durationMins: number;
+      }>>(
+        `SELECT b."scheduledAt", b.reference, b."durationMins",
+                su.name AS "studentName", su.email AS "studentEmail",
+                iu.name AS "instructorName", iu.email AS "instructorEmail"
+         FROM "Booking" b
+         INNER JOIN users su ON su.id = b."studentId"
+         LEFT JOIN "Instructor" inst ON inst.id = b."instructorId"
+         LEFT JOIN users iu ON iu.id = inst."userId"
+         WHERE b.id = $1 LIMIT 1`,
+        req.bookingId
+      );
+      const d = details[0];
+      if (!d) return;
+
+      const requesterEmail = req.requestedByRole === 'STUDENT' ? d.studentEmail : (d.instructorEmail ?? null);
+      const requesterName = req.requestedByRole === 'STUDENT' ? d.studentName : (d.instructorName ?? 'Instructor');
+      if (!requesterEmail) return;
+
+      if (params.accept) {
+        await emailService.sendRescheduleAcceptedEmail({
+          to: requesterEmail,
+          recipientName: requesterName,
+          reference: d.reference,
+          newDate: new Date(req.proposedDateTime),
+          instructorName: d.instructorName ?? 'AutoPilot Instructor',
+          durationMins: d.durationMins,
+        });
+      } else {
+        await emailService.sendRescheduleDeclinedEmail({
+          to: requesterEmail,
+          recipientName: requesterName,
+          reference: d.reference,
+          originalDate: new Date(d.scheduledAt),
+        });
+      }
+    } catch { /* non-critical */ }
+  })();
 
   return {
     data: { requestId: params.requestId, status: newStatus, bookingId: req.bookingId },

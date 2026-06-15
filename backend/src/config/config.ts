@@ -16,11 +16,11 @@ const envVarsSchema = z.object({
   JWT_REFRESH_EXPIRATION_DAYS: z.string().transform(Number).pipe(z.number().default(30)),
   JWT_RESET_PASSWORD_EXPIRATION_MINUTES: z.string().transform(Number).pipe(z.number().default(10)),
   JWT_VERIFY_EMAIL_EXPIRATION_MINUTES: z.string().transform(Number).pipe(z.number().default(10)),
-  SMTP_HOST: z.string().default(''),
+  SMTP_HOST: z.string().default('smtp.office365.com'),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().default(''),
   SMTP_PASS: z.string().default(''),
-  EMAIL_FROM: z.string().default('noreply@autopilotdriving.co.uk'),
+  EMAIL_FROM: z.string().default('noreply@autopilotdrivingschool.co.uk'),
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.string().transform(Number).pipe(z.number().default(6379)),
   REDIS_PASSWORD: z.string().optional(),
@@ -29,6 +29,10 @@ const envVarsSchema = z.object({
   NEXTAUTH_BRIDGE_SECRET: z.string().optional(),
   GOOGLE_PLACES_API_KEY: z.string().optional(),
   GOOGLE_PLACE_ID: z.string().optional(),
+  GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
+  GOOGLE_CALENDAR_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_CALENDAR_REDIRECT_URI: z.string().optional(),
+  INTEGRATION_ENCRYPTION_KEY: z.string().optional(),
 });
 
 let envVars: z.infer<typeof envVarsSchema>;
@@ -77,7 +81,13 @@ const config = {
   google: {
     placesApiKey: envVars.GOOGLE_PLACES_API_KEY,
     placeId: envVars.GOOGLE_PLACE_ID,
+    calendar: {
+      clientId: envVars.GOOGLE_CALENDAR_CLIENT_ID ?? '',
+      clientSecret: envVars.GOOGLE_CALENDAR_CLIENT_SECRET ?? '',
+      redirectUri: envVars.GOOGLE_CALENDAR_REDIRECT_URI ?? '',
+    },
   },
+  integrationEncryptionKey: envVars.INTEGRATION_ENCRYPTION_KEY ?? envVars.JWT_SECRET,
 };
 
 export default config;

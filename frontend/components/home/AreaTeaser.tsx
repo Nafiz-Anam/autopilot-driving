@@ -1,26 +1,36 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
-import { PostcodeSearch } from "@/components/shared/PostcodeSearch";
 import { ArrowRight, MapPin } from "lucide-react";
+import { backendApiUrl } from "@/lib/backend-api";
 
-const areas = [
-  "Slough",
-  "Windsor",
-  "Maidenhead",
-  "Reading",
-  "Wokingham",
-  "Bracknell",
-  "Staines",
-  "Feltham",
-  "Hounslow",
-];
+const VISIBLE_COUNT = 20;
+
+interface AreaData {
+  id: string;
+  name: string;
+}
 
 export function AreaTeaser() {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [areas, setAreas] = useState<AreaData[]>([]);
+
+  useEffect(() => {
+    fetch(backendApiUrl("/public/areas"), { cache: "no-store" })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setAreas(json.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const visibleAreas = areas.slice(0, VISIBLE_COUNT);
+  const remaining = areas.length - VISIBLE_COUNT;
 
   return (
     <section className="bg-[#0D0D0D] py-14 sm:py-20 lg:py-28 px-4 overflow-hidden relative">
@@ -39,7 +49,7 @@ export function AreaTeaser() {
 
       <div className="max-w-7xl mx-auto relative z-10" ref={ref}>
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Left — text + search */}
+          {/* Left — text + CTA */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -62,22 +72,13 @@ export function AreaTeaser() {
               areas.
             </p>
 
-            <div className="max-w-md mb-6">
-              <PostcodeSearch
-                placeholder="Check your postcode..."
-                buttonLabel="Check Coverage"
-                variant="white"
-                redirectTo="/areas"
-              />
-            </div>
-
             <Link
               href="/areas"
-              className="inline-flex items-center gap-1.5 text-[#666666] hover:text-white text-sm font-medium transition-colors duration-200 group"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#E8200A] hover:bg-[#c41a08] text-white text-sm font-semibold transition-colors duration-200 group"
             >
-              See all areas
+              See All Areas
               <ArrowRight
-                size={13}
+                size={15}
                 className="group-hover:translate-x-1 transition-transform duration-200"
               />
             </Link>
@@ -96,22 +97,40 @@ export function AreaTeaser() {
               transition={{ duration: 0.6, delay: 0.15 }}
               className="flex flex-wrap gap-3"
             >
-              {areas.map((area, i) => (
+              {visibleAreas.map((area, i) => (
                 <motion.div
-                  key={area}
+                  key={area.id}
                   initial={{ opacity: 0, scale: 0.85 }}
                   animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                  transition={{ duration: 0.3, delay: 0.25 + i * 0.07 }}
+                  transition={{ duration: 0.3, delay: 0.25 + i * 0.04 }}
                 >
                   <Link
-                    href={`/areas/${area.toLowerCase()}`}
+                    href={`/areas/${area.name.toLowerCase()}`}
                     className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/10 text-[#AAAAAA] text-sm font-medium hover:border-[#E8200A]/40 hover:text-white hover:bg-[#E8200A]/8 transition-all duration-200"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[#E8200A] opacity-50 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0" />
-                    {area}
+                    {area.name}
                   </Link>
                 </motion.div>
               ))}
+
+              {remaining > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={isInView ? { opacity: 1, scale: 1 } : {}}
+                  transition={{
+                    duration: 0.3,
+                    delay: 0.25 + visibleAreas.length * 0.04,
+                  }}
+                >
+                  <Link
+                    href="/areas"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#E8200A]/30 text-[#E8200A] text-sm font-medium hover:bg-[#E8200A]/10 transition-all duration-200"
+                  >
+                    +{remaining} more places
+                  </Link>
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </div>

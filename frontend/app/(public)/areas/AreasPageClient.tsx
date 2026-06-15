@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import axios from "axios";
 import { PageHero } from "@/components/shared/PageHero";
 import { backendApiUrl } from "@/lib/backend-api";
@@ -14,13 +13,7 @@ interface AreaData {
   name: string;
   postcodePrefix: string;
   description: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
 }
-
-const CoverageLeafletMap = dynamic(() => import("./CoverageLeafletMap"), {
-  ssr: false,
-});
 
 interface CoverageResult {
   covered: boolean;
@@ -84,9 +77,7 @@ function PostcodeChecker() {
             {loading ? "Checking…" : "Check Coverage"}
           </button>
         </form>
-        {error && (
-          <p className="mt-4 text-red-600 text-sm">{error}</p>
-        )}
+        {error && <p className="mt-4 text-red-600 text-sm">{error}</p>}
         {result && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -214,37 +205,6 @@ export default function AreasPageClient() {
       <PageHero title="We Cover Your Area" dark={true} />
       <PostcodeChecker />
       <AreaCards areas={areas} />
-
-      {/* Map Section */}
-      <section className="py-16 lg:py-24 bg-brand-surface px-4 relative z-10">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-8">
-            <h2
-              className="text-3xl lg:text-4xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
-            >
-              Find Us on the Map
-            </h2>
-            <p className="text-brand-muted mt-3 max-w-2xl mx-auto">
-              Each pin marks one of our active lesson coverage locations.
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {areas.map((area) => (
-              <span
-                key={`map-pin-${area.id}`}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-brand-border text-sm text-brand-black"
-              >
-                <span className="text-brand-red">●</span>
-                {area.name}
-              </span>
-            ))}
-          </div>
-          <div className="relative rounded-2xl overflow-hidden shadow-lg border border-brand-border bg-white">
-            <CoverageLeafletMap areas={areas} />
-          </div>
-        </div>
-      </section>
     </>
   );
 }

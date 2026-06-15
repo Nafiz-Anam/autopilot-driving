@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
+import prisma from '../client';
 import settingsService from '../services/settings.service';
 import paymentFinalizeService from '../services/paymentFinalize.service';
 import { createStripeClient } from '../utils/stripeClient';
@@ -48,6 +49,19 @@ async function handleStripe(req: Request, res: Response): Promise<void> {
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         await paymentFinalizeService.markBookingUnpaidFromFailed(paymentIntent);
+        break;
+      }
+      case 'charge.refunded': {
+        // Safety net: Stripe confirms the refund completed — mark booking REFUNDED if not already
+        const charge = event.data.object as Stripe.Charge;
+        if (charge.payment_intent && typeof charge.payment_intent === 'string') {
+          await prisma.$executeRawUnsafe(
+            `UPDATE "Booking"
+             SET "paymentStatus" = 'REFUNDED', "updatedAt" = NOW()
+             WHERE "stripePaymentId" = $1 AND "paymentStatus" <> 'REFUNDED'`,
+            charge.payment_intent
+          );
+        }
         break;
       }
       default:

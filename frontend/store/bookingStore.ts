@@ -80,6 +80,11 @@ export const useBookingStore = create<BookingStore>()(
     }),
     {
       name: "autopilot-booking-v2",
+      onRehydrateStorage: () => (state) => {
+        if (state?.selectedDate && typeof state.selectedDate === "string") {
+          state.selectedDate = new Date(state.selectedDate);
+        }
+      },
       partialize: (state) => ({
         currentStep: state.currentStep,
         lessonType: state.lessonType,

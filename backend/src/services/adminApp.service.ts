@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
 import { createStripeClient } from '../utils/stripeClient';
 import { SETTING_KEYS } from './settings.service';
+import emailService from './email.service';
 
 const PAGE_SIZE = 20;
 const VALID_BOOKING_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'] as const;
@@ -593,7 +594,23 @@ const updateApplicationStatus = async (id: string, status: string) => {
     `SELECT * FROM "InstructorApplication" WHERE id = $1 LIMIT 1`,
     id
   );
-  return rows[0] ?? null;
+  const app = rows[0] ?? null;
+
+  if (app?.email && app?.fullName) {
+    if (status === 'approved') {
+      emailService.sendInstructorApplicationApprovedEmail({
+        to: app.email,
+        applicantName: app.fullName,
+      }).catch(() => {});
+    } else if (status === 'rejected') {
+      emailService.sendInstructorApplicationRejectedEmail({
+        to: app.email,
+        applicantName: app.fullName,
+      }).catch(() => {});
+    }
+  }
+
+  return app;
 };
 
 const getApplicationById = async (id: string) => {
@@ -1637,8 +1654,8 @@ const createInstructor = async (payload: {
     userId, payload.name.trim(), payload.email.trim().toLowerCase(), payload.phone ?? null, passwordHash
   );
   const rows = await prisma.$queryRawUnsafe<any[]>(
-    `INSERT INTO "Instructor" (id, "userId", bio, "pricePerHour", transmission, "yearsExp", "licenceNumber", "isFemale", areas, "isActive", rating, "reviewCount", "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, $4::decimal, $5::text[], $6, $7, $8, $9::text[], $10, 0, 0, NOW(), NOW())
+    `INSERT INTO "Instructor" (id, "userId", bio, "pricePerHour", transmission, "yearsExp", "licenceNumber", "isFemale", areas, "isActive", rating, "reviewCount", "createdAt")
+     VALUES ($1, $2, $3, $4::decimal, $5::text[], $6, $7, $8, $9::text[], $10, 0, 0, NOW())
      RETURNING id`,
     instructorId, userId, payload.bio ?? null, payload.pricePerHour, payload.transmission,
     payload.yearsExp, payload.licenceNumber ?? null, payload.isFemale, payload.areas, payload.isActive

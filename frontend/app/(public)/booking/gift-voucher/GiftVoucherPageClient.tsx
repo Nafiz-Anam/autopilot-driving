@@ -115,7 +115,7 @@ function VoucherPreview({
           </p>
         )}
         <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
-          <p className="text-white/40 text-xs">autopilotdriving.co.uk</p>
+          <p className="text-white/40 text-xs">autopilotdrivingschool.co.uk</p>
         </div>
       </div>
     </motion.div>
