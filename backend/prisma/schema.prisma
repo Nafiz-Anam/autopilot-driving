@@ -667,6 +667,7 @@ model InstructorApplication {
 model ContactSubmission {
   id          String   @id
   name        String
+  email       String?
   phone       String?
   postcode    String?
   enquiryType String?  @map("enquiryType")

@@ -13,7 +13,10 @@ import {
   authLimiter,
   passwordResetLimiter,
   registrationLimiter,
+  sensitiveOperationLimiter,
+  paymentLimiter,
 } from './middlewares/rateLimiter';
+import { securityHeaders } from './middlewares/security';
 import { performanceTracker, addPerformanceHeaders } from './middlewares/performanceMonitoring';
 import { addRequestId } from './middlewares/requestId';
 import { sanitizeInput } from './middlewares/sanitize';
@@ -27,53 +30,85 @@ import instructorAppRoute from './routes/v1/instructorApp.route';
 
 const app = express();
 
+// ── Logging ──────────────────────────────────────────────────────────────────
 if (config.env !== 'test') {
   app.use(morgan.successHandler);
   app.use(morgan.errorHandler);
 }
 
-// set security HTTP headers
-app.use(helmet());
+// ── Security headers ─────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+}));
+app.use(securityHeaders);
 
-// Stripe webhooks require raw body — must run before express.json()
+// ── CORS — only allow the frontend origin ────────────────────────────────────
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS ?? config.clientUrl
+).split(',').map((o) => o.trim()).filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      // Allow server-to-server (no Origin header) and whitelisted origins
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      cb(new Error(`CORS: origin '${origin}' not allowed`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature'],
+    optionsSuccessStatus: 200,
+  })
+);
+app.options('*', cors());
+
+// ── Stripe webhooks — raw body BEFORE express.json() ─────────────────────────
 app.post(
   '/v1/payments/webhook',
   express.raw({ type: 'application/json' }),
   paymentWebhookController.handleStripe
 );
 
-// parse json request body
-app.use(express.json());
+// ── Body parsing ──────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// parse urlencoded request body
-app.use(express.urlencoded({ extended: true }));
-
-// add request ID for tracking
+// ── Request infrastructure ────────────────────────────────────────────────────
 app.use(addRequestId);
-
-// add structured logging
 app.use(requestLogger);
-
-// sanitize request data
 app.use(sanitizeInput);
 app.use(xss());
-
-// gzip compression
 app.use(compression());
 
-// enable cors
-app.use(cors());
-// app.options('*', cors());
-
-// jwt authentication
+// ── Auth ──────────────────────────────────────────────────────────────────────
 app.use(passport.initialize());
 passport.use('jwt', jwtStrategy);
 
-// Performance monitoring
+// ── Performance ───────────────────────────────────────────────────────────────
 app.use(performanceTracker);
 app.use(addPerformanceHeaders);
 
-// Health check routes (no rate limiting)
+// ── Health checks (no rate limiting) ─────────────────────────────────────────
 app.get('/v1/health', healthController.healthCheck);
 app.get('/v1/health/database', healthController.databaseHealthCheck);
 app.get('/v1/health/email', healthController.emailHealthCheck);
@@ -82,60 +117,47 @@ app.get('/v1/health/detailed', healthController.detailedHealthCheck);
 app.get('/v1/health/ready', healthController.readinessCheck);
 app.get('/v1/health/live', healthController.livenessCheck);
 
-// Global rate limiting - apply to all API endpoints
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+// Global — all /v1 endpoints
 app.use('/v1', apiLimiter);
 
-// Specific rate limiting for sensitive endpoints (stricter limits)
-if (config.env === 'production') {
-  // Auth endpoints - stricter limits
-  app.use('/v1/auth/login', authLimiter);
-  app.use('/v1/auth/register', registrationLimiter);
-  app.use('/v1/auth/forgot-password', passwordResetLimiter);
-  app.use('/v1/auth/reset-password', passwordResetLimiter);
-} else {
-  // Development - apply rate limiting but with more lenient limits
-  app.use('/v1/auth/login', authLimiter);
-  app.use('/v1/auth/register', registrationLimiter);
-  app.use('/v1/auth/forgot-password', passwordResetLimiter);
-  app.use('/v1/auth/reset-password', passwordResetLimiter);
-}
+// Auth — strict limits on all envs
+app.use('/v1/auth/login', authLimiter);
+app.use('/v1/auth/app-login', authLimiter);
+app.use('/v1/auth/register', registrationLimiter);
+app.use('/v1/auth/forgot-password', passwordResetLimiter);
+app.use('/v1/auth/reset-password', passwordResetLimiter);
 
-// v1 api routes
+// Payment — dedicated limits (prevents payment abuse / enumeration)
+app.use('/v1/payments', paymentLimiter);
+app.use('/v1/gift-vouchers', paymentLimiter);
+
+// Booking mutations — sensitive operation limit
+app.use('/v1/bookings', sensitiveOperationLimiter);
+
+// Student / instructor profile mutations
+app.use('/v1/student/profile', sensitiveOperationLimiter);
+app.use('/v1/instructor/profile', sensitiveOperationLimiter);
+
+// ── API routes ────────────────────────────────────────────────────────────────
 app.use('/v1/instructor', instructorAppRoute);
 app.use('/v1', routes);
 
-// Welcome endpoint for root URL
-app.get('/', (req, res) => {
+// ── Root info ─────────────────────────────────────────────────────────────────
+app.get('/', (_req, res) => {
   res.json({
     success: true,
-    message: '🚀 Welcome to the REST API Boilerplate!',
-    data: {
-      name: 'Prisma Express TypeScript Boilerplate',
-      version: '1.0.0',
-      environment: config.env || 'development',
-      endpoints: {
-        health: '/v1/health',
-        documentation: '/v1/docs',
-        api: '/v1',
-      },
-      links: {
-        health_check: `${req.protocol}://${req.get('host')}/v1/health`,
-        api_docs: `${req.protocol}://${req.get('host')}/v1/docs`,
-        github: 'https://github.com/antonio-lazaro/prisma-express-typescript-boilerplate',
-      },
-    },
+    message: 'AutoPilot Driving School API',
+    version: '1.0.0',
+    environment: config.env,
   });
 });
 
-// send back a 404 error for any unknown api request
+// ── 404 + error handlers ──────────────────────────────────────────────────────
 app.use((req, res, next) => {
   next(new ApiError(httpStatus.NOT_FOUND, 'Not found'));
 });
-
-// convert error to ApiError, if needed
 app.use(errorConverter);
-
-// handle error
 app.use(errorHandler);
 
 export default app;

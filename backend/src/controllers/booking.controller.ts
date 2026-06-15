@@ -72,15 +72,24 @@ const createMine = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 const getAvailability = catchAsync(async (req: Request, res: Response) => {
-  const instructorId = String(req.query.instructorId ?? '');
-  const startDate = String(req.query.startDate ?? '');
-  const endDate = String(req.query.endDate ?? '');
+  const instructorId = String(req.query.instructorId ?? '').trim();
+  const startDate = String(req.query.startDate ?? '').trim();
+  const endDate = String(req.query.endDate ?? '').trim();
 
   if (!instructorId || !startDate || !endDate) {
     return res.status(httpStatus.BAD_REQUEST).send({
       success: false,
       error: 'instructorId, startDate, endDate required',
+    });
+  }
+
+  if (!DATE_RE.test(startDate) || !DATE_RE.test(endDate)) {
+    return res.status(httpStatus.BAD_REQUEST).send({
+      success: false,
+      error: 'startDate and endDate must be YYYY-MM-DD',
     });
   }
 

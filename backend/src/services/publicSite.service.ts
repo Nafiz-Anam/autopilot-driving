@@ -30,6 +30,7 @@ const applySchema = z.object({
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name required'),
+  email: z.string().email('Please enter a valid email address'),
   phone: z.string().regex(/^(\+44|0)[\d\s]{9,12}$/, 'Enter a valid UK phone number'),
   postcode: z.string().min(3, 'Postcode required').optional(),
   enquiryType: z.enum([
@@ -42,7 +43,7 @@ const contactSchema = z.object({
     'other',
   ]),
   callTime: z.string().optional(),
-  message: z.string().optional(),
+  message: z.string().min(5, 'Please tell us a bit more').max(1000),
 });
 
 const registerSchema = z
@@ -331,6 +332,9 @@ const createInstructorApplication = async (payload: unknown) => {
     }
   );
 
+  // Acknowledge receipt to applicant (fire-and-forget)
+  emailService.sendInstructorApplicationReceivedEmail({ to: email, applicantName: fullName, email }).catch(() => {});
+
   return { id: rows[0]?.id };
 };
 
@@ -344,33 +348,43 @@ const createContactSubmission = async (payload: unknown, ip: string) => {
     throw new PublicSiteError(400, 'Invalid input', parsed.error.flatten());
   }
 
-  const { name, phone, postcode, enquiryType, callTime, message } = parsed.data;
+  const { name, email, phone, postcode, enquiryType, callTime, message } = parsed.data;
+
+  // Add email column if it doesn't exist yet (migration-free approach)
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "ContactSubmission" ADD COLUMN IF NOT EXISTS email TEXT`
+  ).catch(() => {});
 
   const id = randomUUID();
   const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
-    `INSERT INTO "ContactSubmission" (id, name, phone, postcode, "enquiryType", "callTime", message)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO "ContactSubmission" (id, name, email, phone, postcode, "enquiryType", "callTime", message)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING id`,
     id,
     name,
+    email,
     phone,
-    postcode,
+    postcode ?? null,
     enquiryType,
     callTime ?? null,
-    message ?? null
+    message
   );
 
   void notifyAdmin(
     `New Contact Form Submission — ${enquiryType}`,
     {
       Name: name,
+      Email: email,
       Phone: phone,
-      Postcode: postcode,
+      Postcode: postcode ?? '—',
       Enquiry: enquiryType,
       'Best time': callTime ?? 'any',
-      Message: message ?? 'none',
+      Message: message,
     }
   );
+
+  // Acknowledge receipt to submitter
+  emailService.sendContactAcknowledgementEmail({ to: email, name }).catch(() => {});
 
   return { id: rows[0]?.id };
 };

@@ -6,6 +6,7 @@ import { generateBookingReference } from '../utils/bookingReference';
 import rescheduleService from './reschedule.service';
 import refundService from './refund.service';
 import googleCalendarService from './googleCalendar.service';
+import emailService from './email.service';
 
 const ALL_SLOTS = [
   '08:00',
@@ -241,6 +242,58 @@ const cancelForStudent = async (bookingId: string, studentId: string, reason: st
 
   // Remove from Google Calendar (fire-and-forget)
   googleCalendarService.deleteCalendarEvent(studentId, bookingId).catch(() => {});
+
+  // Send cancellation emails (fire-and-forget)
+  void (async () => {
+    try {
+      const details = await prisma.$queryRawUnsafe<Array<{
+        studentName: string; studentEmail: string;
+        instructorName: string | null; instructorEmail: string | null;
+        lessonType: string; scheduledAt: Date; totalAmount: string;
+      }>>(
+        `SELECT su.name AS "studentName", su.email AS "studentEmail",
+                iu.name AS "instructorName", iu.email AS "instructorEmail",
+                b."lessonType", b."scheduledAt", b."totalAmount"::text
+         FROM "Booking" b
+         INNER JOIN users su ON su.id = b."studentId"
+         LEFT  JOIN "Instructor" i ON i.id = b."instructorId"
+         LEFT  JOIN users iu ON iu.id = i."userId"
+         WHERE b.id = $1 LIMIT 1`,
+        bookingId
+      );
+      const d = details[0];
+      if (d) {
+        await emailService.sendBookingCancellationEmail({
+          to: d.studentEmail,
+          studentName: d.studentName,
+          reference: bookingId.slice(-8).toUpperCase(),
+          lessonType: d.lessonType,
+          scheduledAt: new Date(d.scheduledAt),
+          refunded: refundResult.refunded,
+          refundAmount: refundResult.refunded ? Number(d.totalAmount) : undefined,
+        });
+        if (refundResult.refunded) {
+          await emailService.sendRefundConfirmationEmail({
+            to: d.studentEmail,
+            studentName: d.studentName,
+            reference: bookingId.slice(-8).toUpperCase(),
+            refundAmount: Number(d.totalAmount),
+            scheduledAt: new Date(d.scheduledAt),
+          });
+        }
+        if (d.instructorEmail) {
+          await emailService.sendInstructorBookingCancellationEmail({
+            to: d.instructorEmail,
+            instructorName: d.instructorName ?? 'Instructor',
+            studentName: d.studentName,
+            reference: bookingId.slice(-8).toUpperCase(),
+            scheduledAt: new Date(d.scheduledAt),
+            reason,
+          });
+        }
+      }
+    } catch { /* email failure must not break cancellation */ }
+  })();
 
   return {
     data: {

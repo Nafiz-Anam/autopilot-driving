@@ -51,12 +51,13 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
         studentName: string | null;
         studentEmail: string;
         instructorName: string | null;
+        instructorEmail: string | null;
       }>
     >(
       `SELECT b.reference, b."lessonType", b."scheduledAt", b."durationMins", b."totalAmount"::text,
               b."studentId",
               su.name AS "studentName", su.email AS "studentEmail",
-              iu.name AS "instructorName"
+              iu.name AS "instructorName", iu.email AS "instructorEmail"
        FROM "Booking" b
        INNER JOIN users su ON su.id = b."studentId"
        LEFT  JOIN "Instructor" i ON i.id = b."instructorId"
@@ -98,6 +99,19 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
         scheduledAt: new Date(row.scheduledAt),
         durationMins: row.durationMins,
       }).catch(() => { /* non-critical */ });
+
+      // Notify instructor of new booking (fire-and-forget)
+      if (row.instructorEmail) {
+        emailService.sendInstructorNewBookingEmail({
+          to: row.instructorEmail,
+          instructorName: row.instructorName ?? 'Instructor',
+          studentName: row.studentName ?? 'Student',
+          reference: row.reference,
+          lessonType: row.lessonType,
+          scheduledAt: new Date(row.scheduledAt),
+          durationMins: row.durationMins,
+        }).catch(() => {});
+      }
     }
   } catch {
     // Email/calendar failure must not break payment finalization
@@ -172,6 +186,29 @@ async function finalizeGiftVoucherPurchaseFromPayment(
     expiresAt.toISOString()
   );
 
+  // Send voucher confirmation to purchaser + delivery to recipient (fire-and-forget)
+  void (async () => {
+    try {
+      await emailService.sendGiftVoucherConfirmationEmail({
+        to: md.recipientEmail,
+        senderName: md.senderName ?? 'Someone',
+        recipientName: md.recipientName ?? 'Friend',
+        recipientEmail: md.recipientEmail,
+        code: md.voucherCode,
+        amount: amountGbp,
+        message: md.message && md.message.length > 0 ? md.message : undefined,
+      });
+      await emailService.sendGiftVoucherRecipientEmail({
+        to: md.recipientEmail,
+        recipientName: md.recipientName ?? 'Friend',
+        senderName: md.senderName ?? 'Someone',
+        code: md.voucherCode,
+        amount: amountGbp,
+        message: md.message && md.message.length > 0 ? md.message : undefined,
+      });
+    } catch { /* non-critical */ }
+  })();
+
   return { code: md.voucherCode };
 }
 
@@ -182,6 +219,33 @@ async function markBookingUnpaidFromFailed(pi: Stripe.PaymentIntent): Promise<vo
     `UPDATE "Booking" SET "paymentStatus" = 'UNPAID', "updatedAt" = NOW() WHERE id = $1`,
     bookingId
   );
+
+  // Notify student of payment failure (fire-and-forget)
+  void (async () => {
+    try {
+      const rows = await prisma.$queryRawUnsafe<Array<{
+        reference: string; lessonType: string; scheduledAt: Date;
+        totalAmount: string; studentName: string | null; studentEmail: string;
+      }>>(
+        `SELECT b.reference, b."lessonType", b."scheduledAt", b."totalAmount"::text,
+                su.name AS "studentName", su.email AS "studentEmail"
+         FROM "Booking" b INNER JOIN users su ON su.id = b."studentId"
+         WHERE b.id = $1 LIMIT 1`,
+        bookingId
+      );
+      const row = rows[0];
+      if (row) {
+        await emailService.sendPaymentFailedEmail({
+          to: row.studentEmail,
+          studentName: row.studentName ?? 'Student',
+          reference: row.reference,
+          lessonType: row.lessonType,
+          scheduledAt: new Date(row.scheduledAt),
+          amount: Number(row.totalAmount),
+        });
+      }
+    } catch { /* non-critical */ }
+  })();
 }
 
 export default {

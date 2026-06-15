@@ -176,9 +176,15 @@ jobs:
           SMTP_PASS=${SMTP_PASS}
           EMAIL_FROM=${EMAIL_FROM}
 
+          # CORS
+          ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+
           # Google Places
           GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY}
           GOOGLE_PLACE_ID=${GOOGLE_PLACE_ID}
+
+          # Integration encryption
+          INTEGRATION_ENCRYPTION_KEY=${INTEGRATION_ENCRYPTION_KEY}
           EOF
         env:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
@@ -203,6 +209,8 @@ jobs:
           EMAIL_FROM: ${{ vars.EMAIL_FROM }}
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
           GOOGLE_PLACE_ID: ${{ secrets.GOOGLE_PLACE_ID }}
+          ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
+          INTEGRATION_ENCRYPTION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}
 
       - name: Upload .env.production to VPS
         run: |

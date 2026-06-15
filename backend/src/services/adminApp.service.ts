@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
 import { createStripeClient } from '../utils/stripeClient';
 import { SETTING_KEYS } from './settings.service';
+import emailService from './email.service';
 
 const PAGE_SIZE = 20;
 const VALID_BOOKING_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'] as const;
@@ -593,7 +594,23 @@ const updateApplicationStatus = async (id: string, status: string) => {
     `SELECT * FROM "InstructorApplication" WHERE id = $1 LIMIT 1`,
     id
   );
-  return rows[0] ?? null;
+  const app = rows[0] ?? null;
+
+  if (app?.email && app?.fullName) {
+    if (status === 'approved') {
+      emailService.sendInstructorApplicationApprovedEmail({
+        to: app.email,
+        applicantName: app.fullName,
+      }).catch(() => {});
+    } else if (status === 'rejected') {
+      emailService.sendInstructorApplicationRejectedEmail({
+        to: app.email,
+        applicantName: app.fullName,
+      }).catch(() => {});
+    }
+  }
+
+  return app;
 };
 
 const getApplicationById = async (id: string) => {

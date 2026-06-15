@@ -8,6 +8,7 @@ import { backendApiUrl } from "@/lib/backend-api";
 
 const schema = z.object({
   name: z.string().min(2, "Please enter your name"),
+  email: z.string().email("Please enter a valid email address"),
   phone: z
     .string()
     .regex(
@@ -19,7 +20,10 @@ const schema = z.object({
     .regex(
       /^[A-Za-z]{1,2}\d{1,2}[A-Za-z]?\s?\d[A-Za-z]{2}$/,
       "Please enter a valid UK postcode"
-    ),
+    )
+    .optional()
+    .or(z.literal("")),
+  message: z.string().min(5, "Please tell us a bit more"),
   bestTime: z.string().min(1, "Please select a best time to call"),
 });
 
@@ -50,10 +54,12 @@ export function CallbackForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: data.name,
+          email: data.email,
           phone: data.phone,
-          postcode: data.postcode,
+          postcode: data.postcode ?? undefined,
           enquiryType: "callback_request",
           callTime: data.bestTime,
+          message: data.message,
         }),
       });
 
@@ -98,10 +104,10 @@ export function CallbackForm() {
           </svg>
         </div>
         <p style={{ fontSize: 18, fontWeight: 700, color: "#0D0D0D", margin: 0 }}>
-          We will call you soon!
+          Message received!
         </p>
         <p style={{ fontSize: 14, color: "#6B6B6B", margin: 0 }}>
-          One of our team will be in touch during your preferred time.
+          We&apos;ll be in touch soon. Check your email for a confirmation.
         </p>
       </div>
     );
@@ -124,6 +130,21 @@ export function CallbackForm() {
         {errors.name && <p style={errorStyle}>{errors.name.message}</p>}
       </div>
 
+      {/* Email */}
+      <div>
+        <label htmlFor="cb-email" style={labelStyle}>
+          Email address
+        </label>
+        <input
+          id="cb-email"
+          type="email"
+          placeholder="you@example.com"
+          style={inputStyle(!!errors.email)}
+          {...register("email")}
+        />
+        {errors.email && <p style={errorStyle}>{errors.email.message}</p>}
+      </div>
+
       {/* Phone */}
       <div>
         <label htmlFor="cb-phone" style={labelStyle}>
@@ -142,7 +163,7 @@ export function CallbackForm() {
       {/* Postcode */}
       <div>
         <label htmlFor="cb-postcode" style={labelStyle}>
-          Postcode
+          Postcode <span style={{ fontWeight: 400, color: "#9CA3AF" }}>(optional)</span>
         </label>
         <input
           id="cb-postcode"
@@ -152,6 +173,21 @@ export function CallbackForm() {
           {...register("postcode")}
         />
         {errors.postcode && <p style={errorStyle}>{errors.postcode.message}</p>}
+      </div>
+
+      {/* Message */}
+      <div>
+        <label htmlFor="cb-message" style={labelStyle}>
+          Your message
+        </label>
+        <textarea
+          id="cb-message"
+          rows={4}
+          placeholder="Tell us what you're looking for — lesson type, your experience level, preferred areas..."
+          style={{ ...inputStyle(!!errors.message), resize: "vertical" as const, lineHeight: "1.5" }}
+          {...register("message")}
+        />
+        {errors.message && <p style={errorStyle}>{errors.message.message}</p>}
       </div>
 
       {/* Best time */}

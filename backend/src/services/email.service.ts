@@ -226,16 +226,7 @@ const sendVerificationEmail = async (to: string, token: string, name: string) =>
  * @param {string} name
  * @returns {Promise}
  */
-const sendWelcomeEmail = async (to: string, name: string) => {
-  const subject = `Welcome to ${BRAND.name}`;
-  const text = `Hi ${name}, welcome to ${BRAND.name}.`;
-  const html = renderEmailLayout({
-    title: 'Welcome aboard',
-    intro: `Hi ${name}, thanks for joining ${BRAND.name}.`,
-    bodyHtml: '<p>Your account is ready. You can now book lessons and manage your progress from your dashboard.</p>',
-  });
-  await sendEmail(to, subject, text, html);
-};
+// sendWelcomeEmail is defined below with the full branded template
 
 /**
  * Send login alert email
@@ -568,6 +559,420 @@ const sendBookingConfirmationEmail = async (params: {
   });
 };
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function fmtDate(d: Date) {
+  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+function fmtTime(d: Date) {
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+function detailRow(label: string, value: string) {
+  return `<tr><td style="padding:5px 0;color:#6B7280;width:42%;">${escapeHtml(label)}</td><td style="padding:5px 0;font-weight:600;">${escapeHtml(value)}</td></tr>`;
+}
+function detailTable(rows: [string, string][]) {
+  return `<table style="width:100%;border-collapse:collapse;margin:12px 0;">${rows.map(([l, v]) => detailRow(l, v)).join('')}</table>`;
+}
+
+// ── Booking cancellation — student ─────────────────────────────────────────────
+const sendBookingCancellationEmail = async (params: {
+  to: string;
+  studentName: string;
+  reference: string;
+  lessonType: string;
+  scheduledAt: Date;
+  refunded: boolean;
+  refundAmount?: number;
+}) => {
+  const subject = `Booking Cancelled — ${params.reference}`;
+  const refundNote = params.refunded && params.refundAmount
+    ? `A full refund of <strong>£${params.refundAmount.toFixed(2)}</strong> has been issued and will appear in your account within 5–10 business days.`
+    : 'As the lesson was within 24 hours, no refund has been issued in line with our cancellation policy.';
+
+  const html = renderEmailLayout({
+    title: 'Your booking has been cancelled',
+    intro: `Hi ${escapeHtml(params.studentName)}, your lesson has been cancelled as requested.`,
+    bodyHtml: `
+      ${detailTable([
+        ['Reference', params.reference],
+        ['Lesson Type', params.lessonType],
+        ['Was Scheduled', `${fmtDate(params.scheduledAt)} at ${fmtTime(params.scheduledAt)}`],
+      ])}
+      <p style="margin:12px 0;padding:12px;background:${params.refunded ? '#f0fdf4' : '#fef2f2'};border-radius:8px;font-size:13px;">${refundNote}</p>
+    `,
+    ctaLabel: 'Book Another Lesson',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/booking',
+    footnote: 'Questions? Contact us at contact@autopilotdrivingschool.co.uk',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Booking cancellation — instructor ──────────────────────────────────────────
+const sendInstructorBookingCancellationEmail = async (params: {
+  to: string;
+  instructorName: string;
+  studentName: string;
+  reference: string;
+  scheduledAt: Date;
+  reason: string;
+}) => {
+  const subject = `Lesson Cancelled — ${params.reference}`;
+  const html = renderEmailLayout({
+    title: 'A lesson has been cancelled',
+    intro: `Hi ${escapeHtml(params.instructorName)}, a student has cancelled their upcoming lesson.`,
+    bodyHtml: `
+      ${detailTable([
+        ['Reference', params.reference],
+        ['Student', params.studentName],
+        ['Was Scheduled', `${fmtDate(params.scheduledAt)} at ${fmtTime(params.scheduledAt)}`],
+        ['Reason', params.reason],
+      ])}
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">This slot is now free in your calendar.</p>
+    `,
+    ctaLabel: 'View Dashboard',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/instructor/dashboard',
+    footnote: 'You will receive this notification for every cancellation.',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── New booking assigned — instructor ──────────────────────────────────────────
+const sendInstructorNewBookingEmail = async (params: {
+  to: string;
+  instructorName: string;
+  studentName: string;
+  reference: string;
+  lessonType: string;
+  scheduledAt: Date;
+  durationMins: number;
+}) => {
+  const subject = `New Lesson Booked — ${params.reference}`;
+  const html = renderEmailLayout({
+    title: 'You have a new lesson!',
+    intro: `Hi ${escapeHtml(params.instructorName)}, a new lesson has been assigned to you.`,
+    bodyHtml: detailTable([
+      ['Reference', params.reference],
+      ['Student', params.studentName],
+      ['Lesson Type', params.lessonType],
+      ['Date', fmtDate(params.scheduledAt)],
+      ['Time', fmtTime(params.scheduledAt)],
+      ['Duration', `${params.durationMins / 60}hr`],
+    ]),
+    ctaLabel: 'View Schedule',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/instructor/schedule',
+    footnote: 'You will receive this notification for every new booking.',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Reschedule request — notify the other party ────────────────────────────────
+const sendRescheduleRequestEmail = async (params: {
+  to: string;
+  recipientName: string;
+  requesterName: string;
+  requesterRole: 'student' | 'instructor';
+  reference: string;
+  currentDate: Date;
+  proposedDate: Date;
+  reason: string;
+}) => {
+  const subject = `Reschedule Request — ${params.reference}`;
+  const html = renderEmailLayout({
+    title: 'A reschedule has been requested',
+    intro: `Hi ${escapeHtml(params.recipientName)}, ${escapeHtml(params.requesterName)} has requested to reschedule a lesson.`,
+    bodyHtml: `
+      ${detailTable([
+        ['Reference', params.reference],
+        ['Current Date', `${fmtDate(params.currentDate)} at ${fmtTime(params.currentDate)}`],
+        ['Proposed Date', `${fmtDate(params.proposedDate)} at ${fmtTime(params.proposedDate)}`],
+        ['Reason', params.reason],
+      ])}
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">Please log in to accept or decline this request.</p>
+    `,
+    ctaLabel: 'Review Request',
+    ctaUrl: params.requesterRole === 'student'
+      ? 'https://autopilotdrivingschool.co.uk/instructor/bookings'
+      : 'https://autopilotdrivingschool.co.uk/student/bookings',
+    footnote: 'If you have questions, contact us at contact@autopilotdrivingschool.co.uk',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Reschedule accepted ────────────────────────────────────────────────────────
+const sendRescheduleAcceptedEmail = async (params: {
+  to: string;
+  recipientName: string;
+  reference: string;
+  newDate: Date;
+  instructorName: string;
+  durationMins: number;
+  icsContent?: string;
+}) => {
+  const subject = `Reschedule Confirmed — ${params.reference}`;
+  const html = renderEmailLayout({
+    title: 'Your reschedule has been accepted',
+    intro: `Hi ${escapeHtml(params.recipientName)}, your lesson has been moved to the new time.`,
+    bodyHtml: detailTable([
+      ['Reference', params.reference],
+      ['New Date', fmtDate(params.newDate)],
+      ['New Time', fmtTime(params.newDate)],
+      ['Instructor', params.instructorName],
+      ['Duration', `${params.durationMins / 60}hr`],
+    ]),
+    ctaLabel: 'View Bookings',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/student/bookings',
+    footnote: params.icsContent ? 'The attached file will update your calendar automatically.' : undefined,
+  });
+  const mail = await getTransporter();
+  await mail.transporter.sendMail({
+    from: mail.from,
+    to: params.to,
+    subject,
+    text: subject,
+    html,
+    ...(params.icsContent ? {
+      attachments: [{
+        filename: `lesson-${params.reference}-updated.ics`,
+        content: params.icsContent,
+        contentType: 'text/calendar; method=REQUEST; charset=utf-8',
+      }],
+    } : {}),
+  });
+};
+
+// ── Reschedule declined ────────────────────────────────────────────────────────
+const sendRescheduleDeclinedEmail = async (params: {
+  to: string;
+  recipientName: string;
+  reference: string;
+  originalDate: Date;
+}) => {
+  const subject = `Reschedule Declined — ${params.reference}`;
+  const html = renderEmailLayout({
+    title: 'Reschedule request declined',
+    intro: `Hi ${escapeHtml(params.recipientName)}, unfortunately your reschedule request has been declined.`,
+    bodyHtml: `
+      ${detailTable([
+        ['Reference', params.reference],
+        ['Original Date', `${fmtDate(params.originalDate)} at ${fmtTime(params.originalDate)}`],
+      ])}
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">Your original lesson time remains unchanged. If you need to cancel, please do so from your dashboard.</p>
+    `,
+    ctaLabel: 'View Bookings',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/student/bookings',
+    footnote: 'Questions? Contact us at contact@autopilotdrivingschool.co.uk',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Payment failed ─────────────────────────────────────────────────────────────
+const sendPaymentFailedEmail = async (params: {
+  to: string;
+  studentName: string;
+  reference: string;
+  lessonType: string;
+  scheduledAt: Date;
+  amount: number;
+}) => {
+  const subject = `Payment Failed — ${params.reference}`;
+  const html = renderEmailLayout({
+    title: 'Your payment was unsuccessful',
+    intro: `Hi ${escapeHtml(params.studentName)}, we were unable to process your payment for the following lesson.`,
+    bodyHtml: `
+      ${detailTable([
+        ['Reference', params.reference],
+        ['Lesson', params.lessonType],
+        ['Date', `${fmtDate(params.scheduledAt)} at ${fmtTime(params.scheduledAt)}`],
+        ['Amount', `£${params.amount.toFixed(2)}`],
+      ])}
+      <p style="margin:12px 0;padding:12px;background:#fef2f2;border-radius:8px;font-size:13px;">Please update your payment details and try again. Your booking will be held for a short time before being released.</p>
+    `,
+    ctaLabel: 'Retry Payment',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/student/bookings',
+    footnote: 'If you continue to have issues, contact us at contact@autopilotdrivingschool.co.uk',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Refund confirmation ────────────────────────────────────────────────────────
+const sendRefundConfirmationEmail = async (params: {
+  to: string;
+  studentName: string;
+  reference: string;
+  refundAmount: number;
+  scheduledAt: Date;
+}) => {
+  const subject = `Refund Processed — ${params.reference}`;
+  const html = renderEmailLayout({
+    title: 'Your refund is on its way',
+    intro: `Hi ${escapeHtml(params.studentName)}, your refund has been processed successfully.`,
+    bodyHtml: `
+      ${detailTable([
+        ['Reference', params.reference],
+        ['Refund Amount', `£${params.refundAmount.toFixed(2)}`],
+        ['Cancelled Lesson', `${fmtDate(params.scheduledAt)} at ${fmtTime(params.scheduledAt)}`],
+      ])}
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">Refunds typically appear within 5–10 business days depending on your bank or card provider.</p>
+    `,
+    ctaLabel: 'Book Another Lesson',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/booking',
+    footnote: 'Questions about your refund? Contact us at contact@autopilotdrivingschool.co.uk',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Gift voucher — purchaser confirmation ──────────────────────────────────────
+const sendGiftVoucherConfirmationEmail = async (params: {
+  to: string;
+  senderName: string;
+  recipientName: string;
+  recipientEmail: string;
+  code: string;
+  amount: number;
+  message?: string;
+}) => {
+  const subject = 'Gift Voucher Purchase Confirmed';
+  const html = renderEmailLayout({
+    title: 'Your gift voucher is ready!',
+    intro: `Hi ${escapeHtml(params.senderName)}, your gift voucher for ${escapeHtml(params.recipientName)} has been purchased successfully.`,
+    bodyHtml: `
+      ${detailTable([
+        ['Voucher Code', params.code],
+        ['Amount', `£${params.amount.toFixed(2)}`],
+        ['For', params.recipientName],
+        ['Sent To', params.recipientEmail],
+        ...(params.message ? [['Message', params.message] as [string, string]] : []),
+      ])}
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">The voucher has been sent to ${escapeHtml(params.recipientName)} at ${escapeHtml(params.recipientEmail)}. It is valid for 12 months from today.</p>
+    `,
+    footnote: 'Questions? Contact us at contact@autopilotdrivingschool.co.uk',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Gift voucher — recipient delivery ─────────────────────────────────────────
+const sendGiftVoucherRecipientEmail = async (params: {
+  to: string;
+  recipientName: string;
+  senderName: string;
+  code: string;
+  amount: number;
+  message?: string;
+}) => {
+  const subject = `You've received a driving lesson gift from ${params.senderName}!`;
+  const html = renderEmailLayout({
+    title: `${escapeHtml(params.senderName)} gave you a driving lesson gift!`,
+    intro: `Hi ${escapeHtml(params.recipientName)}, you've received a gift voucher for AutoPilot Driving School.`,
+    bodyHtml: `
+      ${params.message ? `<p style="margin:0 0 16px;padding:14px;background:#f9fafb;border-left:4px solid #E8200A;border-radius:4px;font-style:italic;">"${escapeHtml(params.message)}"<br><span style="font-style:normal;font-weight:600;">— ${escapeHtml(params.senderName)}</span></p>` : ''}
+      <p style="margin:0 0 8px;font-size:13px;color:#6B7280;">Your voucher code:</p>
+      <p style="margin:0 0 16px;font-size:28px;font-weight:800;letter-spacing:4px;color:#E8200A;">${escapeHtml(params.code)}</p>
+      ${detailTable([['Value', `£${params.amount.toFixed(2)}`], ['Valid For', '12 months']])}
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">Use this code when booking your lesson to redeem the full amount.</p>
+    `,
+    ctaLabel: 'Book Your Lesson',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/booking',
+    footnote: 'Questions? Contact us at contact@autopilotdrivingschool.co.uk',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Instructor application received ───────────────────────────────────────────
+const sendInstructorApplicationReceivedEmail = async (params: {
+  to: string;
+  applicantName: string;
+  email: string;
+}) => {
+  const subject = 'We received your instructor application';
+  const html = renderEmailLayout({
+    title: 'Application received — thank you!',
+    intro: `Hi ${escapeHtml(params.applicantName)}, we've received your application to join AutoPilot Driving School as an instructor.`,
+    bodyHtml: `
+      <p>Our team will review your application and get back to you within <strong>2–5 business days</strong>.</p>
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">If you have any questions in the meantime, feel free to contact us at contact@autopilotdrivingschool.co.uk</p>
+    `,
+    footnote: 'You are receiving this because you submitted an instructor application on our website.',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Instructor application approved ───────────────────────────────────────────
+const sendInstructorApplicationApprovedEmail = async (params: {
+  to: string;
+  applicantName: string;
+}) => {
+  const subject = 'Congratulations — Your Application Has Been Approved!';
+  const html = renderEmailLayout({
+    title: 'Welcome to the AutoPilot team!',
+    intro: `Hi ${escapeHtml(params.applicantName)}, we're delighted to let you know your instructor application has been approved.`,
+    bodyHtml: `
+      <p>You are now an approved instructor with AutoPilot Driving School. A member of our team will be in touch shortly with your onboarding details and login credentials.</p>
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">In the meantime, if you have any questions please reach out to us at contact@autopilotdrivingschool.co.uk</p>
+    `,
+    ctaLabel: 'Visit Our Website',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk',
+    footnote: 'Welcome aboard — we look forward to working with you!',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Instructor application rejected ───────────────────────────────────────────
+const sendInstructorApplicationRejectedEmail = async (params: {
+  to: string;
+  applicantName: string;
+}) => {
+  const subject = 'Your AutoPilot Instructor Application';
+  const html = renderEmailLayout({
+    title: 'Thank you for applying',
+    intro: `Hi ${escapeHtml(params.applicantName)}, thank you for your interest in joining AutoPilot Driving School as an instructor.`,
+    bodyHtml: `
+      <p>After careful consideration, we are unable to move forward with your application at this time.</p>
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">We appreciate the time you took to apply and encourage you to apply again in the future. If you have any questions, feel free to contact us at contact@autopilotdrivingschool.co.uk</p>
+    `,
+    footnote: 'We wish you all the best.',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Contact form acknowledgement ───────────────────────────────────────────────
+const sendContactAcknowledgementEmail = async (params: {
+  to: string;
+  name: string;
+}) => {
+  const subject = "We've received your message";
+  const html = renderEmailLayout({
+    title: "Thanks for getting in touch!",
+    intro: `Hi ${escapeHtml(params.name)}, we've received your message and will get back to you as soon as possible.`,
+    bodyHtml: `
+      <p>Our team typically responds within <strong>1–2 business days</strong> (Mon–Fri, 8am–8pm).</p>
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">If your enquiry is urgent, you can also reach us by phone at <a href="tel:07450556963" style="color:#E8200A;">07450 556 963</a>.</p>
+    `,
+    footnote: 'You are receiving this because you submitted a contact form on our website.',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
+// ── Welcome email ──────────────────────────────────────────────────────────────
+const sendWelcomeEmail = async (params: { to: string; name: string }) => {
+  const subject = 'Welcome to AutoPilot Driving School!';
+  const html = renderEmailLayout({
+    title: `Welcome, ${escapeHtml(params.name)}!`,
+    intro: "You're all set. Here's how to get started with your driving lessons.",
+    bodyHtml: `
+      <ol style="margin:12px 0;padding-left:20px;line-height:2;">
+        <li>Book your first lesson from the booking page</li>
+        <li>Choose your preferred instructor and time slot</li>
+        <li>Pay securely — your lesson is confirmed instantly</li>
+        <li>Track your progress from your student dashboard</li>
+      </ol>
+    `,
+    ctaLabel: 'Book Your First Lesson',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/booking',
+    footnote: 'Questions? We\'re here at contact@autopilotdrivingschool.co.uk or 07450 556 963.',
+  });
+  await sendEmail(params.to, subject, subject, html);
+};
+
 const sendAdminNotificationEmail = async (
   subject: string,
   details: Record<string, string | number | boolean | null | undefined>
@@ -620,6 +1025,26 @@ export default {
   sendPasswordResetOtp,
   sendAdminNotificationEmail,
   sendBookingConfirmationEmail,
+  // Booking lifecycle
+  sendBookingCancellationEmail,
+  sendInstructorBookingCancellationEmail,
+  sendInstructorNewBookingEmail,
+  // Reschedule
+  sendRescheduleRequestEmail,
+  sendRescheduleAcceptedEmail,
+  sendRescheduleDeclinedEmail,
+  // Payment
+  sendPaymentFailedEmail,
+  sendRefundConfirmationEmail,
+  // Gift vouchers
+  sendGiftVoucherConfirmationEmail,
+  sendGiftVoucherRecipientEmail,
+  // Instructor applications
+  sendInstructorApplicationReceivedEmail,
+  sendInstructorApplicationApprovedEmail,
+  sendInstructorApplicationRejectedEmail,
+  // Misc
+  sendContactAcknowledgementEmail,
   verifySmtpConnection,
   checkEmailServiceHealth,
   transporter,

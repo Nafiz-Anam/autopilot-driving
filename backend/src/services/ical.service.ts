@@ -24,12 +24,12 @@ function generateBookingIcs(params: {
   const end = new Date(params.scheduledAt.getTime() + params.durationMins * 60 * 1000);
 
   cal.createEvent({
-    uid: `booking-${params.bookingId}@autopilotdriving.co.uk`,
+    id: `booking-${params.bookingId}@autopilotdrivingschool.co.uk`,
     start: params.scheduledAt,
     end,
     summary: `Driving Lesson — ${formatLessonType(params.lessonType)}`,
     description: `Booking reference: ${params.reference}\nInstructor: ${params.instructorName}\nDuration: ${params.durationMins / 60}hr\nAmount: £${params.totalAmount.toFixed(2)}`,
-    organizer: { name: 'AutoPilot Driving School', email: 'noreply@autopilotdriving.co.uk' },
+    organizer: { name: 'AutoPilot Driving School', email: 'noreply@autopilotdrivingschool.co.uk' },
     attendees: [{ name: params.studentName, email: params.studentEmail, rsvp: false }],
   });
 
@@ -80,7 +80,7 @@ async function generateInstructorFeedIcs(instructorId: string): Promise<string |
     const start = new Date(b.scheduledAt);
     const end = new Date(start.getTime() + b.durationMins * 60 * 1000);
     cal.createEvent({
-      uid: `booking-${b.id}@autopilotdriving.co.uk`,
+      id: `booking-${b.id}@autopilotdrivingschool.co.uk`,
       start,
       end,
       summary: `Lesson — ${b.studentName ?? 'Student'} (${formatLessonType(b.lessonType)})`,
@@ -144,7 +144,7 @@ async function generateStudentFeedIcs(studentId: string): Promise<string | null>
     const start = new Date(b.scheduledAt);
     const end = new Date(start.getTime() + b.durationMins * 60 * 1000);
     cal.createEvent({
-      uid: `booking-${b.id}@autopilotdriving.co.uk`,
+      id: `booking-${b.id}@autopilotdrivingschool.co.uk`,
       start,
       end,
       summary: `Driving Lesson — ${formatLessonType(b.lessonType)}`,
