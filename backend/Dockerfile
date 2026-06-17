@@ -49,6 +49,6 @@ EXPOSE 8008
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:8008/v1/health/live || exit 1
 
-# Run Prisma generate + schema sync + demo seed at startup, then launch API.
+# Run Prisma generate + schema sync at startup, then launch API.
 # Use local Prisma CLI (not dlx) to avoid runtime package download delays.
-CMD ["sh", "-c", "pnpm prisma generate && pnpm prisma db push --accept-data-loss && pnpm run db:seed && pnpm exec pm2-runtime start ecosystem.config.json"]
+CMD ["sh", "-c", "pnpm prisma generate && pnpm prisma db push && pnpm exec pm2-runtime start ecosystem.config.json"]

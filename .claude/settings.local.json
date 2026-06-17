@@ -3,13 +3,14 @@
     "allow": [
       "Bash(DATABASE_URL=\"postgresql://postgres:password@localhost:5432/autopilot_db\" pnpm exec prisma generate)",
       "Bash(npx tsc *)",
-      "Bash(gh variable *)",
-      "Bash(ssh *)",
       "Bash(docker compose *)",
-      "Read(//home/nafiz/.claude/**)",
-      "Read(//root/**)",
-      "Bash(claude mcp *)",
-      "Bash(git add *)"
+      "Bash(curl -s http://localhost:8008/v1/public/areas)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f'Total areas: {len\\(d[\\\\\"data\\\\\"]\\)}'\\)\")",
+      "Bash(gh run *)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "notion"
+  ]
 }
