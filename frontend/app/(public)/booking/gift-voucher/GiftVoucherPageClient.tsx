@@ -585,9 +585,14 @@ export default function GiftVoucherPageClient() {
                 </Field>
               </div>
 
-              <Field label="From (your name)" error={errors.senderName?.message}>
-                <input {...register("senderName")} className={inputClass} placeholder="Your name" />
-              </Field>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Your name" error={errors.senderName?.message}>
+                  <input {...register("senderName")} className={inputClass} placeholder="Your name" />
+                </Field>
+                <Field label="Your email" error={errors.senderEmail?.message}>
+                  <input {...register("senderEmail")} type="email" className={inputClass} placeholder="your@email.com" />
+                </Field>
+              </div>
 
               <Field label="Personal message (optional)" error={errors.message?.message}>
                 <div className="relative">

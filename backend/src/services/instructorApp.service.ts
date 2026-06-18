@@ -1,4 +1,6 @@
 import prisma from '../client';
+import refundService from './refund.service';
+import emailService from './email.service';
 
 type InstructorProfileRow = {
   instructor: Record<string, unknown>;
@@ -514,9 +516,10 @@ const cancelMyBooking = async (
   if (!instructor) return { error: 'NOT_FOUND' as const };
 
   const bookingRows = await prisma.$queryRawUnsafe<
-    Array<{ id: string; instructorId: string; status: string }>
+    Array<{ id: string; instructorId: string; status: string; paymentStatus: string; studentId: string }>
   >(
-    `SELECT id, "instructorId", status::text AS status FROM "Booking" WHERE id = $1 LIMIT 1`,
+    `SELECT id, "instructorId", status::text AS status, "paymentStatus"::text AS "paymentStatus", "studentId"
+     FROM "Booking" WHERE id = $1 LIMIT 1`,
     bookingId
   );
   const booking = bookingRows[0];
@@ -538,7 +541,62 @@ const cancelMyBooking = async (
     );
   } catch { /* ignore */ }
 
-  return { data: { id: bookingId, status: 'CANCELLED' as const } };
+  // Always refund the student when the instructor cancels — not the student's fault
+  let refundResult: { refunded: boolean; stripeRefundId?: string } = { refunded: false };
+  if (booking.paymentStatus === 'PAID') {
+    const result = await refundService.issueRefundForBooking(bookingId);
+    if (result.refunded) {
+      refundResult = { refunded: true, stripeRefundId: result.stripeRefundId };
+    }
+  }
+
+  // Notify student (fire-and-forget)
+  void (async () => {
+    try {
+      const details = await prisma.$queryRawUnsafe<Array<{
+        reference: string;
+        studentName: string; studentEmail: string;
+        instructorName: string | null;
+        lessonType: string; scheduledAt: Date; totalAmount: string; discountAmount: string | null;
+      }>>(
+        `SELECT b.reference,
+                su.name AS "studentName", su.email AS "studentEmail",
+                iu.name AS "instructorName",
+                b."lessonType", b."scheduledAt", b."totalAmount"::text,
+                b."discountAmount"::text AS "discountAmount"
+         FROM "Booking" b
+         INNER JOIN users su ON su.id = b."studentId"
+         LEFT  JOIN "Instructor" i ON i.id = b."instructorId"
+         LEFT  JOIN users iu ON iu.id = i."userId"
+         WHERE b.id = $1 LIMIT 1`,
+        bookingId
+      );
+      const d = details[0];
+      if (d) {
+        const paidAmount = Math.max(0, Number(d.totalAmount) - Number(d.discountAmount ?? 0));
+        await emailService.sendBookingCancellationEmail({
+          to: d.studentEmail,
+          studentName: d.studentName,
+          reference: d.reference,
+          lessonType: d.lessonType,
+          scheduledAt: new Date(d.scheduledAt),
+          refunded: refundResult.refunded,
+          refundAmount: refundResult.refunded ? paidAmount : undefined,
+        });
+        if (refundResult.refunded) {
+          await emailService.sendRefundConfirmationEmail({
+            to: d.studentEmail,
+            studentName: d.studentName,
+            reference: d.reference,
+            refundAmount: paidAmount,
+            scheduledAt: new Date(d.scheduledAt),
+          });
+        }
+      }
+    } catch { /* email failure must not break cancellation */ }
+  })();
+
+  return { data: { id: bookingId, status: 'CANCELLED' as const, refund: refundResult } };
 };
 
 export default {

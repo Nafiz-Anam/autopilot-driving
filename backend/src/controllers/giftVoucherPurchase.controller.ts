@@ -7,6 +7,7 @@ import giftVoucherPurchaseService from '../services/giftVoucherPurchase.service'
 const bodySchema = z.object({
   amount: z.number().min(10),
   senderName: z.string().min(1),
+  senderEmail: z.string().email(),
   recipientName: z.string().min(1),
   recipientEmail: z.string().email(),
   message: z.string().optional(),

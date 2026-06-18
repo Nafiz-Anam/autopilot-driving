@@ -5,6 +5,7 @@ import prisma from '../client';
 import { createStripeClient } from '../utils/stripeClient';
 import { SETTING_KEYS } from './settings.service';
 import emailService from './email.service';
+import refundService from './refund.service';
 
 const PAGE_SIZE = 20;
 const VALID_BOOKING_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'] as const;
@@ -354,6 +355,20 @@ const patchBookingById = async (
   id: string,
   payload: { status?: string; paymentStatus?: string; notes?: string | null; scheduledAt?: string | null }
 ) => {
+  // When admin sets paymentStatus=REFUNDED, issue the actual Stripe refund rather than
+  // just flipping a DB flag (which would mark it refunded without returning the money).
+  if (payload.paymentStatus === 'REFUNDED') {
+    const currentRows = await prisma.$queryRawUnsafe<Array<{ paymentStatus: string }>>(
+      `SELECT "paymentStatus"::text AS "paymentStatus" FROM "Booking" WHERE id = $1 LIMIT 1`,
+      id
+    );
+    if (currentRows[0]?.paymentStatus === 'PAID') {
+      await refundService.issueRefundForBooking(id);
+      // Let the service own the paymentStatus write; exclude it from the bulk UPDATE below
+      payload = { ...payload, paymentStatus: undefined };
+    }
+  }
+
   await prisma.$executeRawUnsafe(
     `UPDATE "Booking"
      SET status = COALESCE($2::"BookingStatus", status),

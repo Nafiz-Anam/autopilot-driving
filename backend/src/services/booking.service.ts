@@ -247,13 +247,16 @@ const cancelForStudent = async (bookingId: string, studentId: string, reason: st
   void (async () => {
     try {
       const details = await prisma.$queryRawUnsafe<Array<{
+        reference: string;
         studentName: string; studentEmail: string;
         instructorName: string | null; instructorEmail: string | null;
-        lessonType: string; scheduledAt: Date; totalAmount: string;
+        lessonType: string; scheduledAt: Date; totalAmount: string; discountAmount: string | null;
       }>>(
-        `SELECT su.name AS "studentName", su.email AS "studentEmail",
+        `SELECT b.reference,
+                su.name AS "studentName", su.email AS "studentEmail",
                 iu.name AS "instructorName", iu.email AS "instructorEmail",
-                b."lessonType", b."scheduledAt", b."totalAmount"::text
+                b."lessonType", b."scheduledAt", b."totalAmount"::text,
+                b."discountAmount"::text AS "discountAmount"
          FROM "Booking" b
          INNER JOIN users su ON su.id = b."studentId"
          LEFT  JOIN "Instructor" i ON i.id = b."instructorId"
@@ -263,21 +266,22 @@ const cancelForStudent = async (bookingId: string, studentId: string, reason: st
       );
       const d = details[0];
       if (d) {
+        const paidAmount = Math.max(0, Number(d.totalAmount) - Number(d.discountAmount ?? 0));
         await emailService.sendBookingCancellationEmail({
           to: d.studentEmail,
           studentName: d.studentName,
-          reference: bookingId.slice(-8).toUpperCase(),
+          reference: d.reference,
           lessonType: d.lessonType,
           scheduledAt: new Date(d.scheduledAt),
           refunded: refundResult.refunded,
-          refundAmount: refundResult.refunded ? Number(d.totalAmount) : undefined,
+          refundAmount: refundResult.refunded ? paidAmount : undefined,
         });
         if (refundResult.refunded) {
           await emailService.sendRefundConfirmationEmail({
             to: d.studentEmail,
             studentName: d.studentName,
-            reference: bookingId.slice(-8).toUpperCase(),
-            refundAmount: Number(d.totalAmount),
+            reference: d.reference,
+            refundAmount: paidAmount,
             scheduledAt: new Date(d.scheduledAt),
           });
         }
@@ -286,7 +290,7 @@ const cancelForStudent = async (bookingId: string, studentId: string, reason: st
             to: d.instructorEmail,
             instructorName: d.instructorName ?? 'Instructor',
             studentName: d.studentName,
-            reference: bookingId.slice(-8).toUpperCase(),
+            reference: d.reference,
             scheduledAt: new Date(d.scheduledAt),
             reason,
           });

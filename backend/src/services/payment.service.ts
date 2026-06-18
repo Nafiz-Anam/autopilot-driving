@@ -21,12 +21,51 @@ async function createPaymentIntent(params: {
       id: string;
       studentId: string;
       totalAmount: string;
+      paymentStatus: string;
+      status: string;
+      stripePaymentId: string | null;
     }>
-  >(`SELECT id, "studentId", "totalAmount"::text FROM "Booking" WHERE id = $1 LIMIT 1`, bookingId);
+  >(
+    `SELECT id, "studentId", "totalAmount"::text, "paymentStatus"::text, status::text, "stripePaymentId"
+     FROM "Booking" WHERE id = $1 LIMIT 1`,
+    bookingId
+  );
 
   const booking = brows[0];
   if (!booking || booking.studentId !== studentId) {
     return { error: 'NOT_FOUND' as const, message: 'Booking not found' };
+  }
+  if (booking.paymentStatus === 'PAID' || booking.paymentStatus === 'REFUNDED') {
+    return { error: 'BAD_REQUEST' as const, message: 'This booking has already been paid' };
+  }
+  if (booking.status === 'CANCELLED') {
+    return { error: 'BAD_REQUEST' as const, message: 'Cannot pay for a cancelled booking' };
+  }
+
+  const secretKey = await settingsService.getStripeSecretKey();
+  if (!secretKey) {
+    return { error: 'SERVICE_UNAVAILABLE' as const, message: 'Payment gateway not configured. Contact support.' };
+  }
+
+  const stripe = createStripeClient(secretKey);
+
+  // Idempotency: if a PI already exists for this booking and is still actionable,
+  // return it rather than creating a duplicate (handles frontend retries / double-clicks).
+  if (booking.stripePaymentId) {
+    try {
+      const existing = await stripe.paymentIntents.retrieve(booking.stripePaymentId);
+      if (!['canceled', 'succeeded'].includes(existing.status)) {
+        return {
+          success: true as const,
+          data: {
+            clientSecret: existing.client_secret,
+            paymentIntentId: existing.id,
+          },
+        };
+      }
+    } catch {
+      // Stale PI — fall through and create a new one
+    }
   }
 
   const bookingTotal = Number(booking.totalAmount);
@@ -43,8 +82,7 @@ async function createPaymentIntent(params: {
 
     const voucher = vrows[0];
     if (voucher && !voucher.isRedeemed && Number(voucher.balance) > 0) {
-      const voucherBalance = Number(voucher.balance);
-      discountAmount = Math.min(voucherBalance, bookingTotal);
+      discountAmount = Math.min(Number(voucher.balance), bookingTotal);
       amountPence = Math.max(0, Math.round((bookingTotal - discountAmount) * 100));
     }
   } else if (normCoupon) {
@@ -75,70 +113,120 @@ async function createPaymentIntent(params: {
     amountPence = Math.max(0, Math.round((bookingTotal - discountAmount) * 100));
   }
 
+  // Fully-discounted path — no Stripe PI needed
   if (amountPence === 0) {
-    await prisma.$executeRawUnsafe(
+    // RETURNING id acts as a CAS: only one concurrent request wins; the loser sees 0 rows and exits
+    const updated = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
       `UPDATE "Booking"
        SET "paymentStatus" = 'PAID', status = 'CONFIRMED',
            "voucherCode" = COALESCE($2, "voucherCode"),
            "couponCode" = COALESCE($3, "couponCode"),
            "discountAmount" = COALESCE($4::decimal, "discountAmount"),
            "updatedAt" = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 AND "paymentStatus" <> 'PAID'
+       RETURNING id`,
       bookingId,
       normVoucher ?? null,
       normCoupon ?? null,
       discountAmount > 0 ? discountAmount.toFixed(2) : null
     );
 
-    if (normVoucher && discountAmount > 0) {
-      const vrows = await prisma.$queryRawUnsafe<Array<{ balance: string }>>(
-        `SELECT balance::text FROM "GiftVoucher" WHERE code = $1`,
-        normVoucher
-      );
-      const v = vrows[0];
-      if (v) {
-        const newBalance = Math.max(0, Number(v.balance) - discountAmount);
+    if (updated.length > 0) {
+      if (normVoucher && discountAmount > 0) {
         await prisma.$executeRawUnsafe(
-          `UPDATE "GiftVoucher" SET balance = $2::decimal, "isRedeemed" = $3 WHERE code = $1`,
+          `UPDATE "GiftVoucher"
+           SET balance = GREATEST(0, balance - $2::decimal),
+               "isRedeemed" = CASE WHEN balance - $2::decimal <= 0 THEN true ELSE "isRedeemed" END
+           WHERE code = $1`,
           normVoucher,
-          newBalance.toFixed(2),
-          newBalance === 0
+          discountAmount.toFixed(2)
+        );
+      } else if (normCoupon) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "Coupon" SET "redemptionCount" = "redemptionCount" + 1, "updatedAt" = NOW() WHERE code = $1`,
+          normCoupon
         );
       }
-    } else if (normCoupon) {
-      await prisma.$executeRawUnsafe(
-        `UPDATE "Coupon" SET "redemptionCount" = "redemptionCount" + 1, "updatedAt" = NOW() WHERE code = $1`,
-        normCoupon
-      );
     }
 
     return { success: true as const, data: { fullyDiscounted: true } };
   }
 
-  const secretKey = await settingsService.getStripeSecretKey();
-  if (!secretKey) {
-    return { error: 'SERVICE_UNAVAILABLE' as const, message: 'Payment gateway not configured. Contact support.' };
+  // Non-zero path — atomically reserve voucher/coupon BEFORE calling Stripe.
+  // This prevents concurrent requests from both applying the same discount.
+  // The reservation is stored in the PI metadata and restored on payment failure or cancellation.
+  if (normVoucher && discountAmount > 0) {
+    const reserved = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `UPDATE "GiftVoucher"
+       SET balance = balance - $2::decimal,
+           "isRedeemed" = CASE WHEN balance = $2::decimal THEN true ELSE "isRedeemed" END
+       WHERE code = $1 AND "isRedeemed" = false AND balance >= $2::decimal
+       RETURNING id`,
+      normVoucher,
+      discountAmount.toFixed(2)
+    );
+    if (!reserved.length) {
+      return { error: 'BAD_REQUEST' as const, message: 'Gift voucher has insufficient balance' };
+    }
+  } else if (normCoupon && discountAmount > 0) {
+    const claimed = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `UPDATE "Coupon"
+       SET "redemptionCount" = "redemptionCount" + 1, "updatedAt" = NOW()
+       WHERE code = $1 AND ("maxRedemptions" IS NULL OR "redemptionCount" < "maxRedemptions")
+       RETURNING id`,
+      normCoupon
+    );
+    if (!claimed.length) {
+      return { error: 'BAD_REQUEST' as const, message: 'This coupon has reached its usage limit' };
+    }
   }
 
-  const stripe = createStripeClient(secretKey);
-
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: amountPence,
-    currency: 'gbp',
-    automatic_payment_methods: { enabled: true },
-    metadata: {
-      bookingId,
-      userId: studentId,
-      voucherCode: normVoucher ?? '',
-      couponCode: normCoupon ?? '',
-      discountAmount: discountAmount.toString(),
-    },
-  });
+  let paymentIntent;
+  try {
+    paymentIntent = await stripe.paymentIntents.create({
+      amount: amountPence,
+      currency: 'gbp',
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        bookingId,
+        userId: studentId,
+        voucherCode: normVoucher ?? '',
+        couponCode: normCoupon ?? '',
+        discountAmount: discountAmount.toString(),
+      },
+    });
+  } catch {
+    // Stripe call failed — roll back the reservation so the user can retry
+    if (normVoucher && discountAmount > 0) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "GiftVoucher" SET balance = balance + $2::decimal, "isRedeemed" = false WHERE code = $1`,
+        normVoucher,
+        discountAmount.toFixed(2)
+      );
+    } else if (normCoupon && discountAmount > 0) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "Coupon"
+         SET "redemptionCount" = GREATEST(0, "redemptionCount" - 1), "updatedAt" = NOW()
+         WHERE code = $1`,
+        normCoupon
+      );
+    }
+    return { error: 'SERVICE_UNAVAILABLE' as const, message: 'Payment gateway error. Please try again.' };
+  }
 
   await prisma.$executeRawUnsafe(
-    `UPDATE "Booking" SET "stripePaymentId" = $2, "updatedAt" = NOW() WHERE id = $1`,
+    `UPDATE "Booking"
+     SET "stripePaymentId" = $2,
+         "voucherCode" = COALESCE($3, "voucherCode"),
+         "couponCode" = COALESCE($4, "couponCode"),
+         "discountAmount" = COALESCE($5::decimal, "discountAmount"),
+         "updatedAt" = NOW()
+     WHERE id = $1`,
     bookingId,
-    paymentIntent.id
+    paymentIntent.id,
+    normVoucher ?? null,
+    normCoupon ?? null,
+    discountAmount > 0 ? discountAmount.toFixed(2) : null
   );
 
   return {

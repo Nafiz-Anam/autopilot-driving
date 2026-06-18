@@ -117,30 +117,8 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
     // Email/calendar failure must not break payment finalization
   }
 
-  if (vCode && d > 0) {
-    const vrows = await prisma.$queryRawUnsafe<Array<{ balance: string }>>(
-      `SELECT balance::text AS balance FROM "GiftVoucher" WHERE code = $1 LIMIT 1`,
-      vCode
-    );
-    const voucher = vrows[0];
-    if (voucher) {
-      const newBalance = Math.max(0, Number(voucher.balance) - d);
-      await prisma.$executeRawUnsafe(
-        `UPDATE "GiftVoucher"
-         SET balance = $2::decimal,
-             "isRedeemed" = $3
-         WHERE code = $1`,
-        vCode,
-        newBalance.toFixed(2),
-        newBalance === 0
-      );
-    }
-  } else if (cCode) {
-    await prisma.$executeRawUnsafe(
-      `UPDATE "Coupon" SET "redemptionCount" = "redemptionCount" + 1, "updatedAt" = NOW() WHERE code = $1`,
-      cCode
-    );
-  }
+  // Voucher balance and coupon redemptionCount were already reserved atomically
+  // at PaymentIntent creation time — no deduction needed here.
 }
 
 async function finalizeGiftVoucherPurchaseFromPayment(
@@ -186,25 +164,28 @@ async function finalizeGiftVoucherPurchaseFromPayment(
     expiresAt.toISOString()
   );
 
-  // Send voucher confirmation to purchaser + delivery to recipient (fire-and-forget)
+  // Send purchase confirmation to the buyer, then voucher delivery to recipient (fire-and-forget)
   void (async () => {
     try {
-      await emailService.sendGiftVoucherConfirmationEmail({
-        to: md.recipientEmail,
-        senderName: md.senderName ?? 'Someone',
-        recipientName: md.recipientName ?? 'Friend',
-        recipientEmail: md.recipientEmail,
-        code: md.voucherCode,
-        amount: amountGbp,
-        message: md.message && md.message.length > 0 ? md.message : undefined,
-      });
+      const msg = md.message && md.message.length > 0 ? md.message : undefined;
+      if (md.senderEmail) {
+        await emailService.sendGiftVoucherConfirmationEmail({
+          to: md.senderEmail,
+          senderName: md.senderName ?? 'Someone',
+          recipientName: md.recipientName ?? 'Friend',
+          recipientEmail: md.recipientEmail,
+          code: md.voucherCode,
+          amount: amountGbp,
+          message: msg,
+        });
+      }
       await emailService.sendGiftVoucherRecipientEmail({
         to: md.recipientEmail,
         recipientName: md.recipientName ?? 'Friend',
         senderName: md.senderName ?? 'Someone',
         code: md.voucherCode,
         amount: amountGbp,
-        message: md.message && md.message.length > 0 ? md.message : undefined,
+        message: msg,
       });
     } catch { /* non-critical */ }
   })();
@@ -219,6 +200,9 @@ async function markBookingUnpaidFromFailed(pi: Stripe.PaymentIntent): Promise<vo
     `UPDATE "Booking" SET "paymentStatus" = 'UNPAID', "updatedAt" = NOW() WHERE id = $1`,
     bookingId
   );
+
+  // Restore the voucher/coupon that was reserved at PI creation
+  await restorePromoFromMetadata(pi.metadata);
 
   // Notify student of payment failure (fire-and-forget)
   void (async () => {
@@ -248,8 +232,30 @@ async function markBookingUnpaidFromFailed(pi: Stripe.PaymentIntent): Promise<vo
   })();
 }
 
+async function restorePromoFromMetadata(metadata: Stripe.Metadata): Promise<void> {
+  const vCode = metadata.voucherCode && metadata.voucherCode.length > 0 ? metadata.voucherCode : null;
+  const cCode = metadata.couponCode && metadata.couponCode.length > 0 ? metadata.couponCode : null;
+  const discount = metadata.discountAmount ? parseFloat(metadata.discountAmount) : 0;
+
+  if (vCode && discount > 0) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "GiftVoucher" SET balance = balance + $2::decimal, "isRedeemed" = false WHERE code = $1`,
+      vCode,
+      discount.toFixed(2)
+    );
+  } else if (cCode) {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Coupon"
+       SET "redemptionCount" = GREATEST(0, "redemptionCount" - 1), "updatedAt" = NOW()
+       WHERE code = $1`,
+      cCode
+    );
+  }
+}
+
 export default {
   finalizeBookingFromSucceededPayment,
   finalizeGiftVoucherPurchaseFromPayment,
   markBookingUnpaidFromFailed,
+  restorePromoFromMetadata,
 };

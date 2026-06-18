@@ -8,6 +8,7 @@ const META_MAX = 450;
 type Body = {
   amount: number;
   senderName: string;
+  senderEmail: string;
   recipientName: string;
   recipientEmail: string;
   message?: string;
@@ -48,6 +49,7 @@ async function createPaymentIntent(input: Body) {
       voucherCode: code,
       amountGbp: input.amount.toFixed(2),
       senderName: input.senderName.slice(0, 80),
+      senderEmail: input.senderEmail.slice(0, 120),
       recipientName: input.recipientName.slice(0, 80),
       recipientEmail: input.recipientEmail.slice(0, 120),
       message: msg,
