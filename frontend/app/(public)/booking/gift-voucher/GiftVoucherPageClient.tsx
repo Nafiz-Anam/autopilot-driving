@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gift, Star, CheckCircle2, Loader2, Copy, Check, Lock, XCircle, ArrowLeft } from "lucide-react";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import type { Stripe } from "@stripe/stripe-js";
 import { giftVoucherSchema, type GiftVoucherInput } from "@/lib/validations/giftVoucher.schema";
@@ -234,11 +234,10 @@ function GiftPayForm({
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [hasWallets, setHasWallets] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setLoading(true);
+  async function confirmPayment() {
+    if (!stripe || !elements) return false;
     setError("");
     const { error: err, paymentIntent } = await stripe.confirmPayment({
       elements,
@@ -249,14 +248,12 @@ function GiftPayForm({
     });
     if (err) {
       setError(err.message ?? "Payment failed.");
-      setLoading(false);
-      return;
+      return false;
     }
     const piId = paymentIntent?.id;
     if (!piId) {
       setError("Could not verify payment.");
-      setLoading(false);
-      return;
+      return false;
     }
     let code = "";
     try {
@@ -268,11 +265,40 @@ function GiftPayForm({
       /* webhook may complete first; parent falls back to payCtx.code */
     }
     onPaid(code);
-    setLoading(false);
+    return true;
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const ok = await confirmPayment();
+    if (!ok) setLoading(false);
+  }
+
+  async function handleExpressConfirm() {
+    setLoading(true);
+    const ok = await confirmPayment();
+    if (!ok) setLoading(false);
   }
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <ExpressCheckoutElement
+        onConfirm={handleExpressConfirm}
+        onReady={({ availablePaymentMethods }) =>
+          setHasWallets(availablePaymentMethods != null)
+        }
+        options={{ buttonHeight: 52 }}
+      />
+
+      {hasWallets && (
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-brand-border" />
+          <span className="text-xs text-brand-muted">or pay by card</span>
+          <div className="h-px flex-1 bg-brand-border" />
+        </div>
+      )}
+
       <PaymentElement options={{ layout: "tabs" }} />
       {error && (
         <div className="flex items-start gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">

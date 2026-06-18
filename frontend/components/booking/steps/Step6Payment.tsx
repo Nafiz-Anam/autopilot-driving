@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import {
   Elements,
   PaymentElement,
+  ExpressCheckoutElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
@@ -32,11 +33,10 @@ function PaymentForm({
   const paymentIntentIdFromStore = useBookingStore((s) => s.paymentIntentId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [hasWallets, setHasWallets] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-    setLoading(true);
+  async function confirmPayment() {
+    if (!stripe || !elements) return false;
     setError("");
 
     const { error: submitError, paymentIntent } = await stripe.confirmPayment({
@@ -49,15 +49,13 @@ function PaymentForm({
 
     if (submitError) {
       setError(submitError.message ?? "Payment failed. Please try again.");
-      setLoading(false);
-      return;
+      return false;
     }
 
     const piId = paymentIntent?.id ?? paymentIntentIdFromStore;
     if (!piId) {
       setError("Could not confirm payment. Please try again.");
-      setLoading(false);
-      return;
+      return false;
     }
 
     try {
@@ -69,17 +67,44 @@ function PaymentForm({
       /* webhook or retry may still complete the booking */
     }
 
-    onSuccess();
+    return true;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const ok = await confirmPayment();
+    if (ok) onSuccess();
+    else setLoading(false);
+  }
+
+  async function handleExpressConfirm() {
+    setLoading(true);
+    const ok = await confirmPayment();
+    if (ok) onSuccess();
+    else setLoading(false);
   }
 
   return (
     <form onSubmit={handleSubmit}>
+      <ExpressCheckoutElement
+        onConfirm={handleExpressConfirm}
+        onReady={({ availablePaymentMethods }) =>
+          setHasWallets(availablePaymentMethods != null)
+        }
+        options={{ buttonHeight: 52 }}
+      />
+
+      {hasWallets && (
+        <div className="flex items-center gap-3 my-4">
+          <div className="h-px flex-1 bg-brand-border" />
+          <span className="text-xs text-brand-muted">or pay by card</span>
+          <div className="h-px flex-1 bg-brand-border" />
+        </div>
+      )}
+
       <div className="mb-5">
-        <PaymentElement
-          options={{
-            layout: "tabs",
-          }}
-        />
+        <PaymentElement options={{ layout: "tabs" }} />
       </div>
 
       {error && (
