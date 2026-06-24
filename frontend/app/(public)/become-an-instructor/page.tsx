@@ -11,7 +11,6 @@ import {
   PoundSterling,
   Monitor,
   Headphones,
-  Award,
   CheckCircle2,
   ShieldCheck,
   Clock,
@@ -64,7 +63,7 @@ const adiSteps = [
     points: [
       "3 days of immersive learning plus 3 days of in-car coaching across two weeks.",
       "Peer learning opportunities — share ideas, practise together, learn from one another.",
-      "Full support from our AI-powered platform, the AutoPilot team, and experienced trainers.",
+      "Full support from our AI-powered platform, the Autopilot team, and experienced trainers.",
       "Be ready to teach real learners with a driving school franchise on day one.",
     ],
   },
@@ -125,27 +124,6 @@ const pricingCards = [
   },
 ];
 
-const testimonials = [
-  {
-    name: "James Williams",
-    quote:
-      "Joining AutoPilot was the best career decision I made. The support team is brilliant and I have a full diary within 3 months of qualifying.",
-    role: "Instructor since 2021",
-  },
-  {
-    name: "David Patel",
-    quote:
-      "I was a teacher before becoming an ADI. The transition was smooth and earning more than I ever did in school, while working hours that suit my family.",
-    role: "Instructor since 2022",
-  },
-  {
-    name: "Michael O'Brien",
-    quote:
-      "The booking platform is a game-changer. I never have to chase payments or deal with no-shows — it's all handled.",
-    role: "Instructor since 2020",
-  },
-];
-
 const faqs = [
   {
     value: "q1",
@@ -167,7 +145,7 @@ const faqs = [
   },
   {
     value: "q4",
-    question: "What support does AutoPilot provide?",
+    question: "What support does Autopilot provide?",
     answer:
       "We provide a full online booking platform, marketing support, student referrals in your area, ongoing CPD support, and a dedicated support line for any issues.",
   },
@@ -190,6 +168,7 @@ const applicationSchema = z.object({
   email: z.string().email("Valid email required"),
   phone: z.string().regex(/^(\+44|0)7\d{9}$/, "Enter a valid UK mobile number"),
   postcode: z.string().min(3, "Postcode required"),
+  applicantType: z.enum(["already_instructor", "want_to_become"], { errorMap: () => ({ message: "Please select an option" }) }),
   hasFullLicence: z.boolean(),
   yearsExperience: z.enum(["3-5", "6-10", "10+"], { errorMap: () => ({ message: "Please select experience" }) }),
   trainingStarted: z.boolean(),
@@ -202,6 +181,7 @@ function ApplicationForm() {
   const [submitted, setSubmitted] = useState(false);
   const [hasLicence, setHasLicence] = useState<boolean | null>(null);
   const [trainingStarted, setTrainingStarted] = useState<boolean | null>(null);
+  const [applicantType, setApplicantType] = useState<"already_instructor" | "want_to_become" | null>(null);
 
   const {
     register,
@@ -240,6 +220,37 @@ function ApplicationForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <div>
+        <label className="block text-sm font-medium text-brand-black mb-2">
+          I am applying because…
+        </label>
+        <div className="flex flex-col sm:flex-row gap-3">
+          {([
+            { value: "already_instructor" as const, label: "I'm already a qualified instructor (ADI)", sub: "I want to join Autopilot" },
+            { value: "want_to_become" as const, label: "I want to become an instructor", sub: "I need training" },
+          ] as const).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                setApplicantType(opt.value);
+                setValue("applicantType", opt.value);
+              }}
+              className={cn(
+                "flex-1 py-3 px-4 border-2 rounded-xl text-left transition-colors duration-200",
+                applicantType === opt.value
+                  ? "border-brand-red bg-red-50"
+                  : "border-brand-border hover:border-brand-red"
+              )}
+            >
+              <span className={cn("block text-sm font-semibold", applicantType === opt.value ? "text-brand-red" : "text-brand-black")}>{opt.label}</span>
+              <span className="block text-xs text-brand-muted mt-0.5">{opt.sub}</span>
+            </button>
+          ))}
+        </div>
+        {errors.applicantType && <p className="text-xs text-red-500 mt-1">{errors.applicantType.message}</p>}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-brand-black mb-1">Full Name</label>
@@ -382,26 +393,11 @@ export default function BecomeInstructorPage() {
       <section className="py-16 lg:py-20 bg-white px-4">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-lg sm:text-xl text-brand-black font-semibold leading-relaxed mb-3">
-            Our AutoPilot training course combines immersive classroom learning with practical driving lessons.
+            Our Autopilot training course combines immersive classroom learning with practical driving lessons.
           </p>
-          <p className="text-brand-muted leading-relaxed mb-10">
-            Cutting-edge driver training — with AutoPilot you can complete your Part 1 &amp; Part 2 within 26 weeks*.
+          <p className="text-brand-muted leading-relaxed">
+            Cutting-edge driver training — with Autopilot you can complete your Part 1 &amp; Part 2 within 26 weeks*.
           </p>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center gap-4 bg-brand-surface border border-brand-border rounded-2xl px-6 py-4"
-          >
-            <div className="w-14 h-14 rounded-full bg-brand-red text-white flex items-center justify-center shrink-0">
-              <Award className="w-7 h-7" />
-            </div>
-            <div className="text-left">
-              <p className="text-xs uppercase tracking-wider text-brand-muted">Intelligent Instructor Awards 2024</p>
-              <p className="font-extrabold text-brand-black">Winner — Product of the Year</p>
-            </div>
-          </motion.div>
         </div>
       </section>
 
@@ -413,7 +409,7 @@ export default function BecomeInstructorPage() {
               className="text-3xl lg:text-4xl font-bold text-brand-black mb-3"
               style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
             >
-              AutoPilot Training Course
+              Autopilot Training Course
             </h2>
             <p className="text-brand-muted">Delivered in 3 parts to match the DVSA qualification.</p>
           </div>
@@ -474,7 +470,7 @@ export default function BecomeInstructorPage() {
               What will the integrated training give you?
             </h2>
             <p className="text-brand-muted leading-relaxed mb-6">
-              Immersive in-car training brought to you in a classroom environment, supported by an AutoPilot qualified
+              Immersive in-car training brought to you in a classroom environment, supported by an Autopilot qualified
               driving instructor trainer. The five key functions of a good driving instructor:
             </p>
             <ol className="space-y-3">
@@ -529,7 +525,7 @@ export default function BecomeInstructorPage() {
               className="text-3xl font-bold text-brand-black mb-3"
               style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
             >
-              Why Join AutoPilot?
+              Why Join Autopilot?
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -572,7 +568,7 @@ export default function BecomeInstructorPage() {
             Interested in becoming a Driving Instructor?
           </h2>
           <p className="opacity-90 mb-6 max-w-xl mx-auto text-sm sm:text-base">
-            Call our team on <span className="font-bold">0330 100 7509</span> or send us a message to find out more.
+            Call our team on <span className="font-bold">07450 556 963</span> or send us a message to find out more.
           </p>
           <a
             href="#apply"
@@ -602,31 +598,6 @@ export default function BecomeInstructorPage() {
           <p className="text-xs text-brand-muted text-center mt-6">
             *Based on trainee engagement in training materials and DVSA test availability.
           </p>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-16 bg-white px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <h2
-              className="text-3xl font-bold text-brand-black"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
-            >
-              Hear from Our Instructors
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {testimonials.map((t) => (
-              <div key={t.name} className="bg-brand-surface rounded-2xl p-6 border border-brand-border">
-                <p className="text-brand-muted text-sm italic leading-relaxed mb-4">&ldquo;{t.quote}&rdquo;</p>
-                <div>
-                  <p className="font-bold text-brand-black text-sm">{t.name}</p>
-                  <p className="text-xs text-brand-muted">{t.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 

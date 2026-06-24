@@ -34,6 +34,7 @@ export interface Package {
   hours: number;
   price: number;
   pricePerLesson: number;
+  pricePerHour: number | null;
   savings: number;
   isPopular: boolean;
   badge?: string;

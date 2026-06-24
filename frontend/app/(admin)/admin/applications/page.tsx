@@ -15,9 +15,11 @@ interface InstructorApplication {
   hasFullLicence: boolean;
   yearsExperience: number;
   trainingStarted: boolean;
+  applicantType: string | null;
   message: string | null;
   status: string;
   createdAt: string;
+  createdUserId: string | null;
 }
 
 const STATUS_TABS = [
@@ -222,6 +224,16 @@ export default function AdminApplicationsPage() {
 
                 {/* Details chips */}
                 <div className="flex flex-wrap gap-2">
+                  {app.applicantType && (
+                    <span className={cn(
+                      "text-xs font-semibold px-2.5 py-0.5 rounded-full",
+                      app.applicantType === 'already_instructor'
+                        ? "bg-blue-50 text-blue-700 border border-blue-200"
+                        : "bg-purple-50 text-purple-700 border border-purple-200"
+                    )}>
+                      {app.applicantType === 'already_instructor' ? 'Qualified ADI' : 'Trainee'}
+                    </span>
+                  )}
                   <span className="inline-flex items-center gap-1 text-xs text-brand-muted bg-brand-surface border border-brand-border px-2.5 py-0.5 rounded-full">
                     <MapPin className="w-3 h-3" />
                     {app.postcode}
@@ -252,10 +264,15 @@ export default function AdminApplicationsPage() {
                   </div>
                 )}
 
-                {/* Applied date */}
-                <p className="text-xs text-brand-muted">
-                  Applied {formatDate(app.createdAt)}
-                </p>
+                {/* Applied date + account status */}
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-brand-muted">Applied {formatDate(app.createdAt)}</p>
+                  {app.createdUserId && (
+                    <span className="text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full font-semibold">
+                      Account created
+                    </span>
+                  )}
+                </div>
 
                 {/* Action buttons — only for pending */}
                 {app.status === "pending" && (

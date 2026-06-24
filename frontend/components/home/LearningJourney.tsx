@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import Link from "next/link";
 import {
   CalendarDays,
   BookOpen,
@@ -15,21 +16,29 @@ const steps = [
     Icon: FileText,
     title: "Get your provisional licence",
     desc: "Apply to the DVLA to get your licence and start your learning journey.",
+    href: "https://www.gov.uk/apply-first-provisional-driving-licence",
+    external: true,
   },
   {
     Icon: CalendarDays,
     title: "Book a lesson",
     desc: "Choose your instructor and lesson time online in just a few taps.",
+    href: "https://autopilotdrivingschool.co.uk/booking",
+    external: false,
   },
   {
     Icon: BookOpen,
     title: "Theory test",
     desc: "Study for your theory test and pass it before taking your practical test.",
+    href: "https://www.gov.uk/book-theory-test",
+    external: true,
   },
   {
     Icon: CheckCircle2,
     title: "Pass your test",
     desc: "Once you pass, you are free to drive on your own whenever you want.",
+    href: "https://www.gov.uk/book-driving-test",
+    external: true,
   },
 ];
 
@@ -109,25 +118,31 @@ export function LearningJourney() {
             <p className="text-[#0D0D0D] font-semibold mb-6">This is how you get driving</p>
             <div className="space-y-4">
               {steps.map((step, i) => (
-                <motion.article
+                <motion.div
                   key={step.title}
-                  className="flex items-start gap-4 rounded-2xl p-3 sm:p-4 transition-colors hover:bg-[#FAFAFA]"
                   initial={{ opacity: 0, y: 16 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.35, delay: 0.08 * i }}
                   whileHover={{ x: 6 }}
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-[#FFF2F0] border border-[#FFE4DF] text-[#E8200A] flex items-center justify-center flex-shrink-0 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.9),transparent_65%)]" />
-                    <step.Icon size={24} className="relative z-10" />
-                  </div>
-                  <div>
-                    <h3 className="text-[#0D0D0D] font-semibold text-base leading-tight mb-1.5">
-                      {i + 1}. {step.title}
-                    </h3>
-                    <p className="text-[#666] text-sm leading-relaxed">{step.desc}</p>
-                  </div>
-                </motion.article>
+                  <Link
+                    href={step.href}
+                    target={step.external ? "_blank" : undefined}
+                    rel={step.external ? "noopener noreferrer" : undefined}
+                    className="flex items-start gap-4 rounded-2xl p-3 sm:p-4 transition-colors hover:bg-[#FAFAFA] group"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-[#FFF2F0] border border-[#FFE4DF] text-[#E8200A] flex items-center justify-center flex-shrink-0 relative overflow-hidden group-hover:bg-[#FFE8E4] transition-colors">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.9),transparent_65%)]" />
+                      <step.Icon size={24} className="relative z-10" />
+                    </div>
+                    <div>
+                      <h3 className="text-[#0D0D0D] font-semibold text-base leading-tight mb-1.5 group-hover:text-[#E8200A] transition-colors">
+                        {i + 1}. {step.title}
+                      </h3>
+                      <p className="text-[#666] text-sm leading-relaxed">{step.desc}</p>
+                    </div>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           </div>

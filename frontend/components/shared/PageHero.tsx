@@ -60,7 +60,7 @@ export function PageHero({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.2 }}
-            className={cn("text-lg max-w-2xl mx-auto", dark ? "text-[#6B6B6B]" : "text-white/80")}
+            className={cn("text-lg max-w-2xl mx-auto", dark ? "text-white/70" : "text-white/80")}
           >
             {subtitle}
           </motion.p>

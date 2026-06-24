@@ -199,13 +199,17 @@ function RescheduleModal({
         }),
       });
       if (res.ok) {
+        setSaving(false);
         onRequested();
       } else {
         const data = await res.json().catch(() => ({}));
         setErr(data.error ?? "Failed to send reschedule request.");
+        setSaving(false);
       }
-    } catch { setErr("Network error."); }
-    finally { setSaving(false); }
+    } catch {
+      setErr("Network error.");
+      setSaving(false);
+    }
   }
 
   return (

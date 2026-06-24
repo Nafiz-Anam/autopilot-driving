@@ -128,7 +128,14 @@ function RequestForm() {
 
   async function onSubmit(data: RequestInput) {
     try {
-      await axios.post(backendApiUrl("/public/instructors/apply"), { ...data, type: "female_request" });
+      await axios.post(backendApiUrl("/public/contact"), {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        postcode: data.postcode,
+        enquiryType: "other",
+        message: `Female instructor request. Preferred day: ${data.preferredDay}. Preferred time: ${data.preferredTime}.`,
+      });
       setSuccess(true);
     } catch {
       // silent — show generic error if needed

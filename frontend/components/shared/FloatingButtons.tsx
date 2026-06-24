@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Phone } from "lucide-react";
 
 export function FloatingButtons() {
   const [showTop, setShowTop] = useState(false);
@@ -15,6 +15,26 @@ export function FloatingButtons() {
 
   return (
     <div className="fixed bottom-6 right-4 z-50 flex flex-col items-end gap-3">
+      {/* Phone call — mobile only */}
+      <motion.a
+        href="tel:07450556963"
+        aria-label="Call us"
+        initial={{ opacity: 0, scale: 0.7 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, type: "spring", stiffness: 260 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        className="sm:hidden rounded-full flex items-center justify-center shadow-lg"
+        style={{
+          width: 52,
+          height: 52,
+          background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)",
+          boxShadow: "0 4px 20px rgba(232,32,10,0.35)",
+        }}
+      >
+        <Phone size={22} color="white" strokeWidth={2} />
+      </motion.a>
+
       {/* WhatsApp */}
       <motion.a
         href="https://wa.me/447450556963"

@@ -33,7 +33,7 @@ const audiences = [
     icon: Compass,
     title: "Independent Drivers",
     description:
-      "Practise following sat-nav directions and road signs for 20 minutes of independent driving — exactly like the real test.",
+      "Practise following sat-nav directions and road signs for 30 minutes of independent driving — exactly like the real test.",
   },
 ];
 
@@ -43,7 +43,7 @@ const whatWeCover = [
   "Rural roads, urban roads and dual carriageways",
   "Multi-lane roundabouts and one-way systems",
   "Reversing manoeuvres",
-  "20 minutes of independent driving",
+  "30 minutes of independent driving",
   "Emergency stop practice",
   "Full result and feedback at the end",
 ];
@@ -99,19 +99,6 @@ const articleSections = [
     ],
     cta: { text: "Book a mock test", href: "/booking" },
   },
-];
-
-const popularLocations = [
-  "Birmingham",
-  "Bristol",
-  "Cardiff",
-  "Leeds",
-  "Leicester",
-  "Liverpool",
-  "London",
-  "Manchester",
-  "Nottingham",
-  "Sheffield",
 ];
 
 const otherCourses = [
@@ -171,9 +158,6 @@ export default function MockTestPage() {
                   {s.title}
                 </a>
               ))}
-              <a href="#near-you" className="block text-brand-muted hover:text-brand-red transition-colors">
-                Mock tests near me
-              </a>
             </div>
           </aside>
 
@@ -214,27 +198,6 @@ export default function MockTestPage() {
               </div>
             ))}
 
-            <h3
-              id="near-you"
-              className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
-            >
-              Mock driving tests near me
-            </h3>
-            <p className="mb-3">
-              Our expert AutoPilot instructors offer mock driving tests all over the UK. Popular locations include{" "}
-              {popularLocations.map((loc, i) => (
-                <span key={loc}>
-                  <Link
-                    href={`/locations/${loc.toLowerCase()}`}
-                    className="text-brand-red font-semibold hover:underline"
-                  >
-                    {loc}
-                  </Link>
-                  {i < popularLocations.length - 2 ? ", " : i === popularLocations.length - 2 ? " and " : "."}
-                </span>
-              ))}
-            </p>
             <Link
               href="/booking"
               className="inline-flex items-center gap-2 mt-3 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"

@@ -184,21 +184,19 @@ export function Step5StudentDetails() {
           <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
         </motion.div>
 
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={prevStep}
-              className="px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors duration-200"
-            >
-              ← Back
-            </button>
-            <button
-              onClick={nextStep}
-              className="px-10 py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30"
-            >
-              Continue →
-            </button>
-          </div>
+        <div className="flex items-center justify-center gap-3 sm:justify-between w-full">
+          <button
+            onClick={prevStep}
+            className="px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors duration-200"
+          >
+            ← Back
+          </button>
+          <button
+            onClick={nextStep}
+            className="px-10 py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30"
+          >
+            Continue →
+          </button>
           <CancelBookingButton className="ml-0" />
         </div>
       </div>

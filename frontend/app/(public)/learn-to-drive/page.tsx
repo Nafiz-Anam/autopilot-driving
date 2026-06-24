@@ -94,7 +94,7 @@ export default function LearnToDrivePage() {
     <>
       <PageHero
         title="Learn to Drive"
-        subtitle="Expert DVSA-approved instruction across Slough, Windsor, Reading and beyond."
+        subtitle="Operating across East London, Tower Hamlets, Newham, Barking & Dagenham and surrounding"
         dark={true}
         eyebrow="AutoPilot Driving School"
       />

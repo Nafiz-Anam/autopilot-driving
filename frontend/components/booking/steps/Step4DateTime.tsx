@@ -41,9 +41,12 @@ export function Step4DateTime() {
     selectedSlot,
     setSlot,
     selectedInstructor,
+    selectedPackage,
     nextStep,
     prevStep,
   } = useBookingStore();
+
+  const isMultiLesson = (selectedPackage?.lessons ?? 1) > 1;
 
   const [viewMonth, setViewMonth] = useState(new Date());
   const [slots, setSlots] = useState<SlotInfo[]>([]);
@@ -80,7 +83,7 @@ export function Step4DateTime() {
             `/bookings/availability?instructorId=${selectedInstructor.id}&startDate=${start}&endDate=${end}`
           )
         );
-        if (data.success && data.data.length > 0 && data.data[0].slots.length > 0) {
+        if (data.success && data.data.length > 0) {
           const raw = data.data[0].slots;
           setSlots(
             raw.map((s) =>
@@ -88,7 +91,7 @@ export function Step4DateTime() {
             )
           );
         } else {
-          setSlots(ALL_SLOTS.map((t) => ({ time: t, available: true })));
+          setSlots([]);
         }
       } catch {
         setSlots(ALL_SLOTS.map((t) => ({ time: t, available: true })));
@@ -265,28 +268,36 @@ export function Step4DateTime() {
                     <p className="text-xs text-brand-muted">Try a different date</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-2">
-                    {slots.map((slot) => {
-                      const isSelected = selectedSlot === slot.time;
-                      return (
-                        <button
-                          key={slot.time}
-                          onClick={() => slot.available && setSlot(slot.time)}
-                          disabled={!slot.available}
-                          className={cn(
-                            "py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-150 relative",
-                            !slot.available
-                              ? "border-brand-border text-brand-muted/40 line-through cursor-not-allowed bg-gray-50"
-                              : isSelected
-                              ? "bg-brand-red border-brand-red text-white shadow-sm"
-                              : "border-brand-border text-brand-black hover:border-brand-red hover:text-brand-red hover:bg-red-50"
-                          )}
-                        >
-                          {slot.time}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-3 gap-2">
+                      {slots.map((slot) => {
+                        const isSelected = selectedSlot === slot.time;
+                        return (
+                          <button
+                            key={slot.time}
+                            onClick={() => slot.available && setSlot(slot.time)}
+                            disabled={!slot.available}
+                            className={cn(
+                              "py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-150 relative",
+                              !slot.available
+                                ? "border-brand-border text-brand-muted/40 line-through cursor-not-allowed bg-gray-50"
+                                : isSelected
+                                ? "bg-brand-red border-brand-red text-white shadow-sm"
+                                : "border-brand-border text-brand-black hover:border-brand-red hover:text-brand-red hover:bg-red-50"
+                            )}
+                          >
+                            {slot.time}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {isMultiLesson && selectedSlot && (
+                      <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 leading-relaxed">
+                        <span className="font-semibold block mb-0.5">Booking {selectedPackage!.lessons} lessons</span>
+                        Your first slot is confirmed here. Please confirm the remaining slots directly with your instructor.
+                      </div>
+                    )}
+                  </>
                 )}
               </motion.div>
             )}
@@ -295,28 +306,26 @@ export function Step4DateTime() {
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={prevStep}
-            className="px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors duration-200"
-          >
-            ← Back
-          </button>
-          <AnimatePresence>
-            {selectedDate && selectedSlot && (
-              <motion.button
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0 }}
-                onClick={nextStep}
-                className="px-10 py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30"
-              >
-                Continue →
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
+      <div className="flex items-center justify-center gap-3 sm:justify-between w-full">
+        <button
+          onClick={prevStep}
+          className="px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors duration-200"
+        >
+          ← Back
+        </button>
+        <AnimatePresence>
+          {selectedDate && selectedSlot && (
+            <motion.button
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              onClick={nextStep}
+              className="px-10 py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30"
+            >
+              Continue →
+            </motion.button>
+          )}
+        </AnimatePresence>
         <CancelBookingButton className="ml-0" />
       </div>
     </div>

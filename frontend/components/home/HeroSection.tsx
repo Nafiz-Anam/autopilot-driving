@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Star, Users, Award } from "lucide-react";
 import { LiveManualHourPrice } from "@/components/pricing/LiveManualHourPrice";
 import { DrivingScene } from "./DrivingScene";
+import { PostcodeSearch } from "@/components/shared/PostcodeSearch";
 
 const rotatingWords = ["Confidence.", "Freedom.", "Autopilot."];
 
@@ -99,11 +100,28 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
-              className="text-base md:text-lg lg:text-xl text-[#6B6B6B] max-w-lg mb-8 leading-relaxed"
+              className="text-base md:text-lg lg:text-xl text-[#6B6B6B] max-w-lg mb-6 leading-relaxed"
             >
               Find a DVSA-approved instructor near you and book your first
               lesson in under 60 seconds.
             </motion.p>
+
+            {/* Postcode search */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.35 }}
+              className="max-w-lg mb-8"
+            >
+              <p className="text-sm text-[#6B6B6B] mb-3">
+                Enter your postcode to see if we offer lessons in your area.
+              </p>
+              <PostcodeSearch
+                placeholder="E.G. SL1 2AB"
+                buttonLabel="Check Coverage"
+                redirectTo="/booking"
+              />
+            </motion.div>
 
             {/* Trust bar */}
             <motion.div
@@ -274,7 +292,7 @@ export function HeroSection() {
                     backgroundClip: "text",
                   }}
                 >
-                  8
+                  16
                 </motion.span>
                 <span className="text-[9px] text-white/55 leading-tight tracking-wide mt-0.5">
                   YRS EXP

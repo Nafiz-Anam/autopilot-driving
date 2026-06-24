@@ -73,19 +73,6 @@ const articleSections = [
   },
 ];
 
-const popularLocations = [
-  "Birmingham",
-  "Bristol",
-  "Cardiff",
-  "Leeds",
-  "Leicester",
-  "Liverpool",
-  "London",
-  "Manchester",
-  "Nottingham",
-  "Sheffield",
-];
-
 const steps = [
   {
     num: 1,
@@ -183,9 +170,6 @@ export default function IntensiveCoursesPage() {
                   {s.title}
                 </a>
               ))}
-              <a href="#near-you" className="block text-brand-muted hover:text-brand-red transition-colors">
-                Intensive lessons near you
-              </a>
             </div>
           </aside>
 
@@ -216,28 +200,6 @@ export default function IntensiveCoursesPage() {
               </div>
             ))}
 
-            <h3
-              id="near-you"
-              className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
-            >
-              Intensive driving lessons near you
-            </h3>
-            <p className="mb-3">
-              Wherever you are in the UK, you shouldn&apos;t be too far from our network of expert AutoPilot instructors.
-              Popular locations include{" "}
-              {popularLocations.map((loc, i) => (
-                <span key={loc}>
-                  <Link
-                    href={`/locations/${loc.toLowerCase()}`}
-                    className="text-brand-red font-semibold hover:underline"
-                  >
-                    {loc}
-                  </Link>
-                  {i < popularLocations.length - 2 ? ", " : i === popularLocations.length - 2 ? " and " : "."}
-                </span>
-              ))}
-            </p>
             <Link
               href="/booking"
               className="inline-flex items-center gap-2 mt-3 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"
@@ -295,7 +257,7 @@ export default function IntensiveCoursesPage() {
               Hour bundles and course totals update everywhere when your team edits them in Admin → Lesson pricing.
             </p>
           </div>
-          <PublicCategoryPricingCards lessonType="INTENSIVE" />
+          <PublicCategoryPricingCards lessonType="INTENSIVE" variant="total" />
           <div className="mt-10 max-w-md mx-auto bg-white rounded-2xl p-6 border border-brand-border text-center shadow-sm">
             <h3 className="text-lg font-bold text-brand-black mb-2">Bespoke course</h3>
             <p className="text-sm text-brand-muted mb-4">

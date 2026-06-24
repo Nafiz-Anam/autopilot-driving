@@ -32,48 +32,30 @@ export default function TheoryTrainingPage() {
   return (
     <div className="min-h-screen bg-brand-surface flex items-center justify-center px-4">
       <div className="max-w-lg w-full">
-        <div className="relative mb-8">
-          <div className="bg-white rounded-2xl border border-brand-border p-6 blur-sm pointer-events-none select-none">
-            <h3 className="text-xl font-bold text-brand-black mb-3">Theory Training Portal</h3>
-            <div className="space-y-3">
-              {["Road Signs & Markings — 70%", "Rules of the Road — 65%", "Vehicle Safety — 55%"].map((cat) => (
-                <div key={cat}>
-                  <p className="text-sm text-brand-muted mb-1">{cat}</p>
-                  <div className="h-2 bg-brand-surface rounded-full">
-                    <div className="h-2 bg-brand-red rounded-full w-3/4" />
-                  </div>
-                </div>
-              ))}
-              <div className="mt-4 p-3 bg-brand-red/10 rounded-xl text-sm text-brand-red font-medium text-center">
-                Start Practice Test →
-              </div>
-            </div>
+        <div className="bg-white rounded-2xl border border-brand-border p-8 text-center mb-6">
+          <Lock className="w-12 h-12 text-brand-red mb-4 mx-auto" />
+          <h2 className="text-2xl font-bold text-brand-black mb-2">Theory Training</h2>
+          <p className="text-brand-muted text-sm mb-6 max-w-sm mx-auto">
+            Full interactive theory practice is included with your AutoPilot account. Sign in to track progress across all DVSA categories.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/login?callbackUrl=/student/theory"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"
+            >
+              <BookOpen className="w-4 h-4" />
+              Sign in to unlock
+            </Link>
+            <Link
+              href="/register"
+              className="inline-flex items-center justify-center px-6 py-3 border border-brand-border rounded-full font-semibold text-brand-black hover:bg-brand-surface transition-colors"
+            >
+              Create account
+            </Link>
           </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/80 backdrop-blur-sm border border-brand-border p-8 text-center">
-            <Lock className="w-12 h-12 text-brand-red mb-4" />
-            <h2 className="text-2xl font-bold text-brand-black mb-2">Theory Training</h2>
-            <p className="text-brand-muted text-sm mb-6 max-w-sm">
-              Full interactive theory practice is included with your AutoPilot account. Sign in to track progress across all DVSA categories.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/login?callbackUrl=/student/theory"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"
-              >
-                <BookOpen className="w-4 h-4" />
-                Sign in to unlock
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center px-6 py-3 border border-brand-border rounded-full font-semibold text-brand-black hover:bg-brand-surface transition-colors"
-              >
-                Create account
-              </Link>
-            </div>
-            <div className="mt-8 pt-6 border-t border-brand-border w-full">
-              <p className="text-xs text-brand-muted mb-2">Theory-only access</p>
-              <LiveTheoryAccessPrice />
-            </div>
+          <div className="mt-8 pt-6 border-t border-brand-border">
+            <p className="text-xs text-brand-muted mb-1">Theory-only access</p>
+            <LiveTheoryAccessPrice />
           </div>
         </div>
         <p className="text-center text-sm text-brand-muted">

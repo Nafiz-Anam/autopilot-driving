@@ -613,10 +613,48 @@ const updateApplicationStatus = async (id: string, status: string) => {
 
   if (app?.email && app?.fullName) {
     if (status === 'approved') {
-      emailService.sendInstructorApplicationApprovedEmail({
-        to: app.email,
-        applicantName: app.fullName,
-      }).catch(() => {});
+      const existingUsers = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT id FROM users WHERE email = $1 LIMIT 1`,
+        app.email.trim().toLowerCase()
+      );
+
+      if (!existingUsers[0]) {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+        const tempRaw = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        const tempPassword = `${tempRaw}!1`;
+        const passwordHash = await bcrypt.hash(tempPassword, 10);
+        const userId = uuidv4();
+        const instructorId = uuidv4();
+
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, 'INSTRUCTOR'::"BackendUserRole", true, NOW(), NOW())`,
+          userId, app.fullName.trim(), app.email.trim().toLowerCase(), app.phone ?? null, passwordHash
+        );
+
+        const yearsExp = app.yearsExperience === '10+' ? 10 : app.yearsExperience === '6-10' ? 8 : 4;
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO "Instructor" (id, "userId", "yearsExp", "pricePerHour", transmission, areas, "isActive", rating, "reviewCount", "createdAt")
+           VALUES ($1, $2, $3, 0, '{}'::text[], '{}'::text[], true, 0, 0, NOW())`,
+          instructorId, userId, yearsExp
+        );
+
+        await prisma.$executeRawUnsafe(
+          `UPDATE "InstructorApplication" SET "createdUserId" = $2 WHERE id = $1`,
+          id, userId
+        );
+
+        emailService.sendInstructorApplicationApprovedEmail({
+          to: app.email,
+          applicantName: app.fullName,
+          tempPassword,
+        }).catch(() => {});
+      } else {
+        emailService.sendInstructorApplicationApprovedEmail({
+          to: app.email,
+          applicantName: app.fullName,
+        }).catch(() => {});
+      }
     } else if (status === 'rejected') {
       emailService.sendInstructorApplicationRejectedEmail({
         to: app.email,
@@ -1665,7 +1703,7 @@ const createInstructor = async (payload: {
   const instructorId = uuidv4();
   await prisma.$executeRawUnsafe(
     `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, $4, $5, 'USER'::"BackendUserRole", true, NOW(), NOW())`,
+     VALUES ($1, $2, $3, $4, $5, 'INSTRUCTOR'::"BackendUserRole", true, NOW(), NOW())`,
     userId, payload.name.trim(), payload.email.trim().toLowerCase(), payload.phone ?? null, passwordHash
   );
   const rows = await prisma.$queryRawUnsafe<any[]>(

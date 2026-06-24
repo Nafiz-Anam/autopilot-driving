@@ -26,7 +26,7 @@ const createRequest = async (params: {
   // Cancel any existing PENDING reschedule requests for this booking
   try {
     await prisma.$executeRawUnsafe(
-      `UPDATE "RescheduleRequest" SET status = 'CANCELLED', "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'`,
+      `UPDATE "RescheduleRequest" SET status = 'CANCELLED'::"RescheduleStatus", "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'::"RescheduleStatus"`,
       params.bookingId
     );
   } catch { /* table may not exist */ }
@@ -46,7 +46,7 @@ const createRequest = async (params: {
   await prisma.$executeRawUnsafe(
     `INSERT INTO "RescheduleRequest"
        (id, "bookingId", "requestedByUserId", "requestedByRole", "proposedDateTime", reason, notes, status, "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, $4, $5::timestamp, $6, $7, 'PENDING', NOW(), NOW())`,
+     VALUES ($1, $2, $3, $4, $5::timestamp, $6, $7, 'PENDING'::"RescheduleStatus", NOW(), NOW())`,
     id,
     params.bookingId,
     params.requestedByUserId,
@@ -254,7 +254,7 @@ const getPendingForBooking = async (bookingId: string) => {
               r."proposedDateTime", r.reason, r.notes, r."createdAt"
        FROM "RescheduleRequest" r
        LEFT JOIN users u ON u.id = r."requestedByUserId"
-       WHERE r."bookingId" = $1 AND r.status = 'PENDING'
+       WHERE r."bookingId" = $1 AND r.status = 'PENDING'::"RescheduleStatus"
        ORDER BY r."createdAt" DESC LIMIT 1`,
       bookingId
     );

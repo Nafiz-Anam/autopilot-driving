@@ -240,18 +240,6 @@ export function Testimonials() {
           >
             What Our Students Say
           </h2>
-          {/* TODO: re-enable dynamic rating badge once Google Place ID is working */}
-          {/* {rating !== null && totalReviews !== null && (
-            <div className="flex items-center gap-2 mb-1">
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={16} className="fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <span className="text-sm font-semibold text-brand-black">{rating.toFixed(1)}</span>
-              <span className="text-sm text-brand-muted">({totalReviews} Google reviews)</span>
-            </div>
-          )} */}
         </motion.div>
       </div>
 

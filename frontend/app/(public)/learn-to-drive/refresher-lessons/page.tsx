@@ -100,19 +100,6 @@ const articleSections = [
   },
 ];
 
-const popularLocations = [
-  "Birmingham",
-  "Bristol",
-  "Cardiff",
-  "Leeds",
-  "Leicester",
-  "Liverpool",
-  "London",
-  "Manchester",
-  "Nottingham",
-  "Sheffield",
-];
-
 const otherCourses = [
   {
     icon: Zap,
@@ -170,9 +157,6 @@ export default function RefresherLessonsPage() {
                   {s.title}
                 </a>
               ))}
-              <a href="#near-you" className="block text-brand-muted hover:text-brand-red transition-colors">
-                Refresher lessons near me
-              </a>
             </div>
           </aside>
 
@@ -218,28 +202,6 @@ export default function RefresherLessonsPage() {
               </div>
             ))}
 
-            <h3
-              id="near-you"
-              className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
-            >
-              Refresher driving lessons near me
-            </h3>
-            <p className="mb-3">
-              Our expert AutoPilot instructors offer refresher driving lessons all over the UK, so we&apos;ll have you
-              covered wherever you are. Some of our more popular areas include{" "}
-              {popularLocations.map((loc, i) => (
-                <span key={loc}>
-                  <Link
-                    href={`/locations/${loc.toLowerCase()}`}
-                    className="text-brand-red font-semibold hover:underline"
-                  >
-                    {loc}
-                  </Link>
-                  {i < popularLocations.length - 2 ? ", " : i === popularLocations.length - 2 ? " and " : "."}
-                </span>
-              ))}
-            </p>
             <Link
               href="/booking"
               className="inline-flex items-center gap-2 mt-3 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"

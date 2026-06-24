@@ -79,6 +79,7 @@ export function publicPackageToBookingPackage(p: PublicPricingPackage): Package 
     hours: p.hours,
     price: p.price,
     pricePerLesson: p.pricePerLesson,
+    pricePerHour: p.pricePerHour,
     savings: p.savings ?? 0,
     isPopular: p.isPopular,
     badge: p.badge ?? undefined,

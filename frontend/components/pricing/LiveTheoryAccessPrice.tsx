@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { backendApiUrl } from "@/lib/backend-api";
 
-export function LiveTheoryAccessPrice({ fallback = 29 }: { fallback?: number }) {
+export function LiveTheoryAccessPrice({ fallback = 9.99 }: { fallback?: number }) {
   const [n, setN] = useState<number | null>(null);
 
   useEffect(() => {
@@ -17,5 +17,5 @@ export function LiveTheoryAccessPrice({ fallback = 29 }: { fallback?: number }) 
   }, []);
 
   const v = n ?? fallback;
-  return <>£{v}</>;
+  return <>£{Number.isInteger(v) ? v : v.toFixed(2)}</>;
 }

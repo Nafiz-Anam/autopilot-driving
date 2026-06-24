@@ -130,19 +130,6 @@ const learnerRules = [
 
 const speedReasons = ["Roadworks", "Congestion", "Poor weather conditions"];
 
-const popularLocations = [
-  "Birmingham",
-  "Bristol",
-  "Cardiff",
-  "Leeds",
-  "Leicester",
-  "Liverpool",
-  "London",
-  "Manchester",
-  "Nottingham",
-  "Sheffield",
-];
-
 const otherCourses = [
   {
     icon: Zap,
@@ -200,9 +187,6 @@ export default function MotorwayLessonsPage() {
                   {s.title}
                 </a>
               ))}
-              <a href="#near-you" className="block text-brand-muted hover:text-brand-red transition-colors">
-                Motorway lessons near me
-              </a>
             </div>
           </aside>
 
@@ -241,27 +225,6 @@ export default function MotorwayLessonsPage() {
               </div>
             ))}
 
-            <h3
-              id="near-you"
-              className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
-            >
-              Motorway driving lessons near me
-            </h3>
-            <p className="mb-3">
-              Wherever you are in the UK, you shouldn&apos;t be too far from our network of expert instructors. Popular locations include{" "}
-              {popularLocations.map((loc, i) => (
-                <span key={loc}>
-                  <Link
-                    href={`/locations/${loc.toLowerCase()}`}
-                    className="text-brand-red font-semibold hover:underline"
-                  >
-                    {loc}
-                  </Link>
-                  {i < popularLocations.length - 2 ? ", " : i === popularLocations.length - 2 ? " and " : "."}
-                </span>
-              ))}
-            </p>
             <Link
               href="/booking"
               className="inline-flex items-center gap-2 mt-3 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"

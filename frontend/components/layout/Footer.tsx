@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail } from "lucide-react";
 
 function FacebookIcon({ size = 18 }: { size?: number }) {
   return (
@@ -20,10 +20,10 @@ function InstagramIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function TwitterIcon({ size = 18 }: { size?: number }) {
+function TikTokIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z" />
     </svg>
   );
 }
@@ -46,21 +46,21 @@ export function Footer() {
                 className="h-auto w-auto object-contain"
               />
             </Link>
-            <p className="text-[#6B6B6B] text-sm leading-relaxed mb-4">
-              UK&apos;s premier driving school. Expert DVSA-approved instructors covering East Berkshire and West London.
+            <p className="text-[#9A9A9A] text-sm leading-relaxed mb-4">
+              UK&apos;s premier driving school. Expert DVSA-approved instructors covering East London, Tower Hamlets, Newham, Barking &amp; Dagenham and surrounding areas.
             </p>
             <div className="flex items-center gap-3 mt-4">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"
-                className="p-2 text-[#6B6B6B] hover:text-[#FF5500] transition-colors">
-                <FacebookIcon size={18} />
-              </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"
+              <a href="https://www.instagram.com/autopilotdrivingschool" target="_blank" rel="noopener noreferrer"
                 className="p-2 text-[#6B6B6B] hover:text-[#FF5500] transition-colors">
                 <InstagramIcon size={18} />
               </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer"
+              <a href="https://www.facebook.com/people/Autopilot-DrivingSchool/100091995016715/" target="_blank" rel="noopener noreferrer"
                 className="p-2 text-[#6B6B6B] hover:text-[#FF5500] transition-colors">
-                <TwitterIcon size={18} />
+                <FacebookIcon size={18} />
+              </a>
+              <a href="https://www.tiktok.com/@autopilotdrivingschool" target="_blank" rel="noopener noreferrer"
+                className="p-2 text-[#6B6B6B] hover:text-[#FF5500] transition-colors">
+                <TikTokIcon size={18} />
               </a>
             </div>
           </div>
@@ -116,25 +116,22 @@ export function Footer() {
             <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-4">Get in Touch</h3>
             <ul className="space-y-3">
               <li>
-                <a href="tel:07450556963" className="flex items-start gap-2.5 text-[#6B6B6B] hover:text-[#FF5500] transition-colors text-sm">
+                <a href="tel:07450556963" className="flex items-start gap-2.5 text-[#9A9A9A] hover:text-[#FF5500] transition-colors text-sm">
                   <Phone size={16} className="mt-0.5 flex-shrink-0" />
                   07450 556 963
                 </a>
               </li>
               <li>
-                <a href="mailto:contact@autopilotdrivingschool.co.uk" className="flex items-start gap-2.5 text-[#6B6B6B] hover:text-[#FF5500] transition-colors text-sm">
+                <a href="mailto:info@autopilotdrivingschool.co.uk" className="flex items-start gap-2.5 text-[#9A9A9A] hover:text-[#FF5500] transition-colors text-sm">
                   <Mail size={16} className="mt-0.5 flex-shrink-0" />
-                  contact@autopilotdrivingschool.co.uk
+                  info@autopilotdrivingschool.co.uk
                 </a>
               </li>
-              <li className="flex items-start gap-2.5 text-[#6B6B6B] text-sm">
-                <MapPin size={16} className="mt-0.5 flex-shrink-0" />
-                Slough, Berkshire & surrounding areas
-              </li>
-              <li className="text-[#6B6B6B] text-sm mt-2">
+              <li className="text-[#9A9A9A] text-sm mt-2">
                 <span className="text-white font-medium block mb-1">Opening Hours</span>
-                Mon–Fri: 8am–8pm<br />
-                Sat–Sun: 9am–6pm
+                Mon–Fri: 9am–7pm<br />
+                Sat: 10am–4pm<br />
+                Sun: Closed
               </li>
             </ul>
           </div>
@@ -150,7 +147,7 @@ export function Footer() {
               href="https://agiloit.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#FF5500] hover:text-white transition-colors"
+              className="text-[#6B6B6B] hover:text-[#9A9A9A] transition-colors"
             >
               Agilo IT
             </a>

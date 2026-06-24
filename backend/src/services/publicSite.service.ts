@@ -25,6 +25,7 @@ const applySchema = z.object({
   hasFullLicence: z.boolean(),
   yearsExperience: z.enum(['3-5', '6-10', '10+']),
   trainingStarted: z.boolean().default(false),
+  applicantType: z.enum(['already_instructor', 'want_to_become']).default('want_to_become'),
   message: z.string().optional(),
 });
 
@@ -296,15 +297,16 @@ const createInstructorApplication = async (payload: unknown) => {
     hasFullLicence,
     yearsExperience,
     trainingStarted,
+    applicantType,
     message,
   } = parsed.data;
 
   const id = randomUUID();
   const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
     `INSERT INTO "InstructorApplication" (
-      id, "fullName", email, phone, postcode, "hasFullLicence", "yearsExperience", "trainingStarted", message, status
+      id, "fullName", email, phone, postcode, "hasFullLicence", "yearsExperience", "trainingStarted", "applicantType", message, status
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending'
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending'
     )
     RETURNING id`,
     id,
@@ -315,6 +317,7 @@ const createInstructorApplication = async (payload: unknown) => {
     hasFullLicence,
     yearsExperience,
     trainingStarted,
+    applicantType,
     message ?? null
   );
 
@@ -328,6 +331,7 @@ const createInstructorApplication = async (payload: unknown) => {
       'Full Licence': hasFullLicence ? 'Yes' : 'No',
       Experience: `${yearsExperience} years`,
       'Training Started': trainingStarted ? 'Yes' : 'No',
+      Type: applicantType === 'already_instructor' ? 'Already a qualified ADI' : 'Wants to become an instructor',
       Message: message ?? 'none',
     }
   );

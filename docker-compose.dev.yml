@@ -106,7 +106,9 @@ services:
       HOSTNAME: 0.0.0.0
       AUTH_TRUST_HOST: "true"
       WATCHPACK_POLLING: "true"
+      WATCHPACK_POLLING_INTERVAL: "500"
       CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "500"
       CI: "true"
     ports:
       - "3008:3000"

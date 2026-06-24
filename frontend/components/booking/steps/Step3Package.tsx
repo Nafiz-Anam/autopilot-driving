@@ -150,46 +150,53 @@ export function Step3Package() {
                   </p>
                 </div>
 
-                <div className="flex items-baseline gap-2 mb-2">
+                <div className="flex items-baseline gap-2 mb-1">
                   <span className="text-4xl font-extrabold text-brand-black">£{pkg.price}</span>
-                  <span className="text-sm text-brand-muted">£{pkg.pricePerLesson}/lesson</span>
+                  {pkg.lessons > 1 && (
+                    <span className="text-sm text-brand-muted">£{pkg.pricePerLesson}/lesson</span>
+                  )}
                 </div>
 
-                {pkg.savings > 0 ? (
-                  <p className="text-sm font-bold text-brand-orange">Save £{pkg.savings}</p>
-                ) : (
-                  <p className="text-sm text-brand-muted">Standard rate</p>
-                )}
+                <div className="flex items-center gap-3 mb-2">
+                  {pkg.pricePerHour != null && (
+                    <span className="text-xs font-semibold text-brand-muted bg-brand-surface border border-brand-border px-2 py-0.5 rounded-full">
+                      £{pkg.pricePerHour}/hr
+                    </span>
+                  )}
+                  {pkg.savings > 0 ? (
+                    <p className="text-sm font-bold text-brand-orange">Save £{pkg.savings}</p>
+                  ) : (
+                    <p className="text-sm text-brand-muted">Standard rate</p>
+                  )}
+                </div>
               </motion.button>
             );
           })}
         </motion.div>
       )}
 
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={prevStep}
-            className="px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors duration-200"
-          >
-            ← Back
-          </button>
-          <AnimatePresence>
-            {selectedPackage && !loading && !error && (
-              <motion.button
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0 }}
-                type="button"
-                onClick={nextStep}
-                className="px-10 py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30"
-              >
-                Continue →
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
+      <div className="flex items-center justify-center gap-3 sm:justify-between w-full">
+        <button
+          type="button"
+          onClick={prevStep}
+          className="px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors duration-200"
+        >
+          ← Back
+        </button>
+        <AnimatePresence>
+          {selectedPackage && !loading && !error && (
+            <motion.button
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              type="button"
+              onClick={nextStep}
+              className="px-10 py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30"
+            >
+              Continue →
+            </motion.button>
+          )}
+        </AnimatePresence>
         <CancelBookingButton className="ml-0" />
       </div>
     </div>

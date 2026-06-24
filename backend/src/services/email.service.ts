@@ -900,17 +900,28 @@ const sendInstructorApplicationReceivedEmail = async (params: {
 const sendInstructorApplicationApprovedEmail = async (params: {
   to: string;
   applicantName: string;
+  tempPassword?: string;
 }) => {
   const subject = 'Congratulations — Your Application Has Been Approved!';
+  const credentialsHtml = params.tempPassword
+    ? `
+      <p>Your instructor account has been created. Use these credentials to log in:</p>
+      <table style="background:#F5F5F5;border-radius:8px;padding:12px 16px;margin:12px 0;width:100%;border-collapse:collapse;">
+        <tr><td style="padding:4px 0;font-size:13px;color:#6B7280;">Email</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#0D0D0D;">${escapeHtml(params.to)}</td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#6B7280;">Temp password</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#0D0D0D;">${escapeHtml(params.tempPassword)}</td></tr>
+      </table>
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">Please change your password after your first login.</p>
+    `
+    : `<p>A member of our team will be in touch shortly with your onboarding details and login credentials.</p>`;
   const html = renderEmailLayout({
-    title: 'Welcome to the AutoPilot team!',
+    title: 'Welcome to the Autopilot team!',
     intro: `Hi ${escapeHtml(params.applicantName)}, we're delighted to let you know your instructor application has been approved.`,
     bodyHtml: `
-      <p>You are now an approved instructor with AutoPilot Driving School. A member of our team will be in touch shortly with your onboarding details and login credentials.</p>
-      <p style="margin:12px 0;font-size:13px;color:#6B7280;">In the meantime, if you have any questions please reach out to us at contact@autopilotdrivingschool.co.uk</p>
+      ${credentialsHtml}
+      <p style="margin:12px 0;font-size:13px;color:#6B7280;">If you have any questions please reach out to us at info@autopilotdrivingschool.co.uk</p>
     `,
-    ctaLabel: 'Visit Our Website',
-    ctaUrl: 'https://autopilotdrivingschool.co.uk',
+    ctaLabel: 'Log In Now',
+    ctaUrl: 'https://autopilotdrivingschool.co.uk/auth/login',
     footnote: 'Welcome aboard — we look forward to working with you!',
   });
   await sendEmail(params.to, subject, subject, html);

@@ -22,18 +22,22 @@ function InstagramIcon({ className }: { className?: string }) {
   );
 }
 
-function TwitterIcon({ className }: { className?: string }) {
+function TikTokIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z" />
     </svg>
   );
 }
 
 const openingHours = [
-  { day: "Monday – Friday", hours: "8:00am – 7:00pm" },
-  { day: "Saturday", hours: "8:00am – 5:00pm" },
-  { day: "Sunday", hours: "10:00am – 3:00pm" },
+  { day: "Monday", hours: "9:00am – 7:00pm" },
+  { day: "Tuesday", hours: "9:00am – 7:00pm" },
+  { day: "Wednesday", hours: "9:00am – 7:00pm" },
+  { day: "Thursday", hours: "9:00am – 7:00pm" },
+  { day: "Friday", hours: "9:00am – 7:00pm" },
+  { day: "Saturday", hours: "10:00am – 4:00pm" },
+  { day: "Sunday", hours: "Closed" },
 ];
 
 export default function ContactPageClient() {
@@ -76,8 +80,8 @@ export default function ContactPageClient() {
               </div>
               <div>
                 <p className="text-xs text-brand-muted uppercase tracking-wide mb-1">Email</p>
-                <a href="mailto:contact@autopilotdrivingschool.co.uk" className="font-bold text-brand-black hover:text-brand-red transition-colors">
-                  contact@autopilotdrivingschool.co.uk
+                <a href="mailto:info@autopilotdrivingschool.co.uk" className="font-bold text-brand-black hover:text-brand-red transition-colors">
+                  info@autopilotdrivingschool.co.uk
                 </a>
               </div>
             </div>
@@ -103,9 +107,9 @@ export default function ContactPageClient() {
             {/* Social */}
             <div className="flex gap-4">
               {[
-                { icon: InstagramIcon, href: "#", label: "Instagram" },
-                { icon: FacebookIcon, href: "#", label: "Facebook" },
-                { icon: TwitterIcon, href: "#", label: "Twitter" },
+                { icon: InstagramIcon, href: "https://www.instagram.com/autopilotdrivingschool", label: "Instagram" },
+                { icon: FacebookIcon, href: "https://www.facebook.com/people/Autopilot-DrivingSchool/100091995016715/", label: "Facebook" },
+                { icon: TikTokIcon, href: "https://www.tiktok.com/@autopilotdrivingschool", label: "TikTok" },
               ].map(({ icon: Icon, href, label }) => (
                 <a
                   key={label}
@@ -134,19 +138,6 @@ export default function ContactPageClient() {
         </div>
       </section>
 
-      {/* Map */}
-      <section className="pb-16 px-4">
-        <div className="max-w-6xl mx-auto rounded-2xl overflow-hidden border border-brand-border shadow-sm">
-          <iframe
-            src="https://maps.google.com/maps?q=Slough+SL1&output=embed"
-            width="100%"
-            height="350"
-            style={{ border: 0 }}
-            allowFullScreen
-            loading="lazy"
-          />
-        </div>
-      </section>
     </>
   );
 }

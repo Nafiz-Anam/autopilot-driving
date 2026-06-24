@@ -40,7 +40,7 @@ async function fetchPendingReschedules(bookingIds: string[]) {
               u.name AS "requesterName", r."proposedDateTime", r.reason
        FROM "RescheduleRequest" r
        LEFT JOIN users u ON u.id = r."requestedByUserId"
-       WHERE r."bookingId" IN (${placeholders}) AND r.status = 'PENDING'
+       WHERE r."bookingId" IN (${placeholders}) AND r.status = 'PENDING'::"RescheduleStatus"
        ORDER BY r."createdAt" DESC`,
       ...bookingIds
     );

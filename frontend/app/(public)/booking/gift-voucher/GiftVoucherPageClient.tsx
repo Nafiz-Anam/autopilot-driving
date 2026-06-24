@@ -338,13 +338,13 @@ function GiftPayForm({
 const inputClass =
   "w-full px-4 py-2.5 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm transition-shadow";
 
-const PRESET_AMOUNTS = [42, 100, 200];
+const PRESET_AMOUNTS = [40, 100, 200];
 
 export default function GiftVoucherPageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [phase, setPhase] = useState<"form" | "pay" | "success">("form");
-  const [amount, setAmount] = useState(42);
+  const [amount, setAmount] = useState(40);
   const [customInput, setCustomInput] = useState("");
   const [useCustom, setUseCustom] = useState(false);
   const [voucherCode, setVoucherCode] = useState("");
@@ -365,7 +365,7 @@ export default function GiftVoucherPageClient() {
     formState: { errors, isSubmitting },
   } = useForm<GiftVoucherInput>({
     resolver: zodResolver(giftVoucherSchema),
-    defaultValues: { amount: 42 },
+    defaultValues: { amount: 40 },
   });
 
   const watchedValues = watch();

@@ -68,8 +68,7 @@ export function AreaTeaser() {
               We Cover Your Area
             </h2>
             <p className="text-[#8A8A8A] text-lg mb-8 leading-relaxed">
-              Operating across East Berkshire, West London and surrounding
-              areas.
+              Operating across East London, Tower Hamlets, Newham, Barking &amp; Dagenham and surrounding
             </p>
 
             <Link
@@ -105,7 +104,7 @@ export function AreaTeaser() {
                   transition={{ duration: 0.3, delay: 0.25 + i * 0.04 }}
                 >
                   <Link
-                    href={`/areas/${area.name.toLowerCase()}`}
+                    href="/areas"
                     className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/10 text-[#AAAAAA] text-sm font-medium hover:border-[#E8200A]/40 hover:text-white hover:bg-[#E8200A]/8 transition-all duration-200"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[#E8200A] opacity-50 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0" />

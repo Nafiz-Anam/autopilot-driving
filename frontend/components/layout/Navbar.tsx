@@ -135,10 +135,10 @@ export function Navbar() {
             </div>
 
             {/* Desktop right actions */}
-            <div className="hidden lg:flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-8">
               <a
                 href="tel:07450556963"
-                className="flex items-center gap-1.5 text-sm font-medium text-[#6B6B6B] hover:text-[#E8200A] transition-colors"
+                className="flex items-center gap-1.5 text-sm font-medium text-[#0D0D0D] hover:text-[#E8200A] transition-colors"
               >
                 <Phone size={14} />
                 07450 556 963
@@ -160,7 +160,7 @@ export function Navbar() {
               )}
               <Link
                 href="/booking"
-                className="px-6 py-2.5 bg-[#E8200A] text-white text-sm font-medium rounded-full hover:bg-[#FF5500] transition-colors duration-200"
+                className="ml-2 px-6 py-2.5 bg-[#E8200A] text-white text-sm font-medium rounded-full hover:bg-[#FF5500] transition-colors duration-200"
               >
                 Book a Lesson
               </Link>
