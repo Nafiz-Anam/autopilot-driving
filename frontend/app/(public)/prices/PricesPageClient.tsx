@@ -5,10 +5,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { LessonType } from "@/types";
 import {
-  Star,
-  MessageCircle,
-  Zap,
-  MapPin,
   CheckCircle,
   Phone,
   ChevronRight,
@@ -38,12 +34,6 @@ const testCentres = [
   { name: "Romford", fee: 175 },
 ];
 
-const trustBadges = [
-  { icon: Star, label: "4.9/5 Rating" },
-  { icon: MessageCircle, label: "40+ Reviews" },
-  { icon: Zap, label: "Flexible Learning" },
-  { icon: MapPin, label: "Near You" },
-];
 
 const usps = [
   {
@@ -331,26 +321,6 @@ function HeroSection() {
         <CallbackForm />
       </div>
 
-      {/* Trust badges strip */}
-      <div className="border-t border-white/10">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4">
-          {trustBadges.map((badge, i) => (
-            <motion.div
-              key={badge.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.4 + i * 0.07 }}
-              className={cn(
-                "flex items-center justify-center gap-2 py-4 text-sm font-semibold text-white/80",
-                i !== trustBadges.length - 1 && "border-r border-white/10"
-              )}
-            >
-              <badge.icon className="w-4 h-4 text-brand-orange" />
-              {badge.label}
-            </motion.div>
-          ))}
-        </div>
-      </div>
     </section>
   );
 }
