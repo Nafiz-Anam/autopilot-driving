@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
 import { PublicCategoryPricingCards } from "@/components/pricing/PublicCategoryPricingCards";
+import { backendApiUrl } from "@/lib/backend-api";
 import { cn } from "@/lib/utils";
 
-const comparisonRows = [
-  { label: "Cost Per Lesson", manual: "£42 / hr", automatic: "£42 / hr" },
+const STATIC_COMPARISON_ROWS = [
   { label: "Pass Rate", manual: "~47% national avg", automatic: "~52% national avg" },
   { label: "Licence Type", manual: "Manual + Automatic", automatic: "Automatic cars only" },
   { label: "Career Flexibility", manual: "Any vehicle type", automatic: "Limited to automatic" },
@@ -262,9 +262,31 @@ function Quiz() {
   );
 }
 
+function useSingleLessonPrice(lessonType: "MANUAL" | "AUTOMATIC") {
+  const [label, setLabel] = useState<string>("—");
+  useEffect(() => {
+    fetch(backendApiUrl(`/pricing/packages?lessonType=${lessonType}`), { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { success?: boolean; data?: { slug: string; price: number; hours: number; pricePerHour?: number | null }[] }) => {
+        const single = d.data?.find((p) => p.slug === "single") ?? d.data?.[0];
+        if (!single) return;
+        const pph = single.pricePerHour ?? (single.hours > 0 ? Math.round((single.price / single.hours) * 100) / 100 : single.price);
+        setLabel(`£${pph} / hr`);
+      })
+      .catch(() => {});
+  }, [lessonType]);
+  return label;
+}
+
 export default function AutomaticManualPage() {
   const tableRef = useRef(null);
   const tableInView = useInView(tableRef, { once: true, margin: "-80px" });
+  const manualPrice = useSingleLessonPrice("MANUAL");
+  const autoPrice = useSingleLessonPrice("AUTOMATIC");
+  const comparisonRows = [
+    { label: "Cost Per Lesson", manual: manualPrice, automatic: autoPrice },
+    ...STATIC_COMPARISON_ROWS,
+  ];
 
   return (
     <>

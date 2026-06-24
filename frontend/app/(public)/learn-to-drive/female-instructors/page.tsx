@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -12,6 +12,17 @@ import { PageHero } from "@/components/shared/PageHero";
 import { PublicCategoryPricingCards } from "@/components/pricing/PublicCategoryPricingCards";
 import { backendApiUrl } from "@/lib/backend-api";
 import { cn } from "@/lib/utils";
+
+interface InstructorData {
+  id: string;
+  yearsExp: number;
+  areas: string[];
+  transmission: string[];
+  rating: number;
+  reviewCount: number;
+  photoUrl: string | null;
+  user: { name: string; image: string | null };
+}
 
 const articleIntro = [
   "If you've recently received your provisional driving licence, the next step is usually to start thinking about driving lessons.",
@@ -63,27 +74,6 @@ const articleSections = [
       "That's why AutoPilot offers a free instructor switch policy. If you feel that your instructor isn't the right fit for any reason, we can arrange for you to change instructors at no extra cost.",
       "Our goal is to help you build the confidence, skills and awareness needed to become a safe driver — for life.",
     ],
-  },
-];
-
-const instructors = [
-  {
-    initials: "SA",
-    name: "Sarah Ahmed",
-    yearsExp: 5,
-    areas: ["SL4", "SL6", "RG1"],
-    transmission: ["Automatic"],
-    rating: 4.8,
-    reviewCount: 84,
-  },
-  {
-    initials: "PS",
-    name: "Priya Sharma",
-    yearsExp: 3,
-    areas: ["TW18", "TW19"],
-    transmission: ["Manual", "Automatic"],
-    rating: 5.0,
-    reviewCount: 52,
   },
 ];
 
@@ -237,6 +227,118 @@ function RequestForm() {
   );
 }
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
+function InstructorCards() {
+  const [instructors, setInstructors] = useState<InstructorData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios
+      .get<{ success: boolean; data: InstructorData[] }>(backendApiUrl("/public/instructors?female=true"))
+      .then((res) => setInstructors(res.data.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {[0, 1].map((i) => (
+          <div key={i} className="bg-white rounded-2xl p-6 border border-brand-border shadow-sm animate-pulse">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-16 h-16 rounded-full bg-gray-200" />
+              <div className="space-y-2 flex-1">
+                <div className="h-4 bg-gray-200 rounded w-32" />
+                <div className="h-3 bg-gray-100 rounded w-24" />
+              </div>
+            </div>
+            <div className="h-8 bg-gray-100 rounded-full mt-4" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (instructors.length === 0) {
+    return (
+      <p className="text-center text-brand-muted py-8">
+        No female instructors available right now. Use the form below to make a request.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {instructors.map((inst, i) => {
+        const firstName = inst.user.name.split(" ")[0];
+        return (
+          <motion.div
+            key={inst.id}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: i * 0.1 }}
+            className="bg-white rounded-2xl p-6 border border-brand-border shadow-sm"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              {inst.photoUrl || inst.user.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={inst.photoUrl ?? inst.user.image ?? ""}
+                  alt={inst.user.name}
+                  className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0"
+                  style={{ background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)" }}
+                >
+                  {getInitials(inst.user.name)}
+                </div>
+              )}
+              <div>
+                <h3 className="font-bold text-brand-black text-lg">{inst.user.name}</h3>
+                <p className="text-sm text-brand-muted">{inst.yearsExp} years experience</p>
+                <StarRating rating={inst.rating} />
+              </div>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex gap-2 flex-wrap">
+                {inst.areas.map((a) => (
+                  <span key={a} className="bg-brand-surface text-brand-black px-2 py-0.5 rounded-md text-xs font-medium">
+                    {a}
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                {inst.transmission.map((t) => (
+                  <span key={t} className="bg-red-50 text-brand-red px-2 py-0.5 rounded-md text-xs font-semibold">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Link
+              href="/booking"
+              className="mt-4 block text-center px-6 py-2.5 bg-brand-red text-white rounded-full hover:bg-brand-orange transition-colors duration-200 text-sm font-semibold"
+            >
+              Book with {firstName}
+            </Link>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function FemaleInstructorsPage() {
   return (
     <>
@@ -346,54 +448,7 @@ export default function FemaleInstructorsPage() {
               Meet Our Female Instructors
             </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {instructors.map((inst, i) => (
-              <motion.div
-                key={inst.name}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-                className="bg-white rounded-2xl p-6 border border-brand-border shadow-sm"
-              >
-                <div className="flex items-center gap-4 mb-4">
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)" }}
-                  >
-                    {inst.initials}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-brand-black text-lg">{inst.name}</h3>
-                    <p className="text-sm text-brand-muted">{inst.yearsExp} years experience</p>
-                    <StarRating rating={inst.rating} />
-                  </div>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex gap-2 flex-wrap">
-                    {inst.areas.map((a) => (
-                      <span key={a} className="bg-brand-surface text-brand-black px-2 py-0.5 rounded-md text-xs font-medium">
-                        {a}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    {inst.transmission.map((t) => (
-                      <span key={t} className="bg-red-50 text-brand-red px-2 py-0.5 rounded-md text-xs font-semibold">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <Link
-                  href="/booking"
-                  className="mt-4 block text-center px-6 py-2.5 bg-brand-red text-white rounded-full hover:bg-brand-orange transition-colors duration-200 text-sm font-semibold"
-                >
-                  Book with {inst.name.split(" ")[0]}
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+          <InstructorCards />
         </div>
       </section>
 

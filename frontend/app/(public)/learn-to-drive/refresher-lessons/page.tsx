@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
 import {
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
 import { PublicCategoryPricingCards } from "@/components/pricing/PublicCategoryPricingCards";
+import { backendApiUrl } from "@/lib/backend-api";
 
 const audiences = [
   {
@@ -93,9 +94,8 @@ const articleSections = [
   {
     id: "price",
     title: "How much are refresher lessons?",
-    body: [
-      "The cost of refresher lessons differs across the country. Single AutoPilot refresher lessons start from £42/hr, with a 5-lesson block at £195 (£39/hr) for those rebuilding skills more fully.",
-    ],
+    body: [],
+    livePrice: true,
     cta: { text: "Get a quote online", href: "/booking" },
   },
 ];
@@ -123,6 +123,38 @@ const otherCourses = [
     href: "/learn-to-drive/pass-plus",
   },
 ];
+
+function RefresherPriceBody() {
+  const [singlePrice, setSinglePrice] = useState<string | null>(null);
+  const [blockText, setBlockText] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(backendApiUrl("/pricing/packages?lessonType=REFRESHER"), { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { success?: boolean; data?: { slug: string; price: number; hours: number; pricePerHour?: number | null; name: string }[] }) => {
+        if (!d.data?.length) return;
+        const single = d.data.find((p) => p.slug === "single") ?? d.data[0];
+        const pph = single.pricePerHour ?? (single.hours > 0 ? Math.round((single.price / single.hours) * 100) / 100 : single.price);
+        setSinglePrice(`£${pph}/hr`);
+        const block = d.data.find((p) => p.hours >= 5 && p.slug !== "single");
+        if (block) {
+          const bpph = block.pricePerHour ?? (block.hours > 0 ? Math.round((block.price / block.hours) * 100) / 100 : null);
+          setBlockText(`£${block.price}${bpph ? ` (£${bpph}/hr)` : ""} for a ${block.hours}-hour block`);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const single = singlePrice ?? "—";
+  const block = blockText;
+  return (
+    <p>
+      The cost of refresher lessons differs across the country. Single AutoPilot refresher lessons
+      start from <strong>{single}</strong>
+      {block && <>, with {block} for those rebuilding skills more fully</>}.
+    </p>
+  );
+}
 
 export default function RefresherLessonsPage() {
   const audienceRef = useRef(null);
@@ -171,9 +203,11 @@ export default function RefresherLessonsPage() {
                   {section.title}
                 </h3>
                 <div className="space-y-4">
-                  {section.body.map((p, i) => (
-                    <p key={i}>{p}</p>
-                  ))}
+                  {section.livePrice ? (
+                    <RefresherPriceBody />
+                  ) : (
+                    section.body.map((p, i) => <p key={i}>{p}</p>)
+                  )}
                   {section.showTopics && (
                     <ul className="list-disc list-inside space-y-1.5 pl-1">
                       {refresherTopics.map((t) => (
