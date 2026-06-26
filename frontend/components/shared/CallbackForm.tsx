@@ -65,7 +65,7 @@ export function CallbackForm() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.message ?? "Something went wrong. Please try again.");
+        throw new Error(body?.error ?? body?.message ?? "Something went wrong. Please try again.");
       }
 
       setSubmitted(true);
@@ -175,21 +175,6 @@ export function CallbackForm() {
         {errors.postcode && <p style={errorStyle}>{errors.postcode.message}</p>}
       </div>
 
-      {/* Message */}
-      <div>
-        <label htmlFor="cb-message" style={labelStyle}>
-          Your message
-        </label>
-        <textarea
-          id="cb-message"
-          rows={4}
-          placeholder="Tell us what you're looking for — lesson type, your experience level, preferred areas..."
-          style={{ ...inputStyle(!!errors.message), resize: "vertical" as const, lineHeight: "1.5" }}
-          {...register("message")}
-        />
-        {errors.message && <p style={errorStyle}>{errors.message.message}</p>}
-      </div>
-
       {/* Best time */}
       <div>
         <label htmlFor="cb-best-time" style={labelStyle}>
@@ -211,6 +196,21 @@ export function CallbackForm() {
           ))}
         </select>
         {errors.bestTime && <p style={errorStyle}>{errors.bestTime.message}</p>}
+      </div>
+
+      {/* Message */}
+      <div>
+        <label htmlFor="cb-message" style={labelStyle}>
+          Your message
+        </label>
+        <textarea
+          id="cb-message"
+          rows={4}
+          placeholder="Tell us what you're looking for — lesson type, your experience level, preferred areas..."
+          style={{ ...inputStyle(!!errors.message), resize: "vertical" as const, lineHeight: "1.5" }}
+          {...register("message")}
+        />
+        {errors.message && <p style={errorStyle}>{errors.message.message}</p>}
       </div>
 
       {/* Server error */}
