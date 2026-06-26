@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, X, CalendarClock } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, X, CalendarClock, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
 
@@ -323,6 +323,60 @@ function RescheduleModal({ booking, onClose, onDone }: {
   );
 }
 
+function BookingDetailsModal({ booking, onClose, onCancel, onReschedule }: {
+  booking: BookingRecord;
+  onClose: () => void;
+  onCancel: (b: BookingRecord) => void;
+  onReschedule: (b: BookingRecord) => void;
+}) {
+  const isActive = ["PENDING", "CONFIRMED"].includes(booking.status);
+  const rows: [string, string][] = [
+    ["Reference",   booking.reference],
+    ["Student",     `${booking.student.name ?? "—"} (${booking.student.email})`],
+    ["Instructor",  booking.instructor.user.name ?? "—"],
+    ["Date & Time", `${formatDate(booking.scheduledAt)} ${formatTime(booking.scheduledAt)}`],
+    ["Duration",    `${booking.durationMins} min`],
+    ["Type",        LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType],
+    ["Transmission",booking.transmission],
+    ["Amount",      `£${Number(booking.totalAmount).toFixed(2)}`],
+    ["Payment",     booking.paymentStatus],
+    ["Status",      booking.status],
+    ...(booking.notes ? [["Notes", booking.notes] as [string, string]] : []),
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg border border-brand-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
+          <h2 className="text-lg font-bold text-brand-black">Booking Details</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6 space-y-3">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex gap-3 text-sm">
+              <span className="w-28 shrink-0 font-semibold text-brand-muted">{label}</span>
+              <span className="text-brand-black break-all">{value}</span>
+            </div>
+          ))}
+        </div>
+        {isActive && (
+          <div className="flex gap-3 px-6 pb-6">
+            <button onClick={() => { onClose(); onReschedule(booking); }}
+              className="flex-1 px-4 py-2 border border-brand-border rounded-xl text-sm font-semibold text-brand-muted hover:bg-brand-surface transition-colors">
+              Reschedule
+            </button>
+            <button onClick={() => { onClose(); onCancel(booking); }}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors">
+              Cancel Booking
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [total, setTotal] = useState(0);
@@ -333,6 +387,7 @@ export default function AdminBookingsPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [cancelBooking, setCancelBooking] = useState<BookingRecord | null>(null);
   const [rescheduleBooking, setRescheduleBooking] = useState<BookingRecord | null>(null);
+  const [viewBooking, setViewBooking] = useState<BookingRecord | null>(null);
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -494,35 +549,37 @@ export default function AdminBookingsPage() {
                           onChange={(v) => updateBooking(booking.id, { status: v })} />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {pr ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <div className="text-right mr-1">
-                              <p className="text-[10px] font-semibold text-amber-700">Reschedule request</p>
-                              <p className="text-[10px] text-brand-muted">{formatDate(pr.proposedDateTime)} {formatTime(pr.proposedDateTime)}</p>
-                            </div>
-                            <button onClick={() => respondToReschedule(booking.id, pr.id, true)}
-                              disabled={busy}
-                              className="text-xs px-2 py-1 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">
-                              Accept
-                            </button>
-                            <button onClick={() => respondToReschedule(booking.id, pr.id, false)}
-                              disabled={busy}
-                              className="text-xs px-2 py-1 border border-red-200 text-brand-red rounded-lg font-semibold hover:bg-red-50 transition-colors disabled:opacity-50">
-                              Decline
-                            </button>
-                          </div>
-                        ) : isActive ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button onClick={() => setRescheduleBooking(booking)}
-                              className="text-xs px-2.5 py-1 border border-brand-border text-brand-muted rounded-lg font-medium hover:bg-brand-surface hover:text-brand-black transition-colors">
-                              Reschedule
-                            </button>
-                            <button onClick={() => setCancelBooking(booking)}
-                              className="text-xs px-2.5 py-1 border border-red-200 text-brand-red rounded-lg font-medium hover:bg-red-50 transition-colors">
-                              Cancel
-                            </button>
-                          </div>
-                        ) : null}
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button onClick={() => setViewBooking(booking)}
+                            className="p-1.5 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors" title="View details">
+                            <Info className="w-4 h-4" />
+                          </button>
+                          {pr ? (
+                            <>
+                              <button onClick={() => respondToReschedule(booking.id, pr.id, true)}
+                                disabled={busy}
+                                className="text-xs px-2 py-1 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">
+                                Accept
+                              </button>
+                              <button onClick={() => respondToReschedule(booking.id, pr.id, false)}
+                                disabled={busy}
+                                className="text-xs px-2 py-1 border border-red-200 text-brand-red rounded-lg font-semibold hover:bg-red-50 transition-colors disabled:opacity-50">
+                                Decline
+                              </button>
+                            </>
+                          ) : isActive ? (
+                            <>
+                              <button onClick={() => setRescheduleBooking(booking)}
+                                className="text-xs px-2.5 py-1 border border-brand-border text-brand-muted rounded-lg font-medium hover:bg-brand-surface hover:text-brand-black transition-colors">
+                                Reschedule
+                              </button>
+                              <button onClick={() => setCancelBooking(booking)}
+                                className="text-xs px-2.5 py-1 border border-red-200 text-brand-red rounded-lg font-medium hover:bg-red-50 transition-colors">
+                                Cancel
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -568,6 +625,14 @@ export default function AdminBookingsPage() {
               setBookings((prev) => prev.map((b) => b.id === id ? { ...b, ...updates } : b));
               setRescheduleBooking(null);
             }}
+          />
+        )}
+        {viewBooking && (
+          <BookingDetailsModal
+            booking={viewBooking}
+            onClose={() => setViewBooking(null)}
+            onCancel={(b) => setCancelBooking(b)}
+            onReschedule={(b) => setRescheduleBooking(b)}
           />
         )}
       </AnimatePresence>
