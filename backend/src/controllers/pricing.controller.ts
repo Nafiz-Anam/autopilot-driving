@@ -26,7 +26,19 @@ const getPackages = catchAsync(async (req: Request, res: Response) => {
   res.status(httpStatus.OK).send({ success: true, data: data ?? [] });
 });
 
+const getTestCentres = catchAsync(async (_req: Request, res: Response) => {
+  const data = await pricingService.getTestCentres();
+  res.status(httpStatus.OK).send({ success: true, data });
+});
+
+const getTheoryPrice = catchAsync(async (_req: Request, res: Response) => {
+  const price = await pricingService.getTheoryPrice();
+  res.status(httpStatus.OK).send({ success: true, data: { price } });
+});
+
 export default {
   getCategories,
   getPackages,
+  getTestCentres,
+  getTheoryPrice,
 };

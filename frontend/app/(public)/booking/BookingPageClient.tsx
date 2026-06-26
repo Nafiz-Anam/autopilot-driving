@@ -32,9 +32,26 @@ function StepContent({ step }: { step: number }) {
 export default function BookingPageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { currentStep, setStep } = useBookingStore();
+  const { currentStep, lessonType, setStep, setLessonType, reset } = useBookingStore();
 
-  /* After 3D Secure, Stripe returns with ?payment_intent=…&step=7 — sync step and confirm server-side */
+  /* On fresh mount: reset state unless Stripe 3DS is returning (has payment_intent param) */
+  useEffect(() => {
+    const pi = searchParams.get("payment_intent");
+    const ltParam = searchParams.get("lessonType");
+
+    if (pi) return; // Stripe 3DS return — keep state
+
+    reset();
+
+    if (ltParam === "THEORY") {
+      setLessonType("THEORY");
+      setStep(3);
+      router.replace("/booking", { scroll: false });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs only on mount
+
+  /* After 3D Secure, Stripe returns with ?payment_intent=…&step=7 — sync and confirm server-side */
   useEffect(() => {
     const pi = searchParams.get("payment_intent");
     const stepParam = searchParams.get("step");
@@ -64,7 +81,7 @@ export default function BookingPageClient() {
           >
             Book a Lesson
           </h1>
-          <WizardProgress currentStep={currentStep} />
+          <WizardProgress currentStep={currentStep} lessonType={lessonType} />
         </div>
       </div>
 

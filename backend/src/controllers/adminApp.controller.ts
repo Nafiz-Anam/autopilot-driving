@@ -559,4 +559,36 @@ export default {
   getTheoryById,
   putTheoryById,
   deleteTheoryById,
+  getTestCentres,
+  patchTestCentres,
+  getTheoryAccessPrice,
+  patchTheoryAccessPrice,
 };
+
+const getTestCentres = catchAsync(async (_req: Request, res: Response) => {
+  const data = await adminAppService.getTestCentres();
+  return res.status(httpStatus.OK).send({ success: true, data });
+});
+
+const patchTestCentres = catchAsync(async (req: Request, res: Response) => {
+  const centres = req.body?.centres;
+  if (!Array.isArray(centres)) {
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'centres array required' });
+  }
+  await adminAppService.patchTestCentres(centres);
+  return res.status(httpStatus.OK).send({ success: true });
+});
+
+const getTheoryAccessPrice = catchAsync(async (_req: Request, res: Response) => {
+  const price = await adminAppService.getTheoryAccessPrice();
+  return res.status(httpStatus.OK).send({ success: true, data: { price } });
+});
+
+const patchTheoryAccessPrice = catchAsync(async (req: Request, res: Response) => {
+  const price = parseFloat(req.body?.price);
+  if (isNaN(price) || price < 0) {
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'valid price required' });
+  }
+  await adminAppService.patchTheoryAccessPrice(price);
+  return res.status(httpStatus.OK).send({ success: true });
+});

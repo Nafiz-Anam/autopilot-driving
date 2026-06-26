@@ -7,6 +7,8 @@ import type { LessonType } from "@/types";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
 
+type TestCentre = { name: string; fee: number };
+
 type AdminPkg = {
   id: string;
   slug: string;
@@ -50,32 +52,81 @@ export default function AdminPricingPage() {
   const [categories, setCategories] = useState<AdminCat[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [testCentres, setTestCentres] = useState<TestCentre[]>([]);
+  const [tcSaving, setTcSaving] = useState(false);
+  const [theoryPrice, setTheoryPrice] = useState<string>("9.99");
+  const [theoryPriceSaving, setTheoryPriceSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const data = await fetchAdminCategories();
-        if (!cancelled) setCategories(data);
+        const [cats, tcRes, tpRes] = await Promise.all([
+          fetchAdminCategories(),
+          adminApiFetch("/pricing/test-centres").then((r) => r.json()),
+          adminApiFetch("/pricing/theory-price").then((r) => r.json()),
+        ]);
+        if (!cancelled) {
+          setCategories(cats);
+          setTestCentres(Array.isArray(tcRes?.data) ? tcRes.data : []);
+          if (tpRes?.data?.price != null) setTheoryPrice(String(tpRes.data.price));
+        }
       } catch {
         if (!cancelled) setMsg({ type: "err", text: "Could not load pricing." });
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   async function load() {
     setLoading(true);
     try {
-      setCategories(await fetchAdminCategories());
+      const [cats, tcRes, tpRes] = await Promise.all([
+        fetchAdminCategories(),
+        adminApiFetch("/pricing/test-centres").then((r) => r.json()),
+        adminApiFetch("/pricing/theory-price").then((r) => r.json()),
+      ]);
+      setCategories(cats);
+      setTestCentres(Array.isArray(tcRes?.data) ? tcRes.data : []);
+      if (tpRes?.data?.price != null) setTheoryPrice(String(tpRes.data.price));
     } catch {
       setMsg({ type: "err", text: "Could not load pricing." });
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function saveTheoryPrice() {
+    setTheoryPriceSaving(true);
+    try {
+      await adminApiFetch("/pricing/theory-price", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ price: parseFloat(theoryPrice) || 9.99 }),
+      });
+      setMsg({ type: "ok", text: "Theory access price saved." });
+    } catch {
+      setMsg({ type: "err", text: "Could not save theory price." });
+    } finally {
+      setTheoryPriceSaving(false);
+    }
+  }
+
+  async function saveTestCentres() {
+    setTcSaving(true);
+    try {
+      await adminApiFetch("/pricing/test-centres", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ centres: testCentres }),
+      });
+      setMsg({ type: "ok", text: "Test Day Fees saved." });
+    } catch {
+      setMsg({ type: "err", text: "Could not save test centres." });
+    } finally {
+      setTcSaving(false);
     }
   }
 
@@ -246,6 +297,7 @@ export default function AdminPricingPage() {
                       <th className="text-left px-4 py-2 font-semibold">Lsns</th>
                       <th className="text-left px-4 py-2 font-semibold">£/hr (disp.)</th>
                       <th className="text-left px-4 py-2 font-semibold">Save</th>
+                      <th className="text-left px-4 py-2 font-semibold">Popular</th>
                       <th className="text-left px-4 py-2 font-semibold">Active</th>
                       <th className="text-right px-4 py-2 font-semibold">Actions</th>
                     </tr>
@@ -276,6 +328,114 @@ export default function AdminPricingPage() {
               </div>
             </motion.section>
           ))}
+
+          {/* ── Theory Access Price ── */}
+          <motion.section
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-brand-border rounded-2xl overflow-hidden shadow-sm"
+          >
+            <div className="px-5 py-4 bg-brand-surface border-b border-brand-border">
+              <p className="text-xs font-semibold text-brand-muted uppercase tracking-wide">Theory Training</p>
+              <h2 className="text-lg font-bold text-brand-black">Theory-Only Access Price</h2>
+              <p className="text-xs text-brand-muted mt-0.5">Shown on the Theory Training page for non-logged-in users.</p>
+            </div>
+            <div className="px-5 py-4 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-brand-black">£</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={theoryPrice}
+                  onChange={(e) => setTheoryPrice(e.target.value)}
+                  className="w-28 px-3 py-2 border border-brand-border rounded-lg text-sm"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => void saveTheoryPrice()}
+                disabled={theoryPriceSaving}
+                className="text-xs font-semibold px-4 py-2 bg-brand-red text-white rounded-lg hover:bg-brand-orange disabled:opacity-60"
+              >
+                {theoryPriceSaving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </motion.section>
+
+          {/* ── Test Day Fees ── */}
+          <motion.section
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-brand-border rounded-2xl overflow-hidden shadow-sm"
+          >
+            <div className="px-5 py-4 bg-brand-surface border-b border-brand-border flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-brand-muted uppercase tracking-wide">Test Day</p>
+                <h2 className="text-lg font-bold text-brand-black">Test Day Fees</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTestCentres((prev) => [...prev, { name: "", fee: 175 }])}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-brand-red hover:text-brand-orange"
+              >
+                <Plus className="w-4 h-4" /> Add centre
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-brand-surface/80 border-b border-brand-border">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-semibold">Test Centre</th>
+                    <th className="text-left px-4 py-2 font-semibold">Fee (£)</th>
+                    <th className="text-right px-4 py-2 font-semibold">Remove</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {testCentres.map((tc, i) => (
+                    <tr key={i} className="border-b border-brand-border last:border-b-0">
+                      <td className="px-4 py-3">
+                        <input
+                          value={tc.name}
+                          onChange={(e) => setTestCentres((prev) => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                          className="w-full min-w-[140px] px-2 py-1 border border-brand-border rounded-lg text-sm"
+                          placeholder="Centre name"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={tc.fee}
+                          onChange={(e) => setTestCentres((prev) => prev.map((x, j) => j === i ? { ...x, fee: parseFloat(e.target.value) || 0 } : x))}
+                          className="w-24 px-2 py-1 border border-brand-border rounded-lg text-sm"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setTestCentres((prev) => prev.filter((_, j) => j !== i))}
+                          className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"
+                        >
+                          <Trash2 className="w-3 h-3" /> Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-4 py-3 border-t border-brand-border bg-brand-surface/50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => void saveTestCentres()}
+                disabled={tcSaving}
+                className="text-xs font-semibold px-4 py-2 bg-brand-red text-white rounded-lg hover:bg-brand-orange disabled:opacity-60"
+              >
+                {tcSaving ? "Saving…" : "Save Test Day Fees"}
+              </button>
+            </div>
+          </motion.section>
         </div>
       )}
     </div>
@@ -370,6 +530,18 @@ function PackageEditorRow({
           }
           className="w-16 px-2 py-1 border border-brand-border rounded-lg text-sm"
         />
+      </td>
+      <td className="px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setDraft((d) => ({ ...d, isPopular: !d.isPopular }))}
+          className={cn(
+            "text-xs font-semibold px-2 py-1 rounded-lg",
+            draft.isPopular ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-500"
+          )}
+        >
+          {draft.isPopular ? "⭐ Yes" : "No"}
+        </button>
       </td>
       <td className="px-4 py-3">
         <button

@@ -61,8 +61,21 @@ export const useBookingStore = create<BookingStore>()(
     (set, get) => ({
       ...initialState,
       setStep: (step) => set({ currentStep: step }),
-      nextStep: () => set({ currentStep: get().currentStep + 1 }),
-      prevStep: () => set({ currentStep: Math.max(1, get().currentStep - 1) }),
+      nextStep: () => {
+        const { currentStep, lessonType } = get();
+        const isTheory = lessonType === 'THEORY';
+        // THEORY skips instructor (2) and date/time (4)
+        let next = currentStep + 1;
+        if (isTheory && (next === 2 || next === 4)) next++;
+        set({ currentStep: next });
+      },
+      prevStep: () => {
+        const { currentStep, lessonType } = get();
+        const isTheory = lessonType === 'THEORY';
+        let prev = Math.max(1, currentStep - 1);
+        if (isTheory && (prev === 2 || prev === 4)) prev--;
+        set({ currentStep: Math.max(1, prev) });
+      },
       setLessonType: (lessonType) => set({ lessonType }),
       setTransmission: (transmission) => set({ transmission }),
       setInstructor: (selectedInstructor) => set({ selectedInstructor }),

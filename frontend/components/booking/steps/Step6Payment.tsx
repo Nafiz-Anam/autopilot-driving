@@ -309,9 +309,7 @@ export function Step6Payment() {
     setLoadingIntent(true);
     setInitError("");
     try {
-      const scheduledAt = new Date(selectedDate!);
-      const [h, m] = selectedSlot!.split(":").map(Number);
-      scheduledAt.setHours(h, m, 0, 0);
+      const isTheory = lessonType === "THEORY";
 
       const tx =
         lessonType === "AUTOMATIC"
@@ -320,21 +318,27 @@ export function Step6Payment() {
             ? "manual"
             : transmission ?? "manual";
 
+      const bookingPayload: Record<string, unknown> = {
+        lessonType,
+        packageId: selectedPackage!.id,
+        durationMins: 60,
+        ...(promoKind === "gift_voucher" && promoCode ? { voucherCode: promoCode } : {}),
+        ...(promoKind === "coupon" && promoCode ? { couponCode: promoCode } : {}),
+      };
+
+      if (!isTheory) {
+        const scheduledAt = new Date(selectedDate!);
+        const [h, m] = selectedSlot!.split(":").map(Number);
+        scheduledAt.setHours(h, m, 0, 0);
+        bookingPayload.transmission = tx;
+        bookingPayload.instructorId = selectedInstructor!.id;
+        bookingPayload.scheduledAt = scheduledAt.toISOString();
+      }
+
       const bookingHeaders = await getNextAuthBridgeHeaders();
       const bookingRes = await axios.post(
         backendApiUrl("/bookings"),
-        {
-          lessonType,
-          transmission: tx,
-          instructorId: selectedInstructor!.id,
-          packageId: selectedPackage!.id,
-          scheduledAt: scheduledAt.toISOString(),
-          durationMins: 60,
-          ...(promoKind === "gift_voucher" && promoCode
-            ? { voucherCode: promoCode }
-            : {}),
-          ...(promoKind === "coupon" && promoCode ? { couponCode: promoCode } : {}),
-        },
+        bookingPayload,
         { headers: bookingHeaders }
       );
 

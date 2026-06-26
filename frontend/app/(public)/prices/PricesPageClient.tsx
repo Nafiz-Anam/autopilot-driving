@@ -22,17 +22,6 @@ import {
 } from "@/components/ui/select";
 import { backendApiUrl } from "@/lib/backend-api";
 
-const testCentres = [
-  { name: "Goodmayes", fee: 175 },
-  { name: "Barking", fee: 175 },
-  { name: "Hornchurch", fee: 175 },
-  { name: "Wanstead", fee: 175 },
-  { name: "Chingford", fee: 175 },
-  { name: "Sidcup", fee: 175 },
-  { name: "Hither Green", fee: 175 },
-  { name: "South Norwood", fee: 175 },
-  { name: "Romford", fee: 175 },
-];
 
 
 const usps = [
@@ -330,7 +319,11 @@ function AlertBanner() {
     <div className="bg-red-50 border-b border-brand-red/20 px-4 py-3">
       <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 text-sm text-brand-red font-medium">
         <AlertCircle className="w-4 h-4 shrink-0" />
-        Remember to review Terms &amp; Conditions before taking lessons
+        Remember to review our{" "}
+        <Link href="/terms" className="underline underline-offset-2 hover:text-brand-orange transition-colors">
+          Terms &amp; Conditions
+        </Link>{" "}
+        before taking lessons
       </div>
     </div>
   );
@@ -428,7 +421,7 @@ function IntensiveSection({ packages }: { packages: PublicPricingPackage[] }) {
   );
 }
 
-function TestDayFeesSection() {
+function TestDayFeesSection({ centres }: { centres: Array<{ name: string; fee: number }> }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
@@ -456,9 +449,9 @@ function TestDayFeesSection() {
             Test fees for different driving test centres:
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {testCentres.map((tc, i) => (
+            {centres.map((tc, i) => (
               <motion.div
-                key={tc.name}
+                key={i}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={inView ? { opacity: 1, scale: 1 } : {}}
                 transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
@@ -689,14 +682,21 @@ function pkgBySlug(cats: PublicPricingCategory[], lt: LessonType, slug: string) 
 export default function PricesPageClient() {
   const [cats, setCats] = useState<PublicPricingCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [testCentres, setTestCentres] = useState<Array<{ name: string; fee: number }>>([]);
 
   useEffect(() => {
-    fetch(backendApiUrl("/public/pricing/categories"), { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d: { success?: boolean; data?: PublicPricingCategory[] }) => {
-        if (d.success && Array.isArray(d.data)) setCats(d.data);
-      })
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch(backendApiUrl("/public/pricing/categories"), { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d: { success?: boolean; data?: PublicPricingCategory[] }) => {
+          if (d.success && Array.isArray(d.data)) setCats(d.data);
+        }),
+      fetch(backendApiUrl("/public/pricing/test-centres"), { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d: { success?: boolean; data?: Array<{ name: string; fee: number }> }) => {
+          if (d.success && Array.isArray(d.data)) setTestCentres(d.data);
+        }),
+    ]).finally(() => setLoading(false));
   }, []);
 
   const byLt = (lt: LessonType) => cats.find((c) => c.lessonType === lt)?.packages ?? [];
@@ -742,7 +742,7 @@ export default function PricesPageClient() {
           <IntensiveSection packages={intensive} />
         </>
       )}
-      <TestDayFeesSection />
+      <TestDayFeesSection centres={testCentres} />
       <AboutSection />
       <BlockBookingBanner
         manualPph={manualPph}

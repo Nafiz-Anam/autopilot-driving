@@ -55,6 +55,12 @@ router.post('/pricing/packages', adminAppController.postPricingPackages);
 router.patch('/pricing/packages/:id', adminAppController.patchPricingPackageById);
 router.delete('/pricing/packages/:id', adminAppController.deletePricingPackageById);
 
+router.get('/pricing/test-centres', adminAppController.getTestCentres);
+router.patch('/pricing/test-centres', adminAppController.patchTestCentres);
+
+router.get('/pricing/theory-price', adminAppController.getTheoryAccessPrice);
+router.patch('/pricing/theory-price', adminAppController.patchTheoryAccessPrice);
+
 router.get('/settings', adminAppController.getSettings);
 router.patch('/settings', adminAppController.patchSettings);
 router.post('/settings', adminAppController.postSettings);

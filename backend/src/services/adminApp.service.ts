@@ -618,6 +618,8 @@ const updateApplicationStatus = async (id: string, status: string) => {
         app.email.trim().toLowerCase()
       );
 
+      const yearsExp = app.yearsExperience === '10+' ? 10 : app.yearsExperience === '6-10' ? 8 : 4;
+
       if (!existingUsers[0]) {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
         const tempRaw = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -628,11 +630,10 @@ const updateApplicationStatus = async (id: string, status: string) => {
 
         await prisma.$executeRawUnsafe(
           `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
-           VALUES ($1, $2, $3, $4, $5, 'INSTRUCTOR'::"BackendUserRole", true, NOW(), NOW())`,
+           VALUES ($1, $2, $3, $4, $5, 'USER'::"BackendUserRole", true, NOW(), NOW())`,
           userId, app.fullName.trim(), app.email.trim().toLowerCase(), app.phone ?? null, passwordHash
         );
 
-        const yearsExp = app.yearsExperience === '10+' ? 10 : app.yearsExperience === '6-10' ? 8 : 4;
         await prisma.$executeRawUnsafe(
           `INSERT INTO "Instructor" (id, "userId", "yearsExp", "pricePerHour", transmission, areas, "isActive", rating, "reviewCount", "createdAt")
            VALUES ($1, $2, $3, 0, '{}'::text[], '{}'::text[], true, 0, 0, NOW())`,
@@ -650,6 +651,24 @@ const updateApplicationStatus = async (id: string, status: string) => {
           tempPassword,
         }).catch(() => {});
       } else {
+        // Existing user — ensure they have an Instructor profile
+        const existingInstructor = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+          `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+          existingUsers[0].id
+        );
+        if (!existingInstructor[0]) {
+          const instructorId = uuidv4();
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO "Instructor" (id, "userId", "yearsExp", "pricePerHour", transmission, areas, "isActive", rating, "reviewCount", "createdAt")
+             VALUES ($1, $2, $3, 0, '{}'::text[], '{}'::text[], true, 0, 0, NOW())`,
+            instructorId, existingUsers[0].id, yearsExp
+          );
+          await prisma.$executeRawUnsafe(
+            `UPDATE "InstructorApplication" SET "createdUserId" = $2 WHERE id = $1`,
+            id, existingUsers[0].id
+          );
+        }
+
         emailService.sendInstructorApplicationApprovedEmail({
           to: app.email,
           applicantName: app.fullName,
@@ -1146,7 +1165,7 @@ const listPricingCategories = async () => {
             price::text AS price, "pricePerHour"::text AS "pricePerHour",
             savings::text AS savings, "footerNote", badge, "isPopular", "sortOrder", "isActive"
      FROM "LessonPricingPackage"
-     ORDER BY "createdAt" ASC`
+     ORDER BY price ASC`
   );
 
   const pkgByCategory = new Map<string, any[]>();
@@ -1703,7 +1722,7 @@ const createInstructor = async (payload: {
   const instructorId = uuidv4();
   await prisma.$executeRawUnsafe(
     `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
-     VALUES ($1, $2, $3, $4, $5, 'INSTRUCTOR'::"BackendUserRole", true, NOW(), NOW())`,
+     VALUES ($1, $2, $3, $4, $5, 'USER'::"BackendUserRole", true, NOW(), NOW())`,
     userId, payload.name.trim(), payload.email.trim().toLowerCase(), payload.phone ?? null, passwordHash
   );
   const rows = await prisma.$queryRawUnsafe<any[]>(
@@ -1815,4 +1834,50 @@ export default {
   getTheoryById,
   updateTheoryById,
   deleteTheoryById,
+  getTestCentres,
+  patchTestCentres,
+  getTheoryAccessPrice,
+  patchTheoryAccessPrice,
 };
+
+const TEST_CENTRES_KEY = 'test_centres';
+
+const DEFAULT_TEST_CENTRES = [
+  { name: 'Goodmayes', fee: 175 },
+  { name: 'Barking', fee: 175 },
+  { name: 'Hornchurch', fee: 175 },
+  { name: 'Wanstead', fee: 175 },
+  { name: 'Chingford', fee: 175 },
+  { name: 'Sidcup', fee: 175 },
+  { name: 'Hither Green', fee: 175 },
+  { name: 'South Norwood', fee: 175 },
+  { name: 'Romford', fee: 175 },
+];
+
+async function getTestCentres(): Promise<Array<{ name: string; fee: number }>> {
+  const raw = await getSetting(TEST_CENTRES_KEY);
+  if (!raw) return DEFAULT_TEST_CENTRES;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return DEFAULT_TEST_CENTRES;
+  }
+}
+
+async function patchTestCentres(centres: Array<{ name: string; fee: number }>): Promise<void> {
+  await updateSetting(TEST_CENTRES_KEY, JSON.stringify(centres));
+}
+
+const THEORY_PRICE_KEY = 'theory_access_price';
+const DEFAULT_THEORY_PRICE = 9.99;
+
+async function getTheoryAccessPrice(): Promise<number> {
+  const raw = await getSetting(THEORY_PRICE_KEY);
+  if (!raw) return DEFAULT_THEORY_PRICE;
+  const n = parseFloat(raw);
+  return isNaN(n) ? DEFAULT_THEORY_PRICE : n;
+}
+
+async function patchTheoryAccessPrice(price: number): Promise<void> {
+  await updateSetting(THEORY_PRICE_KEY, price.toString());
+}

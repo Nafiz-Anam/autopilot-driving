@@ -3,8 +3,9 @@
 import { Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import type { LessonType } from "@/types";
 
-const STEPS = [
+const ALL_STEPS = [
   { num: 1, label: "Lesson Type" },
   { num: 2, label: "Instructor" },
   { num: 3, label: "Package" },
@@ -14,13 +15,21 @@ const STEPS = [
   { num: 7, label: "Confirmed" },
 ];
 
+const THEORY_SKIP = new Set([2, 4]);
+
 interface WizardProgressProps {
   currentStep: number;
+  lessonType?: LessonType | null;
 }
 
-export function WizardProgress({ currentStep }: WizardProgressProps) {
-  const progressPercent = ((currentStep - 1) / (STEPS.length - 1)) * 100;
-  const currentLabel = STEPS.find((s) => s.num === currentStep)?.label ?? "";
+export function WizardProgress({ currentStep, lessonType }: WizardProgressProps) {
+  const isTheory = lessonType === "THEORY";
+  const steps = isTheory ? ALL_STEPS.filter((s) => !THEORY_SKIP.has(s.num)) : ALL_STEPS;
+
+  // Map real step number to visual position index (0-based)
+  const visualIndex = steps.findIndex((s) => s.num === currentStep);
+  const currentLabel = steps[visualIndex]?.label ?? ALL_STEPS.find((s) => s.num === currentStep)?.label ?? "";
+  const progressPercent = steps.length > 1 ? (Math.max(0, visualIndex) / (steps.length - 1)) * 100 : 0;
 
   return (
     <div className="w-full">
@@ -28,18 +37,17 @@ export function WizardProgress({ currentStep }: WizardProgressProps) {
       <div className="flex sm:hidden items-center justify-between mb-3">
         <span className="text-sm font-semibold text-brand-black">{currentLabel}</span>
         <span className="text-xs text-brand-muted font-medium">
-          Step {currentStep} of {STEPS.length}
+          Step {Math.max(1, visualIndex + 1)} of {steps.length}
         </span>
       </div>
 
       {/* Desktop: full step row */}
       <div className="hidden sm:flex items-start justify-between mb-4 relative">
-        {/* Connector track (behind circles) */}
-        <div className="absolute top-4 left-[7.14%] right-[7.14%] h-0.5 bg-brand-border z-0" />
+        <div className="absolute top-4 left-[7%] right-[7%] h-0.5 bg-brand-border z-0" />
 
-        {STEPS.map((step) => {
+        {steps.map((step) => {
           const isActive = step.num === currentStep;
-          const isCompleted = step.num < currentStep;
+          const isCompleted = step.num < currentStep && !THEORY_SKIP.has(step.num);
 
           return (
             <div key={step.num} className="flex flex-col items-center gap-2 z-10 relative">
@@ -65,7 +73,7 @@ export function WizardProgress({ currentStep }: WizardProgressProps) {
                 {isCompleted ? (
                   <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
                 ) : (
-                  <span>{step.num}</span>
+                  <span>{steps.indexOf(step) + 1}</span>
                 )}
               </motion.div>
 

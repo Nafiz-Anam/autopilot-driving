@@ -65,7 +65,7 @@ function PostcodeChecker() {
             type="text"
             value={postcode}
             onChange={(e) => setPostcode(e.target.value)}
-            placeholder="e.g. SL1 2AB"
+            placeholder="Enter prefix of your postcode. E.G: SL1"
             className="flex-1 px-5 py-3 border border-brand-border rounded-full text-brand-black bg-white focus:outline-none focus:ring-2 focus:ring-brand-red text-lg uppercase"
             maxLength={8}
           />
@@ -108,6 +108,12 @@ function PostcodeChecker() {
                 <p className="text-sm mt-1">
                   Leave your details and we&apos;ll notify you when we expand.
                 </p>
+                <Link
+                  href="/contact"
+                  className="mt-3 inline-block px-6 py-2 bg-brand-red text-white rounded-full font-semibold text-sm hover:bg-brand-orange transition-colors duration-200"
+                >
+                  Contact Us
+                </Link>
               </>
             )}
           </motion.div>

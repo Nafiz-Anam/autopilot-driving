@@ -117,9 +117,10 @@ export function HeroSection() {
                 Enter your postcode to see if we offer lessons in your area.
               </p>
               <PostcodeSearch
-                placeholder="E.G. SL1 2AB"
+                placeholder="Enter prefix of your postcode. E.G: SL1"
                 buttonLabel="Check Coverage"
                 redirectTo="/booking"
+                checkCoverage
               />
             </motion.div>
 

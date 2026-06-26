@@ -42,32 +42,6 @@ async function createPaymentIntent(params: {
     return { error: 'BAD_REQUEST' as const, message: 'Cannot pay for a cancelled booking' };
   }
 
-  const secretKey = await settingsService.getStripeSecretKey();
-  if (!secretKey) {
-    return { error: 'SERVICE_UNAVAILABLE' as const, message: 'Payment gateway not configured. Contact support.' };
-  }
-
-  const stripe = createStripeClient(secretKey);
-
-  // Idempotency: if a PI already exists for this booking and is still actionable,
-  // return it rather than creating a duplicate (handles frontend retries / double-clicks).
-  if (booking.stripePaymentId) {
-    try {
-      const existing = await stripe.paymentIntents.retrieve(booking.stripePaymentId);
-      if (!['canceled', 'succeeded'].includes(existing.status)) {
-        return {
-          success: true as const,
-          data: {
-            clientSecret: existing.client_secret,
-            paymentIntentId: existing.id,
-          },
-        };
-      }
-    } catch {
-      // Stale PI — fall through and create a new one
-    }
-  }
-
   const bookingTotal = Number(booking.totalAmount);
   let amountPence = Math.round(bookingTotal * 100);
   let discountAmount = 0;
@@ -113,7 +87,7 @@ async function createPaymentIntent(params: {
     amountPence = Math.max(0, Math.round((bookingTotal - discountAmount) * 100));
   }
 
-  // Fully-discounted path — no Stripe PI needed
+  // Zero-amount path — bypass Stripe entirely (free booking or fully discounted)
   if (amountPence === 0) {
     // RETURNING id acts as a CAS: only one concurrent request wins; the loser sees 0 rows and exits
     const updated = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
@@ -152,6 +126,33 @@ async function createPaymentIntent(params: {
     return { success: true as const, data: { fullyDiscounted: true } };
   }
 
+  // Non-zero amount — initialize Stripe only when a charge is actually needed
+  const secretKey = await settingsService.getStripeSecretKey();
+  if (!secretKey) {
+    return { error: 'SERVICE_UNAVAILABLE' as const, message: 'Payment gateway not configured. Contact support.' };
+  }
+
+  const stripe = createStripeClient(secretKey);
+
+  // Idempotency: if a PI already exists for this booking and is still actionable,
+  // return it rather than creating a duplicate (handles frontend retries / double-clicks).
+  if (booking.stripePaymentId) {
+    try {
+      const existing = await stripe.paymentIntents.retrieve(booking.stripePaymentId);
+      if (!['canceled', 'succeeded'].includes(existing.status)) {
+        return {
+          success: true as const,
+          data: {
+            clientSecret: existing.client_secret,
+            paymentIntentId: existing.id,
+          },
+        };
+      }
+    } catch {
+      // Stale PI — fall through and create a new one
+    }
+  }
+
   // Non-zero path — atomically reserve voucher/coupon BEFORE calling Stripe.
   // This prevents concurrent requests from both applying the same discount.
   // The reservation is stored in the PI metadata and restored on payment failure or cancellation.
@@ -181,7 +182,7 @@ async function createPaymentIntent(params: {
     }
   }
 
-  let paymentIntent;
+  let paymentIntent: Awaited<ReturnType<typeof stripe.paymentIntents.create>>;
   try {
     paymentIntent = await stripe.paymentIntents.create({
       amount: amountPence,

@@ -55,7 +55,15 @@ export default function TheoryTrainingPage() {
           </div>
           <div className="mt-8 pt-6 border-t border-brand-border">
             <p className="text-xs text-brand-muted mb-1">Theory-only access</p>
-            <LiveTheoryAccessPrice />
+            <p className="text-2xl font-extrabold text-brand-black mb-3">
+              <LiveTheoryAccessPrice />
+            </p>
+            <Link
+              href="/booking?lessonType=THEORY"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-black text-white rounded-full font-semibold hover:bg-brand-red transition-colors"
+            >
+              Buy Theory Access
+            </Link>
           </div>
         </div>
         <p className="text-center text-sm text-brand-muted">

@@ -11,6 +11,7 @@ import { studentDetailsSchema, type StudentDetailsInput } from "@/lib/validation
 import { backendApiUrl } from "@/lib/backend-api";
 import { cn } from "@/lib/utils";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
+import { BookingNavButtons } from "@/components/booking/BookingNavButtons";
 
 /* ── Shared field wrapper ──────────────────────────────────── */
 function Field({
@@ -184,21 +185,7 @@ export function Step5StudentDetails() {
           <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
         </motion.div>
 
-        <div className="flex items-center justify-center gap-3 sm:justify-between w-full">
-          <button
-            onClick={prevStep}
-            className="px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors duration-200"
-          >
-            ← Back
-          </button>
-          <button
-            onClick={nextStep}
-            className="px-10 py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30"
-          >
-            Continue →
-          </button>
-          <CancelBookingButton className="ml-0" />
-        </div>
+        <BookingNavButtons onBack={prevStep} onContinue={nextStep} />
       </div>
     );
   }
@@ -294,14 +281,8 @@ export function Step5StudentDetails() {
             className="max-w-md"
           >
             <SignInForm onSuccess={nextStep} />
-            <div className="flex items-center justify-between mt-6 w-full">
-              <button
-                onClick={prevStep}
-                className="px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors duration-200"
-              >
-                ← Back
-              </button>
-              <CancelBookingButton className="ml-0" />
+            <div className="mt-6 w-full">
+              <BookingNavButtons onBack={prevStep} canContinue={false} />
             </div>
           </motion.div>
         ) : (
@@ -452,24 +433,13 @@ export function Step5StudentDetails() {
               )}
 
               {/* Buttons */}
-              <div className="flex items-center justify-between pt-2 w-full">
-                <div className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={prevStep}
-                    className="px-6 py-3 border border-brand-border text-brand-black rounded-full font-semibold text-sm hover:border-brand-red hover:text-brand-red transition-colors duration-200"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-10 py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 shadow-md shadow-brand-red/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? "Saving…" : "Continue →"}
-                  </button>
-                </div>
-                <CancelBookingButton className="ml-0" />
+              <div className="pt-2">
+                <BookingNavButtons
+                  onBack={prevStep}
+                  continueType="submit"
+                  continueLabel={isSubmitting ? "Saving…" : "Continue →"}
+                  disabled={isSubmitting}
+                />
               </div>
             </form>
           </motion.div>

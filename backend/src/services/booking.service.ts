@@ -132,9 +132,9 @@ const listForStudent = async (studentId: string) => {
 type CreateBookingInput = {
   studentId: string;
   lessonType: string;
-  transmission: string;
-  instructorId: string;
-  scheduledAt: string;
+  transmission?: string;
+  instructorId?: string;
+  scheduledAt?: string;
   durationMins: number;
   packageId: string;
   voucherCode?: string;
@@ -152,6 +152,11 @@ const createForStudent = async (input: CreateBookingInput) => {
   const id = uuidv4();
   const now = new Date();
 
+  // THEORY bookings have no instructor or scheduled time — use now as placeholder scheduledAt
+  const isTheory = input.lessonType === 'THEORY';
+  const scheduledAt = input.scheduledAt ?? now.toISOString();
+  const transmission = input.transmission ?? 'manual';
+
   await prisma.$executeRawUnsafe(
     `INSERT INTO "Booking" (
       id, reference, "studentId", "instructorId", "lessonType", transmission, "scheduledAt",
@@ -165,10 +170,10 @@ const createForStudent = async (input: CreateBookingInput) => {
     id,
     reference,
     input.studentId,
-    input.instructorId,
+    isTheory ? null : (input.instructorId ?? null),
     input.lessonType,
-    input.transmission,
-    input.scheduledAt,
+    transmission,
+    scheduledAt,
     input.durationMins,
     resolved.totalAmount.toFixed(2),
     resolved.packageId,

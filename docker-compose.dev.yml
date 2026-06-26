@@ -71,7 +71,11 @@ services:
     ports:
       - "8008:8008"
     volumes:
-      - ./backend:/app
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - ./backend/package.json:/app/package.json
+      - ./backend/pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./backend/tsconfig.json:/app/tsconfig.json
       - backend_nm:/app/node_modules
     depends_on:
       db:
@@ -113,7 +117,19 @@ services:
     ports:
       - "3008:3000"
     volumes:
-      - ./frontend:/app
+      - ./frontend/app:/app/app
+      - ./frontend/components:/app/components
+      - ./frontend/lib:/app/lib
+      - ./frontend/hooks:/app/hooks
+      - ./frontend/types:/app/types
+      - ./frontend/public:/app/public
+      - ./frontend/store:/app/store
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/next.config.ts:/app/next.config.ts
+      - ./frontend/tailwind.config.ts:/app/tailwind.config.ts
+      - ./frontend/postcss.config.mjs:/app/postcss.config.mjs
       - frontend_nm:/app/node_modules
       - frontend_next:/app/.next
     depends_on:

@@ -50,7 +50,7 @@ const listActivePricingCategories = async () => {
             "footerNote", badge, "isPopular", "sortOrder"
      FROM "LessonPricingPackage"
      WHERE "isActive" = true
-     ORDER BY "categoryId" ASC, "createdAt" ASC`
+     ORDER BY "categoryId" ASC, price ASC`
   );
 
   for (const p of pkgs) {
@@ -118,7 +118,7 @@ const listPackagesForLessonType = async (lessonType: string) => {
             "footerNote", badge, "isPopular", "sortOrder", "isActive"
      FROM "LessonPricingPackage"
      WHERE "isActive" = true AND "categoryId" = $1
-     ORDER BY "createdAt" ASC`,
+     ORDER BY price ASC`,
     category.id
   );
 
@@ -153,9 +153,50 @@ const resolvePackageForBooking = async (lessonType: string, packageId: string) =
   return { packageId: row.id, totalAmount: Number(row.price) };
 };
 
+const TEST_CENTRES_KEY = 'test_centres';
+const DEFAULT_TEST_CENTRES = [
+  { name: 'Goodmayes', fee: 175 },
+  { name: 'Barking', fee: 175 },
+  { name: 'Hornchurch', fee: 175 },
+  { name: 'Wanstead', fee: 175 },
+  { name: 'Chingford', fee: 175 },
+  { name: 'Sidcup', fee: 175 },
+  { name: 'Hither Green', fee: 175 },
+  { name: 'South Norwood', fee: 175 },
+  { name: 'Romford', fee: 175 },
+];
+
+const getTestCentres = async (): Promise<Array<{ name: string; fee: number }>> => {
+  const rows = await prisma.$queryRawUnsafe<Array<{ value: string }>>(
+    `SELECT value FROM "Setting" WHERE key = $1 LIMIT 1`,
+    TEST_CENTRES_KEY
+  );
+  if (!rows[0]?.value) return DEFAULT_TEST_CENTRES;
+  try {
+    return JSON.parse(rows[0].value);
+  } catch {
+    return DEFAULT_TEST_CENTRES;
+  }
+};
+
+const THEORY_PRICE_KEY = 'theory_access_price';
+const DEFAULT_THEORY_PRICE = 9.99;
+
+const getTheoryPrice = async (): Promise<number> => {
+  const rows = await prisma.$queryRawUnsafe<Array<{ value: string }>>(
+    `SELECT value FROM "Setting" WHERE key = $1 LIMIT 1`,
+    THEORY_PRICE_KEY
+  );
+  if (!rows[0]?.value) return DEFAULT_THEORY_PRICE;
+  const n = parseFloat(rows[0].value);
+  return isNaN(n) ? DEFAULT_THEORY_PRICE : n;
+};
+
 export default {
   LESSON_TYPES,
   listActivePricingCategories,
   listPackagesForLessonType,
   resolvePackageForBooking,
+  getTestCentres,
+  getTheoryPrice,
 };
