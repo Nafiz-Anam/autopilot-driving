@@ -56,7 +56,7 @@ export function CallbackForm() {
           name: data.name,
           email: data.email,
           phone: data.phone,
-          postcode: data.postcode ?? undefined,
+          postcode: data.postcode || undefined,
           enquiryType: "callback_request",
           callTime: data.bestTime,
           message: data.message,
