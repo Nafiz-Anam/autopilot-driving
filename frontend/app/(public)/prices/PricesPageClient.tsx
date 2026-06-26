@@ -703,7 +703,7 @@ export default function PricesPageClient() {
 
   const manual = byLt("MANUAL");
   const automatic = byLt("AUTOMATIC");
-  const intensive = byLt("INTENSIVE");
+  const intensive = [...byLt("INTENSIVE")].sort((a, b) => a.price - b.price);
 
   const singleManual = pkgBySlug(cats, "MANUAL", "single");
 
