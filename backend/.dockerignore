@@ -97,9 +97,6 @@ jspm_packages/
 dist
 build
 
-# Prisma
-prisma/migrations/
-
 # Docker
 Dockerfile
 docker-compose*.yml

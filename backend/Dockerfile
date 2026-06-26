@@ -49,5 +49,6 @@ EXPOSE 8008
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:8008/v1/health/live || exit 1
 
-# Run Prisma generate + apply pending migrations at startup, then launch API.
-CMD ["sh", "-c", "pnpm prisma generate && pnpm prisma migrate deploy && pnpm exec pm2-runtime start ecosystem.config.json"]
+# Baseline migrations on first deploy (if DB was previously managed without Prisma
+# migration history), then apply any pending migrations and start the app.
+CMD ["sh", "scripts/startup.sh"]
