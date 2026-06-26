@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import { Search, Users, Trash2, ChevronLeft, ChevronRight, Plus, Pencil, X, Eye, EyeOff } from "lucide-react";
@@ -179,11 +180,12 @@ const itemVariants = {
 };
 
 export default function AdminUsersPage() {
+  const searchParams = useSearchParams();
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [roleFilter, setRoleFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [roleDropdownId, setRoleDropdownId] = useState<string | null>(null);

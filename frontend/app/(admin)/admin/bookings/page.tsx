@@ -27,7 +27,7 @@ interface BookingRecord {
   totalAmount: number;
   notes: string | null;
   student: { id: string; name: string | null; email: string };
-  instructor: { user: { id: string; name: string | null } };
+  instructor: { id: string; user: { id: string; name: string | null; email: string } };
   pendingReschedule?: PendingReschedule | null;
 }
 
@@ -330,17 +330,15 @@ function BookingDetailsModal({ booking, onClose, onCancel, onReschedule }: {
   onReschedule: (b: BookingRecord) => void;
 }) {
   const isActive = ["PENDING", "CONFIRMED"].includes(booking.status);
-  const rows: [string, string][] = [
-    ["Reference",   booking.reference],
-    ["Student",     `${booking.student.name ?? "—"} (${booking.student.email})`],
-    ["Instructor",  booking.instructor.user.name ?? "—"],
-    ["Date & Time", `${formatDate(booking.scheduledAt)} ${formatTime(booking.scheduledAt)}`],
-    ["Duration",    `${booking.durationMins} min`],
-    ["Type",        LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType],
-    ["Transmission",booking.transmission],
-    ["Amount",      `£${Number(booking.totalAmount).toFixed(2)}`],
-    ["Payment",     booking.paymentStatus],
-    ["Status",      booking.status],
+  const staticRows: [string, string][] = [
+    ["Reference",    booking.reference],
+    ["Date & Time",  `${formatDate(booking.scheduledAt)} ${formatTime(booking.scheduledAt)}`],
+    ["Duration",     `${booking.durationMins} min`],
+    ["Type",         LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType],
+    ["Transmission", booking.transmission],
+    ["Amount",       `£${Number(booking.totalAmount).toFixed(2)}`],
+    ["Payment",      booking.paymentStatus],
+    ["Status",       booking.status],
     ...(booking.notes ? [["Notes", booking.notes] as [string, string]] : []),
   ];
   return (
@@ -353,7 +351,39 @@ function BookingDetailsModal({ booking, onClose, onCancel, onReschedule }: {
           </button>
         </div>
         <div className="p-6 space-y-3">
-          {rows.map(([label, value]) => (
+          {/* Reference first */}
+          <div className="flex gap-3 text-sm">
+            <span className="w-28 shrink-0 font-semibold text-brand-muted">Reference</span>
+            <span className="text-brand-black font-mono">{booking.reference}</span>
+          </div>
+
+          {/* Student — clickable */}
+          <div className="flex gap-3 text-sm">
+            <span className="w-28 shrink-0 font-semibold text-brand-muted">Student</span>
+            <a
+              href={`/admin/users?search=${encodeURIComponent(booking.student.email)}`}
+              target="_blank" rel="noreferrer"
+              className="text-brand-red hover:underline break-all"
+            >
+              {booking.student.name ?? "—"}
+              <span className="text-brand-muted ml-1 font-normal">({booking.student.email})</span>
+            </a>
+          </div>
+
+          {/* Instructor — clickable */}
+          <div className="flex gap-3 text-sm">
+            <span className="w-28 shrink-0 font-semibold text-brand-muted">Instructor</span>
+            <a
+              href={`/admin/instructors?search=${encodeURIComponent(booking.instructor.user.email)}`}
+              target="_blank" rel="noreferrer"
+              className="text-brand-red hover:underline break-all"
+            >
+              {booking.instructor.user.name ?? "—"}
+              <span className="text-brand-muted ml-1 font-normal">({booking.instructor.user.email})</span>
+            </a>
+          </div>
+
+          {staticRows.slice(1).map(([label, value]) => (
             <div key={label} className="flex gap-3 text-sm">
               <span className="w-28 shrink-0 font-semibold text-brand-muted">{label}</span>
               <span className="text-brand-black break-all">{value}</span>

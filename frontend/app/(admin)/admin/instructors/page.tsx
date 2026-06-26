@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import {
@@ -587,9 +588,10 @@ function InstructorRow({
 }
 
 export default function AdminInstructorsPage() {
+  const searchParams = useSearchParams();
   const [instructors, setInstructors] = useState<InstructorRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState<InstructorRecord | null>(null);
   const [detailsInstructor, setDetailsInstructor] = useState<InstructorRecord | null>(null);
