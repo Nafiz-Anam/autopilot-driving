@@ -984,6 +984,38 @@ const sendWelcomeEmail = async (params: { to: string; name: string }) => {
   await sendEmail(params.to, subject, subject, html);
 };
 
+const sendAccountCreatedEmail = async (params: {
+  to: string;
+  name: string;
+  password: string;
+  role: 'student' | 'instructor';
+}) => {
+  const loginUrl = 'https://autopilotdrivingschool.co.uk/login';
+  const subject = 'Your AutoPilot Driving School account is ready';
+  const html = renderEmailLayout({
+    title: `Welcome, ${escapeHtml(params.name)}!`,
+    intro: `Your ${params.role} account has been created. Use the credentials below to log in.`,
+    bodyHtml: `
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <tr>
+          <td style="padding:10px 12px;background:#f8f8f8;border:1px solid #e5e5e5;font-weight:600;width:40%;">Email</td>
+          <td style="padding:10px 12px;background:#fff;border:1px solid #e5e5e5;font-family:monospace;">${escapeHtml(params.to)}</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px;background:#f8f8f8;border:1px solid #e5e5e5;font-weight:600;">Temporary Password</td>
+          <td style="padding:10px 12px;background:#fff;border:1px solid #e5e5e5;font-family:monospace;">${escapeHtml(params.password)}</td>
+        </tr>
+      </table>
+      <p style="margin:12px 0;color:#666;font-size:13px;">Please change your password after your first login.</p>
+    `,
+    ctaLabel: 'Log In Now',
+    ctaUrl: loginUrl,
+    footnote: 'If you did not expect this email, contact us at contact@autopilotdrivingschool.co.uk',
+  });
+  const text = `Welcome ${params.name},\n\nYour account has been created.\nEmail: ${params.to}\nPassword: ${params.password}\n\nLog in at: ${loginUrl}\n\nPlease change your password after first login.`;
+  await sendEmail(params.to, subject, text, html);
+};
+
 const sendAdminNotificationEmail = async (
   subject: string,
   details: Record<string, string | number | boolean | null | undefined>
@@ -1056,6 +1088,7 @@ export default {
   sendInstructorApplicationRejectedEmail,
   // Misc
   sendContactAcknowledgementEmail,
+  sendAccountCreatedEmail,
   verifySmtpConnection,
   checkEmailServiceHealth,
   transporter,

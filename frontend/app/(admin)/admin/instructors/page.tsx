@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  Search, GraduationCap, ChevronDown, ChevronUp, Eye, EyeOff, Plus, Pencil, Trash2, X, Check,
+  Search, GraduationCap, Eye, EyeOff, Plus, Pencil, Trash2, X, Check, Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
@@ -94,19 +94,18 @@ function InstructorModal({
       if (res.ok) {
         const json = await res.json();
         const slots: Array<{ dayOfWeek: number; startTime: string; isAvailable: boolean }> = json.data ?? [];
+        const emptyGrid = buildDefaultGrid();
+        Object.keys(emptyGrid).forEach((k) => (emptyGrid[k] = "unavailable"));
         if (slots.length > 0) {
-          const newGrid = buildDefaultGrid();
           for (const slot of slots) {
             const day = INDEX_TO_DAY[slot.dayOfWeek];
             if (!day) continue;
             const hour = slot.startTime.slice(0, 5);
             const key = `${day}-${hour}`;
-            if (key in newGrid) newGrid[key] = slot.isAvailable ? "available" : "unavailable";
+            if (key in emptyGrid) emptyGrid[key] = slot.isAvailable ? "available" : "unavailable";
           }
-          setGrid(newGrid);
-        } else {
-          setGrid(buildDefaultGrid());
         }
+        setGrid(emptyGrid);
       }
     } finally {
       setScheduleLoading(false);
@@ -237,11 +236,16 @@ function InstructorModal({
         const endHour = String((h + 1) % 24).padStart(2, "0");
         return { dayOfWeek: DAY_TO_INDEX[day] ?? 1, startTime: `${hour}:00`, endTime: `${endHour}:00:00`, isAvailable: state === "available" };
       });
-      await adminApiFetch(`/instructors/${editInstructor.id}/schedule`, {
+      const res = await adminApiFetch(`/instructors/${editInstructor.id}/schedule`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slots }),
       });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setError(json.error ?? "Failed to save schedule");
+        return;
+      }
       setScheduleSaved(true);
       setTimeout(() => setScheduleSaved(false), 3000);
     } finally {
@@ -433,94 +437,145 @@ function InstructorModal({
   );
 }
 
-function InstructorRow({
-  instructor, expanded, onToggleExpand, onToggleActive, onEdit, onDelete,
-}: {
-  instructor: InstructorRecord;
-  expanded: boolean;
-  onToggleExpand: (id: string) => void;
-  onToggleActive: (id: string, current: boolean) => void;
-  onEdit: (instructor: InstructorRecord) => void;
-  onDelete: (id: string) => void;
-}) {
+function InstructorDetailsModal({ instructor, onClose }: { instructor: InstructorRecord; onClose: () => void }) {
   return (
-    <>
-      <tr className="hover:bg-brand-surface/50 transition-colors">
-        <td className="px-5 py-3.5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red text-xs font-bold shrink-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md border border-brand-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border">
+          <h2 className="text-lg font-bold text-brand-black">Instructor Details</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6 space-y-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red text-lg font-bold shrink-0">
               {getInitials(instructor.user.name)}
             </div>
             <div>
-              <p className="font-semibold text-brand-black text-sm">{instructor.user.name ?? "—"}</p>
-              <p className="text-xs text-brand-muted">{instructor.user.email}</p>
+              <p className="font-bold text-brand-black text-base">{instructor.user.name ?? "—"}</p>
+              <p className="text-sm text-brand-muted">{instructor.user.email}</p>
+              {instructor.user.phone && <p className="text-sm text-brand-muted">{instructor.user.phone}</p>}
             </div>
           </div>
-        </td>
-        <td className="px-5 py-3.5 hidden md:table-cell">
-          <div className="flex flex-wrap gap-1 max-w-[160px]">
-            {instructor.areas.slice(0, 2).map((area) => (
-              <span key={area} className="text-xs bg-brand-surface rounded-lg px-2 py-0.5 font-medium text-brand-muted border border-brand-border">{area}</span>
-            ))}
-            {instructor.areas.length > 2 && <span className="text-xs text-brand-muted font-medium">+{instructor.areas.length - 2} more</span>}
+          <hr className="border-brand-border" />
+          {instructor.bio && (
+            <div>
+              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-1">Bio</p>
+              <p className="text-sm text-brand-black leading-relaxed">{instructor.bio}</p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Experience</p>
+              <p className="font-semibold text-brand-black">{instructor.yearsExp} yrs</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Price / hr</p>
+              <p className="font-semibold text-brand-black">£{Number(instructor.pricePerHour).toFixed(0)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Licence</p>
+              <p className="font-semibold text-brand-black font-mono">{instructor.licenceNumber ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Female instructor</p>
+              <p className="font-semibold text-brand-black">{instructor.isFemale ? "Yes" : "No"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Transmission</p>
+              <div className="flex flex-wrap gap-1 mt-0.5">
+                {instructor.transmission.map((t) => (
+                  <span key={t} className="text-xs font-medium border border-brand-border px-2 py-0.5 rounded-lg text-brand-black capitalize">{t}</span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Bookings</p>
+              <p className="font-semibold text-brand-black">{instructor._count.bookings}</p>
+            </div>
           </div>
-        </td>
-        <td className="px-5 py-3.5 hidden lg:table-cell">
-          <div className="flex flex-wrap gap-1">
-            {instructor.transmission.map((t) => (
-              <span key={t} className="text-xs font-medium border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">{t}</span>
-            ))}
+          {instructor.areas.length > 0 && (
+            <div>
+              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-1.5">Areas</p>
+              <div className="flex flex-wrap gap-1.5">
+                {instructor.areas.map((area) => (
+                  <span key={area} className="text-xs bg-brand-surface rounded-lg px-2 py-0.5 font-medium text-brand-muted border border-brand-border">{area}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InstructorRow({
+  instructor, onToggleActive, onEdit, onDelete, onDetails,
+}: {
+  instructor: InstructorRecord;
+  onToggleActive: (id: string, current: boolean) => void;
+  onEdit: (instructor: InstructorRecord) => void;
+  onDelete: (id: string) => void;
+  onDetails: (instructor: InstructorRecord) => void;
+}) {
+  return (
+    <tr className="hover:bg-brand-surface/50 transition-colors">
+      <td className="px-5 py-3.5">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-brand-red/10 flex items-center justify-center text-brand-red text-xs font-bold shrink-0">
+            {getInitials(instructor.user.name)}
           </div>
-        </td>
-        <td className="px-5 py-3.5 text-sm font-semibold text-brand-black hidden md:table-cell whitespace-nowrap">
-          £{Number(instructor.pricePerHour).toFixed(0)}/hr
-        </td>
-        <td className="px-5 py-3.5 hidden sm:table-cell">
-          <button onClick={() => onToggleActive(instructor.id, instructor.isActive)}
-            className={cn("flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors",
-              instructor.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-brand-muted hover:bg-gray-200")}>
-            {instructor.isActive ? <><Eye className="w-3 h-3" />Active</> : <><EyeOff className="w-3 h-3" />Inactive</>}
+          <div>
+            <p className="font-semibold text-brand-black text-sm">{instructor.user.name ?? "—"}</p>
+            <p className="text-xs text-brand-muted">{instructor.user.email}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-5 py-3.5 hidden md:table-cell">
+        <div className="flex flex-wrap gap-1 max-w-[160px]">
+          {instructor.areas.slice(0, 2).map((area) => (
+            <span key={area} className="text-xs bg-brand-surface rounded-lg px-2 py-0.5 font-medium text-brand-muted border border-brand-border">{area}</span>
+          ))}
+          {instructor.areas.length > 2 && <span className="text-xs text-brand-muted font-medium">+{instructor.areas.length - 2} more</span>}
+        </div>
+      </td>
+      <td className="px-5 py-3.5 hidden lg:table-cell">
+        <div className="flex flex-wrap gap-1">
+          {instructor.transmission.map((t) => (
+            <span key={t} className="text-xs font-medium border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">{t}</span>
+          ))}
+        </div>
+      </td>
+      <td className="px-5 py-3.5 text-sm font-semibold text-brand-black hidden md:table-cell whitespace-nowrap">
+        £{Number(instructor.pricePerHour).toFixed(0)}/hr
+      </td>
+      <td className="px-5 py-3.5 hidden sm:table-cell">
+        <button onClick={() => onToggleActive(instructor.id, instructor.isActive)}
+          className={cn("flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors",
+            instructor.isActive ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-brand-muted hover:bg-gray-200")}>
+          {instructor.isActive ? <><Eye className="w-3 h-3" />Active</> : <><EyeOff className="w-3 h-3" />Inactive</>}
+        </button>
+      </td>
+      <td className="px-5 py-3.5 text-sm text-brand-black font-semibold hidden lg:table-cell">{instructor._count.bookings}</td>
+      <td className="px-5 py-3.5 text-right">
+        <div className="flex items-center justify-end gap-1">
+          <button onClick={() => onDetails(instructor)}
+            className="p-1.5 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors" title="View details">
+            <Info className="w-4 h-4" />
           </button>
-        </td>
-        <td className="px-5 py-3.5 text-sm text-brand-black font-semibold hidden lg:table-cell">{instructor._count.bookings}</td>
-        <td className="px-5 py-3.5 text-right">
-          <div className="flex items-center justify-end gap-1">
-            <button onClick={() => onEdit(instructor)}
-              className="p-1.5 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors" title="Edit instructor">
-              <Pencil className="w-4 h-4" />
-            </button>
-            <button onClick={() => onDelete(instructor.id)}
-              className="p-1.5 rounded-lg text-brand-muted hover:text-brand-red hover:bg-red-50 transition-colors" title="Delete instructor">
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button onClick={() => onToggleExpand(instructor.id)}
-              className="p-1.5 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors" title="Toggle details">
-              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          </div>
-        </td>
-      </tr>
-      <AnimatePresence>
-        {expanded && (
-          <tr>
-            <td colSpan={8} className="bg-brand-surface/30 border-b border-brand-border">
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                <div className="px-8 py-4">
-                  <p className="text-sm font-semibold text-brand-black mb-1">Bio</p>
-                  <p className="text-sm text-brand-muted mb-4">{instructor.bio ?? "No bio provided."}</p>
-                  <div className="flex flex-wrap gap-6 text-xs text-brand-muted">
-                    <span>Phone: <strong className="text-brand-black">{instructor.user.phone ?? "—"}</strong></span>
-                    <span>Experience: <strong className="text-brand-black">{instructor.yearsExp} yrs</strong></span>
-                    {instructor.licenceNumber && <span>Licence: <strong className="text-brand-black font-mono">{instructor.licenceNumber}</strong></span>}
-                    <span>Female instructor: <strong className="text-brand-black">{instructor.isFemale ? "Yes" : "No"}</strong></span>
-                  </div>
-                </div>
-              </motion.div>
-            </td>
-          </tr>
-        )}
-      </AnimatePresence>
-    </>
+          <button onClick={() => onEdit(instructor)}
+            className="p-1.5 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors" title="Edit instructor">
+            <Pencil className="w-4 h-4" />
+          </button>
+          <button onClick={() => onDelete(instructor.id)}
+            className="p-1.5 rounded-lg text-brand-muted hover:text-brand-red hover:bg-red-50 transition-colors" title="Delete instructor">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -528,9 +583,9 @@ export default function AdminInstructorsPage() {
   const [instructors, setInstructors] = useState<InstructorRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingInstructor, setEditingInstructor] = useState<InstructorRecord | null>(null);
+  const [detailsInstructor, setDetailsInstructor] = useState<InstructorRecord | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function fetchInstructors() {
@@ -589,6 +644,12 @@ export default function AdminInstructorsPage() {
         onClose={() => { setModalOpen(false); setEditingInstructor(null); }}
         onSaved={handleSaved}
       />
+      {detailsInstructor && (
+        <InstructorDetailsModal
+          instructor={detailsInstructor}
+          onClose={() => setDetailsInstructor(null)}
+        />
+      )}
 
       {/* Header */}
       <motion.div variants={itemVariants} className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -654,11 +715,10 @@ export default function AdminInstructorsPage() {
                   <InstructorRow
                     key={instructor.id}
                     instructor={instructor}
-                    expanded={expandedId === instructor.id}
-                    onToggleExpand={(id) => setExpandedId((p) => p === id ? null : id)}
                     onToggleActive={handleToggleActive}
                     onEdit={(ins) => { setEditingInstructor(ins); setModalOpen(true); }}
                     onDelete={handleDelete}
+                    onDetails={setDetailsInstructor}
                   />
                 ))
               )}

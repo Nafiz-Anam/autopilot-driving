@@ -1675,6 +1675,12 @@ const createUser = async (payload: {
     id, payload.name.trim(), payload.email.trim().toLowerCase(),
     payload.phone ?? null, passwordHash, role
   );
+  emailService.sendAccountCreatedEmail({
+    to: payload.email.trim().toLowerCase(),
+    name: payload.name.trim(),
+    password: payload.password,
+    role: 'student',
+  }).catch(() => {});
   return rows[0];
 };
 
@@ -1732,6 +1738,12 @@ const createInstructor = async (payload: {
     instructorId, userId, payload.bio ?? null, payload.pricePerHour, payload.transmission,
     payload.yearsExp, payload.licenceNumber ?? null, payload.isFemale, payload.areas, payload.isActive
   );
+  emailService.sendAccountCreatedEmail({
+    to: payload.email.trim().toLowerCase(),
+    name: payload.name.trim(),
+    password: payload.password,
+    role: 'instructor',
+  }).catch(() => {});
   return rows[0];
 };
 
