@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2, PoundSterling, Plus, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 import type { LessonType } from "@/types";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
@@ -51,7 +52,6 @@ async function fetchAdminCategories(): Promise<AdminCat[]> {
 export default function AdminPricingPage() {
   const [categories, setCategories] = useState<AdminCat[]>([]);
   const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [testCentres, setTestCentres] = useState<TestCentre[]>([]);
   const [tcSaving, setTcSaving] = useState(false);
   const [theoryPrice, setTheoryPrice] = useState<string>("9.99");
@@ -72,7 +72,7 @@ export default function AdminPricingPage() {
           if (tpRes?.data?.price != null) setTheoryPrice(String(tpRes.data.price));
         }
       } catch {
-        if (!cancelled) setMsg({ type: "err", text: "Could not load pricing." });
+        if (!cancelled) toast.error("Could not load pricing.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -92,7 +92,7 @@ export default function AdminPricingPage() {
       setTestCentres(Array.isArray(tcRes?.data) ? tcRes.data : []);
       if (tpRes?.data?.price != null) setTheoryPrice(String(tpRes.data.price));
     } catch {
-      setMsg({ type: "err", text: "Could not load pricing." });
+      toast.error("Could not load pricing.");
     } finally {
       setLoading(false);
     }
@@ -106,9 +106,9 @@ export default function AdminPricingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ price: parseFloat(theoryPrice) || 9.99 }),
       });
-      setMsg({ type: "ok", text: "Theory access price saved." });
+      toast.success("Theory access price saved.");
     } catch {
-      setMsg({ type: "err", text: "Could not save theory price." });
+      toast.error("Could not save theory price.");
     } finally {
       setTheoryPriceSaving(false);
     }
@@ -122,9 +122,9 @@ export default function AdminPricingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ centres: testCentres }),
       });
-      setMsg({ type: "ok", text: "Test Day Fees saved." });
+      toast.success("Test Day Fees saved.");
     } catch {
-      setMsg({ type: "err", text: "Could not save test centres." });
+      toast.error("Could not save test centres.");
     } finally {
       setTcSaving(false);
     }
@@ -140,9 +140,9 @@ export default function AdminPricingPage() {
       setCategories((prev) =>
         prev.map((c) => (c.id === id ? { ...c, isActive: !isActive } : c))
       );
-      setMsg({ type: "ok", text: "Category updated." });
+      toast.success("Category updated.");
     } catch {
-      setMsg({ type: "err", text: "Could not update category." });
+      toast.error("Could not update category.");
     }
   }
 
@@ -161,14 +161,13 @@ export default function AdminPricingPage() {
           ),
         }))
       );
-      setMsg({ type: "ok", text: "Package updated." });
+      toast.success("Package updated.");
     } catch {
-      setMsg({ type: "err", text: "Could not update package." });
+      toast.error("Could not update package.");
     }
   }
 
   async function savePackage(pkg: AdminPkg) {
-    setMsg(null);
     try {
       await adminApiFetch(`/pricing/packages/${pkg.id}`, {
         method: "PATCH",
@@ -186,15 +185,14 @@ export default function AdminPricingPage() {
         sortOrder: pkg.sortOrder,
         }),
       });
-      setMsg({ type: "ok", text: "Saved package." });
+      toast.success("Saved package.");
       await load();
     } catch {
-      setMsg({ type: "err", text: "Could not save package." });
+      toast.error("Could not save package.");
     }
   }
 
   async function createPackage(categoryId: string, lessonType: LessonType) {
-    setMsg(null);
     try {
       await adminApiFetch("/pricing/packages", {
         method: "POST",
@@ -210,21 +208,20 @@ export default function AdminPricingPage() {
         isActive: true,
         }),
       });
-      setMsg({ type: "ok", text: "Package created." });
+      toast.success("Package created.");
       await load();
     } catch {
-      setMsg({ type: "err", text: "Could not create package." });
+      toast.error("Could not create package.");
     }
   }
 
   async function removePackage(pkgId: string) {
-    if (!confirm("Deactivate this package?")) return;
     try {
       await adminApiFetch(`/pricing/packages/${pkgId}`, { method: "DELETE" });
-      setMsg({ type: "ok", text: "Package deactivated." });
+      toast.success("Package deactivated.");
       await load();
     } catch {
-      setMsg({ type: "err", text: "Could not remove package." });
+      toast.error("Could not remove package.");
     }
   }
 
@@ -241,19 +238,6 @@ export default function AdminPricingPage() {
           checkout). Amounts at payment are taken from the package record, not the client.
         </p>
       </div>
-
-      {msg && (
-        <div
-          className={cn(
-            "mb-4 px-4 py-3 rounded-xl text-sm",
-            msg.type === "ok"
-              ? "bg-green-50 text-green-800 border border-green-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          )}
-        >
-          {msg.text}
-        </div>
-      )}
 
       {loading ? (
         <div className="flex justify-center py-16">

@@ -113,8 +113,15 @@ const postUsers = catchAsync(async (req: Request, res: Response) => {
   if (!name || !email || !password) {
     return res.status(httpStatus.BAD_REQUEST).send({ error: 'name, email and password are required' });
   }
-  const data = await adminAppService.createUser({ name, email, phone: phone ?? null, password, role });
-  return res.status(httpStatus.CREATED).send({ data });
+  try {
+    const data = await adminAppService.createUser({ name, email, phone: phone ?? null, password, role });
+    return res.status(httpStatus.CREATED).send({ data });
+  } catch (err: any) {
+    if (err?.code === 'P2002' || err?.message?.includes('unique constraint')) {
+      return res.status(httpStatus.BAD_REQUEST).send({ error: 'An account with this email already exists.' });
+    }
+    throw err;
+  }
 });
 
 const patchUserById = catchAsync(async (req: Request, res: Response) => {
@@ -308,18 +315,25 @@ const postInstructors = catchAsync(async (req: Request, res: Response) => {
   if (!name || !email || !password) {
     return res.status(httpStatus.BAD_REQUEST).send({ error: 'name, email and password are required' });
   }
-  const data = await adminAppService.createInstructor({
-    name, email, phone: phone ?? null, password,
-    bio: bio ?? null,
-    pricePerHour: Number(pricePerHour) || 0,
-    transmission: Array.isArray(transmission) ? transmission : [],
-    yearsExp: Number(yearsExp) || 0,
-    licenceNumber: licenceNumber ?? null,
-    isFemale: Boolean(isFemale),
-    areas: Array.isArray(areas) ? areas : [],
-    isActive: isActive !== false,
-  });
-  return res.status(httpStatus.CREATED).send({ data });
+  try {
+    const data = await adminAppService.createInstructor({
+      name, email, phone: phone ?? null, password,
+      bio: bio ?? null,
+      pricePerHour: Number(pricePerHour) || 0,
+      transmission: Array.isArray(transmission) ? transmission : [],
+      yearsExp: Number(yearsExp) || 0,
+      licenceNumber: licenceNumber ?? null,
+      isFemale: Boolean(isFemale),
+      areas: Array.isArray(areas) ? areas : [],
+      isActive: isActive !== false,
+    });
+    return res.status(httpStatus.CREATED).send({ data });
+  } catch (err: any) {
+    if (err?.code === 'P2002' || err?.message?.includes('unique constraint')) {
+      return res.status(httpStatus.BAD_REQUEST).send({ error: 'An account with this email already exists.' });
+    }
+    throw err;
+  }
 });
 
 const deleteInstructorById = catchAsync(async (req: Request, res: Response) => {

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
+import toast from "react-hot-toast";
 
 interface TheoryQuestion {
   id: string;
@@ -327,9 +328,12 @@ export default function AdminTheoryPage() {
         body: JSON.stringify(data),
       });
       if (res.ok) {
+        toast.success("Question updated");
         setShowModal(false);
         setEditingQuestion(null);
         fetchQuestions();
+      } else {
+        toast.error("Failed to save question");
       }
     } else {
       const res = await adminApiFetch("/theory", {
@@ -338,8 +342,11 @@ export default function AdminTheoryPage() {
         body: JSON.stringify(data),
       });
       if (res.ok) {
+        toast.success("Question created");
         setShowModal(false);
         fetchQuestions();
+      } else {
+        toast.error("Failed to save question");
       }
     }
   }
@@ -347,9 +354,12 @@ export default function AdminTheoryPage() {
   async function handleDelete(id: string) {
     const res = await adminApiFetch(`/theory/${id}`, { method: "DELETE" });
     if (res.ok) {
+      toast.success("Question deleted");
       setQuestions((prev) => prev.filter((q) => q.id !== id));
       setTotal((t) => t - 1);
       setDeleteConfirmId(null);
+    } else {
+      toast.error("Failed to delete question");
     }
   }
 

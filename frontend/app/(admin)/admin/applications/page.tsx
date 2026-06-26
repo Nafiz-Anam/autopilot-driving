@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { FileText, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
+import toast from "react-hot-toast";
 
 interface InstructorApplication {
   id: string;
@@ -97,9 +98,11 @@ export default function AdminApplicationsPage() {
         setApplications((prev) =>
           prev.map((a) => (a.id === id ? { ...a, status } : a))
         );
+        toast.success(status === "approved" ? "Application approved" : "Application rejected");
       }
     } catch (err) {
       console.error("Failed to update application", err);
+      toast.error("Failed to update application");
     } finally {
       setUpdatingId(null);
     }

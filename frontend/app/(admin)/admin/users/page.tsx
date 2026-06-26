@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import { Search, Users, Trash2, ChevronLeft, ChevronRight, Plus, Pencil, X, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -92,9 +93,10 @@ function UserModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const json = await res.json();
-      if (!res.ok) { setError(json.error ?? "Failed to save"); return; }
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(json.error ?? json.message ?? "Failed to save"); return; }
       onSaved({ ...editUser, ...json.data, _count: editUser?._count ?? { bookings: 0 } } as UserRecord, !editUser);
+      toast.success(editUser ? "User updated" : "User created");
     } catch {
       setError("Network error");
     } finally {
@@ -206,6 +208,7 @@ export default function AdminUsersPage() {
   }, [search, roleFilter, page]);
 
   async function handleRoleChange(id: string, role: string) {
+    const prevUsers = users;
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
     setRoleDropdownId(null);
     try {
@@ -214,15 +217,21 @@ export default function AdminUsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, role }),
       });
-    } catch { /* ignore */ }
+      toast.success("Role updated");
+    } catch {
+      setUsers(prevUsers);
+      toast.error("Failed to update role");
+    }
   }
 
   async function handleDelete(id: string) {
     setDeletingId(id);
     try {
       const res = await adminApiFetch(`/users/${id}`, { method: "DELETE" });
-      if (res.ok) { setUsers((prev) => prev.filter((u) => u.id !== id)); setTotal((t) => t - 1); }
-    } catch { /* ignore */ }
+      if (res.ok) { setUsers((prev) => prev.filter((u) => u.id !== id)); setTotal((t) => t - 1); toast.success("User deleted"); }
+    } catch {
+      toast.error("Failed to delete user");
+    }
     finally { setDeletingId(null); setConfirmDeleteId(null); }
   }
 

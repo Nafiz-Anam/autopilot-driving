@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Tag, Loader2, Plus, X, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
+import toast from "react-hot-toast";
 
 interface CouponRow {
   id: string;
@@ -98,6 +99,7 @@ function CouponModal({
           body: JSON.stringify(body),
         });
       }
+      toast.success(editingCoupon ? "Coupon updated" : "Coupon created");
       onSaved();
       onClose();
     } catch {
@@ -299,8 +301,9 @@ export default function AdminCouponsPage() {
         body: JSON.stringify({ isActive: !isActive }),
       });
       setCoupons((prev) => prev.map((c) => (c.id === id ? { ...c, isActive: !isActive } : c)));
+      toast.success("Coupon status updated");
     } catch {
-      setMsg({ type: "err", text: "Could not update coupon." });
+      toast.error("Failed to update coupon");
     }
   }
 
@@ -310,9 +313,9 @@ export default function AdminCouponsPage() {
     try {
       await adminApiFetch(`/coupons/${id}`, { method: "DELETE" });
       setCoupons((prev) => prev.filter((c) => c.id !== id));
-      setMsg({ type: "ok", text: "Coupon deleted." });
+      toast.success("Coupon deleted");
     } catch {
-      setMsg({ type: "err", text: "Could not delete coupon." });
+      toast.error("Failed to delete coupon");
     } finally {
       setDeletingId(null);
     }
@@ -335,7 +338,6 @@ export default function AdminCouponsPage() {
         editingCoupon={editingCoupon}
         onClose={() => setModalOpen(false)}
         onSaved={() => {
-          setMsg({ type: "ok", text: editingCoupon ? "Coupon updated." : "Coupon created." });
           void load();
         }}
       />

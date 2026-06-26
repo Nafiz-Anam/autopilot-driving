@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, X, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -165,6 +166,7 @@ function CancelModal({ booking, onClose, onDone }: {
         body: JSON.stringify(patch),
       });
       if (res.ok) {
+        toast.success("Booking cancelled");
         onDone(booking.id, patch);
       } else {
         setErr("Failed to cancel booking.");
@@ -259,6 +261,7 @@ function RescheduleModal({ booking, onClose, onDone }: {
         body: JSON.stringify({ scheduledAt, notes: combinedNotes }),
       });
       if (res.ok) {
+        toast.success("Lesson rescheduled");
         onDone(booking.id, { scheduledAt });
       } else {
         setErr("Failed to reschedule booking.");
@@ -358,8 +361,13 @@ export default function AdminBookingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
       });
-      if (!res.ok) fetchBookings();
-    } catch { fetchBookings(); }
+      if (res.ok) {
+        toast.success("Booking updated");
+      } else {
+        toast.error("Failed to update booking");
+        fetchBookings();
+      }
+    } catch { toast.error("Failed to update booking"); fetchBookings(); }
     finally { setUpdatingId(null); }
   }
 
@@ -379,8 +387,11 @@ export default function AdminBookingsPage() {
           ? { scheduledAt: bookings.find(b => b.id === bookingId)?.pendingReschedule?.proposedDateTime }
           : {}),
       });
-      if (res.ok) fetchBookings();
-    } catch { /* ignore */ }
+      if (res.ok) {
+        toast.success(accept ? "Reschedule accepted" : "Reschedule declined");
+        fetchBookings();
+      }
+    } catch { toast.error("Failed to respond"); }
     finally { setUpdatingId(null); }
   }
 

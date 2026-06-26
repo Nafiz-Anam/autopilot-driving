@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Plus, Pencil, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
+import toast from "react-hot-toast";
 
 interface Area {
   id: string;
@@ -229,8 +230,11 @@ export default function AdminAreasPage() {
       body: JSON.stringify(data),
     });
     if (res.ok) {
+      toast.success("Area added");
       setShowModal(false);
       fetchAreas();
+    } else {
+      toast.error("Failed to add area");
     }
   }
 
@@ -242,9 +246,12 @@ export default function AdminAreasPage() {
       body: JSON.stringify(data),
     });
     if (res.ok) {
+      toast.success("Area updated");
       setShowModal(false);
       setEditingArea(null);
       fetchAreas();
+    } else {
+      toast.error("Failed to update area");
     }
   }
 
@@ -255,17 +262,23 @@ export default function AdminAreasPage() {
       body: JSON.stringify({ isActive: !area.isActive }),
     });
     if (res.ok) {
+      toast.success("Area status updated");
       setAreas((prev) =>
         prev.map((a) => (a.id === area.id ? { ...a, isActive: !area.isActive } : a))
       );
+    } else {
+      toast.error("Failed to update area");
     }
   }
 
   async function handleDelete(id: string) {
     const res = await adminApiFetch(`/areas/${id}`, { method: "DELETE" });
     if (res.ok) {
+      toast.success("Area deleted");
       setAreas((prev) => prev.filter((a) => a.id !== id));
       setDeleteConfirmId(null);
+    } else {
+      toast.error("Failed to delete area");
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 import {
   MessageSquare,
   Trash2,
@@ -163,6 +164,9 @@ export default function AdminContactPage() {
     if (res.ok) {
       setSubmissions((prev) => prev.filter((s) => s.id !== id));
       setTotal((t) => t - 1);
+      toast.success("Submission deleted");
+    } else {
+      toast.error("Failed to delete submission");
     }
     setConfirmDeleteId(null);
   }
