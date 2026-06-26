@@ -152,6 +152,7 @@ const ENQUIRY_MAP: Record<string, string> = {
 function CallbackForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [enquiry, setEnquiry] = useState("");
   const [callTime, setCallTime] = useState("");
   const [loading, setLoading] = useState(false);
@@ -163,6 +164,9 @@ function CallbackForm() {
     setError("");
     if (!name.trim()) { setError("Please enter your name."); return; }
     if (!phone.trim()) { setError("Please enter your phone number."); return; }
+    if (!email.trim()) { setError("Please enter your email address."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Please enter a valid email address."); return; }
+    if (!/^(\+44|0)[\d\s]{9,12}$/.test(phone.trim())) { setError("Please enter a valid UK phone number."); return; }
     setLoading(true);
     try {
       const res = await fetch(backendApiUrl("/public/contact"), {
@@ -170,9 +174,11 @@ function CallbackForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          email: email.trim(),
           phone: phone.trim(),
           enquiryType: enquiry ? (ENQUIRY_MAP[enquiry] ?? "callback_request") : "callback_request",
           callTime: callTime || undefined,
+          message: `Callback request from pricing page${enquiry ? ` — interested in ${enquiry} lessons` : ""}.`,
         }),
       });
       if (!res.ok) {
@@ -215,6 +221,13 @@ function CallbackForm() {
             placeholder="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            className="w-full border border-brand-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-red transition-colors"
+          />
+          <input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-brand-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-red transition-colors"
           />
           <input

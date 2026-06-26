@@ -15,15 +15,16 @@ const schema = z.object({
       /^(\+44|0)[\d\s]{9,12}$/,
       "Please enter a valid UK phone number"
     ),
+  // Optional: empty string treated as absent; if provided must be a valid UK postcode (min 3 chars matches backend)
   postcode: z
     .string()
     .regex(
       /^[A-Za-z]{1,2}\d{1,2}[A-Za-z]?\s?\d[A-Za-z]{2}$/,
-      "Please enter a valid UK postcode"
+      "Please enter a valid UK postcode (e.g. SL1 1AA)"
     )
     .optional()
     .or(z.literal("")),
-  message: z.string().min(5, "Please tell us a bit more"),
+  message: z.string().min(5, "Please tell us a bit more").max(1000, "Message must be under 1000 characters"),
   bestTime: z.string().min(1, "Please select a best time to call"),
 });
 
