@@ -229,7 +229,7 @@ export default function AdminPricingPage() {
   }
 
   return (
-    <div className="w-full max-w-5xl">
+    <div className="w-full">
       <div className="mb-8">
         <h1 className="text-2xl font-extrabold text-brand-black flex items-center gap-2">
           <PoundSterling className="w-7 h-7 text-brand-red" />
@@ -288,7 +288,7 @@ export default function AdminPricingPage() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-full">
+                <table className="w-full text-sm">
                   <thead className="bg-brand-surface/80 border-b border-brand-border">
                     <tr>
                       <th className="text-left px-4 py-2 font-semibold">Name</th>
