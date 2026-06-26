@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppAuth } from "@/components/providers/AppAuthProvider";
@@ -13,6 +14,8 @@ import { registerSchema, type RegisterInput, type RegisterFormInput } from "@/li
 export default function RegisterPage() {
   const { login } = useAppAuth();
   const [serverError, setServerError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const {
     register,
@@ -102,24 +105,38 @@ export default function RegisterPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-brand-black mb-1">Password</label>
-              <input
-                {...register("password")}
-                type="password"
-                autoComplete="new-password"
-                className="w-full px-4 py-2.5 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm"
-                placeholder="At least 8 characters"
-              />
+              <div className="relative">
+                <input
+                  {...register("password")}
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  className="w-full px-4 py-2.5 pr-11 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm"
+                  placeholder="At least 8 characters"
+                />
+                <button type="button" onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-black transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-brand-black mb-1">Confirm Password</label>
-              <input
-                {...register("confirmPassword")}
-                type="password"
-                autoComplete="new-password"
-                className="w-full px-4 py-2.5 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm"
-                placeholder="Repeat your password"
-              />
+              <div className="relative">
+                <input
+                  {...register("confirmPassword")}
+                  type={showConfirm ? "text" : "password"}
+                  autoComplete="new-password"
+                  className="w-full px-4 py-2.5 pr-11 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm"
+                  placeholder="Repeat your password"
+                />
+                <button type="button" onClick={() => setShowConfirm((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-black transition-colors"
+                  aria-label={showConfirm ? "Hide password" : "Show password"}>
+                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               {errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword.message}</p>}
             </div>
             <div>

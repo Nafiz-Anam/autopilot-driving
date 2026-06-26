@@ -85,7 +85,7 @@ function LessonCard({
   const inView = useInView(ref, { once: true, margin: "-60px" });
   const pricePerHour =
     pkg.pricePerHour ?? (pkg.hours > 0 ? Math.round((pkg.price / pkg.hours) * 100) / 100 : pkg.price);
-  const note = pkg.footerNote ?? `£${pkg.price} total`;
+  const note = pkg.footerNote || `£${pkg.price} total`;
   const popular = pkg.isPopular;
   const ribbon = pkg.badge ?? "Most Popular";
 

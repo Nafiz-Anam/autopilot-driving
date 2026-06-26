@@ -11,6 +11,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { adminApiFetch } from "@/lib/admin-api";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 interface ContactSubmission {
   id: string;
@@ -134,6 +135,7 @@ export default function AdminContactPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function fetchSubmissions(p: number) {
     setLoading(true);
@@ -157,19 +159,24 @@ export default function AdminContactPage() {
   }, [page]);
 
   async function handleDelete(id: string) {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this submission? This cannot be undone."
-    );
-    if (!confirmed) return;
     const res = await adminApiFetch(`/contact/${id}`, { method: "DELETE" });
     if (res.ok) {
       setSubmissions((prev) => prev.filter((s) => s.id !== id));
       setTotal((t) => t - 1);
     }
+    setConfirmDeleteId(null);
   }
 
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="visible">
+      <ConfirmModal
+        open={!!confirmDeleteId}
+        title="Delete submission?"
+        message="This permanently deletes the contact submission. This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
       {/* Header */}
       <motion.div
         variants={itemVariants}
@@ -225,7 +232,7 @@ export default function AdminContactPage() {
           className="space-y-3"
         >
           {submissions.map((sub) => (
-            <ContactCard key={sub.id} submission={sub} onDelete={handleDelete} />
+            <ContactCard key={sub.id} submission={sub} onDelete={setConfirmDeleteId} />
           ))}
         </motion.div>
       )}

@@ -287,7 +287,7 @@ export default function AdminPricingPage() {
                 </button>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="w-full">
                 <table className="w-full text-sm">
                   <thead className="bg-brand-surface/80 border-b border-brand-border">
                     <tr>
@@ -297,13 +297,14 @@ export default function AdminPricingPage() {
                       <th className="text-left px-4 py-2 font-semibold">Lsns</th>
                       <th className="text-left px-4 py-2 font-semibold">£/hr (disp.)</th>
                       <th className="text-left px-4 py-2 font-semibold">Save</th>
+                      <th className="text-left px-4 py-2 font-semibold">Subtitle</th>
                       <th className="text-left px-4 py-2 font-semibold">Popular</th>
                       <th className="text-left px-4 py-2 font-semibold">Active</th>
                       <th className="text-right px-4 py-2 font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cat.packages.map((pkg) => (
+                    {[...cat.packages].sort((a, b) => a.price - b.price).map((pkg) => (
                       <PackageEditorRow
                         key={pkg.id}
                         pkg={pkg}
@@ -369,18 +370,9 @@ export default function AdminPricingPage() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white border border-brand-border rounded-2xl overflow-hidden shadow-sm"
           >
-            <div className="px-5 py-4 bg-brand-surface border-b border-brand-border flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold text-brand-muted uppercase tracking-wide">Test Day</p>
-                <h2 className="text-lg font-bold text-brand-black">Test Day Fees</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setTestCentres((prev) => [...prev, { name: "", fee: 175 }])}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-brand-red hover:text-brand-orange"
-              >
-                <Plus className="w-4 h-4" /> Add centre
-              </button>
+            <div className="px-5 py-4 bg-brand-surface border-b border-brand-border">
+              <p className="text-xs font-semibold text-brand-muted uppercase tracking-wide">Test Day</p>
+              <h2 className="text-lg font-bold text-brand-black">Test Day Fees</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -425,7 +417,14 @@ export default function AdminPricingPage() {
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-3 border-t border-brand-border bg-brand-surface/50 flex justify-end">
+            <div className="px-4 py-3 border-t border-brand-border bg-brand-surface/50 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setTestCentres((prev) => [...prev, { name: "", fee: 175 }])}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-brand-red hover:text-brand-orange"
+              >
+                <Plus className="w-4 h-4" /> Add centre
+              </button>
               <button
                 type="button"
                 onClick={() => void saveTestCentres()}
@@ -463,7 +462,7 @@ function PackageEditorRow({
   }, [pkg]);
 
   return (
-    <tr className="border-b border-brand-border last:border-b-0 align-top">
+    <tr className="border-b border-brand-border last:border-b-0 align-middle">
       <td className="px-4 py-3">
         <input
           value={draft.name}
@@ -532,6 +531,16 @@ function PackageEditorRow({
         />
       </td>
       <td className="px-4 py-3">
+        <input
+          value={draft.footerNote ?? ""}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, footerNote: e.target.value || null }))
+          }
+          placeholder="e.g. Ideal for beginners"
+          className="w-40 px-2 py-1 border border-brand-border rounded-lg text-sm"
+        />
+      </td>
+      <td className="px-4 py-3">
         <button
           type="button"
           onClick={() => setDraft((d) => ({ ...d, isPopular: !d.isPopular }))}
@@ -555,21 +564,23 @@ function PackageEditorRow({
           {pkg.isActive ? "On" : "Off"}
         </button>
       </td>
-      <td className="px-4 py-3 text-right space-x-2">
-        <button
-          type="button"
-          onClick={() => onSave(draft)}
-          className="text-xs font-semibold px-3 py-1.5 bg-brand-red text-white rounded-lg hover:bg-brand-orange"
-        >
-          Save
-        </button>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"
-        >
-          <Trash2 className="w-3 h-3" /> Remove
-        </button>
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+          <button
+            type="button"
+            onClick={() => onSave(draft)}
+            className="text-xs font-semibold px-3 py-1.5 bg-brand-red text-white rounded-lg hover:bg-brand-orange"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex items-center gap-1 text-xs text-red-600 hover:underline"
+          >
+            <Trash2 className="w-3 h-3" /> Remove
+          </button>
+        </div>
       </td>
     </tr>
   );

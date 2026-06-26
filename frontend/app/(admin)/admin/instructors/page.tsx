@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 interface InstructorRecord {
   id: string;
@@ -86,6 +87,7 @@ function InstructorModal({
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [scheduleSaved, setScheduleSaved] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const loadSchedule = useCallback(async (id: string) => {
     setScheduleLoading(true);
@@ -296,8 +298,15 @@ function InstructorModal({
             {!editInstructor && (
               <div>
                 <label className="block text-xs font-semibold text-brand-muted mb-1">Password *</label>
-                <input required type="password" value={form.password} onChange={(e) => set("password", e.target.value)}
-                  className="w-full px-3 py-2 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red" />
+                <div className="relative">
+                  <input required type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => set("password", e.target.value)}
+                    className="w-full px-3 py-2 pr-10 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red" />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-black transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -587,6 +596,7 @@ export default function AdminInstructorsPage() {
   const [editingInstructor, setEditingInstructor] = useState<InstructorRecord | null>(null);
   const [detailsInstructor, setDetailsInstructor] = useState<InstructorRecord | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   function fetchInstructors() {
     setLoading(true);
@@ -613,13 +623,12 @@ export default function AdminInstructorsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Delete this instructor? Their user account will remain.")) return;
     setDeletingId(id);
     try {
       const res = await adminApiFetch(`/instructors/${id}`, { method: "DELETE" });
       if (res.ok) setInstructors((prev) => prev.filter((ins) => ins.id !== id));
     } catch { /* ignore */ }
-    finally { setDeletingId(null); }
+    finally { setDeletingId(null); setConfirmDeleteId(null); }
   }
 
   function handleSaved(instructor: InstructorRecord, isNew: boolean) {
@@ -650,6 +659,14 @@ export default function AdminInstructorsPage() {
           onClose={() => setDetailsInstructor(null)}
         />
       )}
+      <ConfirmModal
+        open={!!confirmDeleteId}
+        title="Delete instructor?"
+        message="This removes the instructor profile. Their user account will remain and can be reassigned."
+        confirmLabel="Delete"
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
 
       {/* Header */}
       <motion.div variants={itemVariants} className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -717,7 +734,7 @@ export default function AdminInstructorsPage() {
                     instructor={instructor}
                     onToggleActive={handleToggleActive}
                     onEdit={(ins) => { setEditingInstructor(ins); setModalOpen(true); }}
-                    onDelete={handleDelete}
+                    onDelete={setConfirmDeleteId}
                     onDetails={setDetailsInstructor}
                   />
                 ))

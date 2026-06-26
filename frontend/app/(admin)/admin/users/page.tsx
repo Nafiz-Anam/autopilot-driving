@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, Users, Trash2, ChevronLeft, ChevronRight, Plus, Pencil, X } from "lucide-react";
+import { Search, Users, Trash2, ChevronLeft, ChevronRight, Plus, Pencil, X, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
+import ConfirmModal from "@/components/admin/ConfirmModal";
 
 interface UserRecord {
   id: string;
@@ -58,6 +59,7 @@ function UserModal({
   const [form, setForm] = useState<UserFormData>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -138,8 +140,15 @@ function UserModal({
           {!editUser && (
             <div>
               <label className="block text-xs font-semibold text-brand-muted mb-1">Password *</label>
-              <input required type="password" value={form.password} onChange={(e) => set("password", e.target.value)}
-                className="w-full px-3 py-2 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red" />
+              <div className="relative">
+                <input required type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => set("password", e.target.value)}
+                  className="w-full px-3 py-2 pr-10 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red" />
+                <button type="button" onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-black transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}>
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           )}
           <div className="flex gap-3 pt-2">
@@ -177,6 +186,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [roleDropdownId, setRoleDropdownId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
 
@@ -208,13 +218,12 @@ export default function AdminUsersPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
     setDeletingId(id);
     try {
       const res = await adminApiFetch(`/users/${id}`, { method: "DELETE" });
       if (res.ok) { setUsers((prev) => prev.filter((u) => u.id !== id)); setTotal((t) => t - 1); }
     } catch { /* ignore */ }
-    finally { setDeletingId(null); }
+    finally { setDeletingId(null); setConfirmDeleteId(null); }
   }
 
   function handleSaved(user: UserRecord, isNew: boolean) {
@@ -238,6 +247,14 @@ export default function AdminUsersPage() {
         editUser={editingUser}
         onClose={() => { setModalOpen(false); setEditingUser(null); }}
         onSaved={handleSaved}
+      />
+      <ConfirmModal
+        open={!!confirmDeleteId}
+        title="Delete user?"
+        message="This permanently deletes the user account and cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
       />
 
       {/* Header */}
@@ -355,7 +372,7 @@ export default function AdminUsersPage() {
                           className="p-1.5 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors" title="Edit user">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDelete(user.id); }} disabled={deletingId === user.id}
+                        <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(user.id); }} disabled={deletingId === user.id}
                           className="p-1.5 rounded-lg text-brand-muted hover:text-brand-red hover:bg-red-50 transition-colors disabled:opacity-50" title="Delete user">
                           <Trash2 className="w-4 h-4" />
                         </button>

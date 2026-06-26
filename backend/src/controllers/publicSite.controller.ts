@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
 import publicSiteService from '../services/publicSite.service';
+import pricingService from '../services/pricing.service';
 
 const handlePublicSiteError = (res: Response, error: unknown) => {
   if (error instanceof publicSiteService.PublicSiteError) {
@@ -108,6 +109,15 @@ const getPricingCategories = catchAsync(async (_req: Request, res: Response) => 
   }
 });
 
+const getTestCentres = catchAsync(async (_req: Request, res: Response) => {
+  try {
+    const data = await pricingService.getTestCentres();
+    return res.send({ success: true, data });
+  } catch (error) {
+    return handlePublicSiteError(res, error);
+  }
+});
+
 export default {
   getAreas,
   getInstructors,
@@ -117,4 +127,5 @@ export default {
   getTheoryQuestions,
   getGoogleReviews,
   getPricingCategories,
+  getTestCentres,
 };
