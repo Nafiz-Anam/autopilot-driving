@@ -1782,8 +1782,8 @@ const updateInstructorScheduleById = async (
 
   for (const slot of slots) {
     await prisma.$executeRawUnsafe(
-      `INSERT INTO "Availability" (id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable", "createdAt", "updatedAt")
-       VALUES (gen_random_uuid(), $1, $2, $3::time, $4::time, $5, NOW(), NOW())`,
+      `INSERT INTO "Availability" (id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable")
+       VALUES (gen_random_uuid(), $1, $2, $3::time, $4::time, $5)`,
       instructorId, slot.dayOfWeek, slot.startTime, slot.endTime, slot.isAvailable
     );
   }
