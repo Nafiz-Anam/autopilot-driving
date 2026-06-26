@@ -310,6 +310,17 @@ enum NotificationType {
   SECURITY_ALERT
   SYSTEM_UPDATE
   WELCOME
+  BOOKING_CANCELLED
+  BOOKING_RESCHEDULED
+  RESCHEDULE_REQUESTED
+  RESCHEDULE_RESPONDED
+}
+
+enum RescheduleStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
 }
 
 enum DeviceType {
@@ -349,6 +360,7 @@ enum DrivingBookingStatus {
   CONFIRMED
   COMPLETED
   CANCELLED
+  NO_SHOW
 
   @@map("BookingStatus")
 }
@@ -358,6 +370,7 @@ enum DrivingPaymentStatus {
   PAID
   FAILED
   REFUNDED
+  PARTIAL_REFUND
 
   @@map("PaymentStatus")
 }
@@ -808,4 +821,21 @@ model Setting {
   updatedAt DateTime @updatedAt @map("updatedAt")
 
   @@map("Setting")
+}
+
+model RescheduleRequest {
+  id                 String            @id
+  bookingId          String
+  requestedByUserId  String
+  requestedByRole    String
+  proposedDateTime   DateTime
+  reason             String?
+  notes              String?
+  status             RescheduleStatus  @default(PENDING)
+  respondedAt        DateTime?
+  respondedByUserId  String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@map("RescheduleRequest")
 }
