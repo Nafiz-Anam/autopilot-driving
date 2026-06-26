@@ -536,9 +536,6 @@ export default function AdminBookingsPage() {
             </div>
           )}
         </motion.div>
-        <p className="text-xs text-brand-muted mt-3 text-center">
-          Click <strong>Payment</strong> or <strong>Status</strong> badges for quick updates · Use <strong>Cancel</strong> or <strong>Reschedule</strong> for proper flows
-        </p>
       </motion.div>
 
       <AnimatePresence>
