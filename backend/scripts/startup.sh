@@ -4,22 +4,17 @@ set -e
 echo "[startup] Generating Prisma client..."
 pnpm prisma generate
 
-# If _prisma_migrations table doesn't exist, this is a first-time deploy on an
-# existing DB (previously managed with db push or raw SQL). Baseline all
-# migrations so migrate deploy doesn't re-apply already-applied DDL.
-STATUS=$(pnpm prisma migrate status 2>&1 || true)
-
-if echo "$STATUS" | grep -q "_prisma_migrations.*does not exist\|No migration found in prisma/migrations\|P3005"; then
-  echo "[startup] No migration history found — baselining all existing migrations..."
-  for dir in prisma/migrations/*/; do
-    name=$(basename "$dir")
-    if [ -f "${dir}migration.sql" ]; then
-      echo "[startup]   Marking $name as applied"
-      pnpm prisma migrate resolve --applied "$name"
-    fi
-  done
-  echo "[startup] Baseline complete."
-fi
+# Baseline any migration not yet recorded in _prisma_migrations.
+# migrate resolve --applied is idempotent-safe: it only fails if the migration
+# is already marked (P3008), which we suppress. This handles first-time deploys
+# on DBs previously managed with db push or raw SQL.
+echo "[startup] Baselining migrations (skips any already applied)..."
+for dir in prisma/migrations/*/; do
+  name=$(basename "$dir")
+  if [ -f "${dir}migration.sql" ]; then
+    pnpm prisma migrate resolve --applied "$name" 2>&1 | grep -v "P3008\|already recorded" || true
+  fi
+done
 
 echo "[startup] Applying any pending migrations..."
 pnpm prisma migrate deploy
