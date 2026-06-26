@@ -287,8 +287,8 @@ export default function AdminPricingPage() {
                 </button>
               </div>
 
-              <div className="w-full">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-full">
                   <thead className="bg-brand-surface/80 border-b border-brand-border">
                     <tr>
                       <th className="text-left px-4 py-2 font-semibold">Name</th>
