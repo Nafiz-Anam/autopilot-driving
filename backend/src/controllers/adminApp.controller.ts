@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import catchAsync from '../utils/catchAsync';
 import adminAppService from '../services/adminApp.service';
+import emailService from '../services/email.service';
 import { geocodePostcode } from '../utils/geocodePostcode';
 
 /** Express 5 `req.params.id` can be `string | string[]`. */
@@ -47,24 +48,84 @@ const getBookingById = catchAsync(async (req: Request, res: Response) => {
 });
 
 const patchBookingById = catchAsync(async (req: Request, res: Response) => {
-  const body = req.body as { status?: string; paymentStatus?: string; notes?: string | null };
-  const payload: { status?: string; paymentStatus?: string; notes?: string | null } = {};
+  const body = req.body as { status?: string; paymentStatus?: string; notes?: string | null; scheduledAt?: string };
+  const payload: { status?: string; paymentStatus?: string; notes?: string | null; scheduledAt?: string } = {};
 
   if (body.status && adminAppService.VALID_BOOKING_STATUSES.includes(body.status as any)) {
     payload.status = body.status;
   }
-  if (
-    body.paymentStatus &&
-    adminAppService.VALID_PAYMENT_STATUSES.includes(body.paymentStatus as any)
-  ) {
+  if (body.paymentStatus && adminAppService.VALID_PAYMENT_STATUSES.includes(body.paymentStatus as any)) {
     payload.paymentStatus = body.paymentStatus;
   }
   if (body.notes !== undefined) payload.notes = body.notes;
+  if (body.scheduledAt) payload.scheduledAt = body.scheduledAt;
 
   const data = await adminAppService.patchBookingById(pid(req), payload);
   if (!data) {
     return res.status(httpStatus.NOT_FOUND).send({ error: 'Booking not found' });
   }
+
+  // Fire emails based on what changed — fire-and-forget so they never block the response
+  const b = data;
+  const studentName = b.student.name ?? 'Student';
+  const instructorName = b.instructor.user.name ?? 'Instructor';
+
+  if (payload.scheduledAt) {
+    // Admin direct reschedule — notify both parties
+    const newDate = new Date(payload.scheduledAt);
+    emailService.sendRescheduleAcceptedEmail({
+      to: b.student.email,
+      recipientName: studentName,
+      reference: b.reference,
+      newDate,
+      instructorName,
+      durationMins: b.durationMins,
+    }).catch(() => {});
+    emailService.sendRescheduleAcceptedEmail({
+      to: b.instructor.user.email,
+      recipientName: instructorName,
+      reference: b.reference,
+      newDate,
+      instructorName,
+      durationMins: b.durationMins,
+    }).catch(() => {});
+  }
+
+  if (payload.status === 'CONFIRMED') {
+    emailService.sendBookingConfirmationEmail({
+      to: b.student.email,
+      studentName,
+      reference: b.reference,
+      lessonType: b.lessonType,
+      instructorName,
+      scheduledAt: b.scheduledAt,
+      durationMins: b.durationMins,
+      totalAmount: b.totalAmount,
+      icsContent: '',
+    }).catch(() => {});
+  }
+
+  if (payload.status === 'CANCELLED') {
+    const refunded = b.paymentStatus === 'REFUNDED';
+    emailService.sendBookingCancellationEmail({
+      to: b.student.email,
+      studentName,
+      reference: b.reference,
+      lessonType: b.lessonType,
+      scheduledAt: b.scheduledAt,
+      refunded,
+      refundAmount: refunded ? b.totalAmount : undefined,
+    }).catch(() => {});
+    emailService.sendInstructorBookingCancellationEmail({
+      to: b.instructor.user.email,
+      instructorName,
+      studentName,
+      reference: b.reference,
+      scheduledAt: b.scheduledAt,
+      reason: 'Cancelled by admin',
+    }).catch(() => {});
+  }
+
   return res.status(httpStatus.OK).send({ data });
 });
 
