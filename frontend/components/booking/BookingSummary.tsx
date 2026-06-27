@@ -123,7 +123,7 @@ export function BookingSummary() {
                 Date
               </span>
               <span className="font-medium text-brand-black text-right">
-                {format(selectedDate, "EEE d MMM")}
+                {(() => { try { return format(new Date(selectedDate), "EEE d MMM"); } catch { return ""; } })()}
               </span>
             </div>
           )}
