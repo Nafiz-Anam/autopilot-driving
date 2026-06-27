@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 import { CalendarSubscribeCard } from "@/components/shared/CalendarSubscribeCard";
-import { GoogleCalendarConnect } from "@/components/shared/GoogleCalendarConnect";
+import { GoogleCalendarSubscribeCard } from "@/components/shared/GoogleCalendarSubscribeCard";
 
 interface ProfileForm {
   name: string;
@@ -296,7 +296,7 @@ export default function InstructorProfilePage() {
 
         {/* Calendar integrations */}
         <motion.div variants={itemVariants} className="lg:col-span-1 space-y-4">
-          <GoogleCalendarConnect />
+          <GoogleCalendarSubscribeCard role="instructor" />
           <CalendarSubscribeCard role="instructor" />
         </motion.div>
 
