@@ -670,6 +670,7 @@ model InstructorApplication {
   hasFullLicence  Boolean  @default(false) @map("hasFullLicence")
   yearsExperience String?  @map("yearsExperience")
   trainingStarted Boolean  @default(false) @map("trainingStarted")
+  applicantType   String   @default("already_instructor") @map("applicantType")
   message         String?
   status          String   @default("pending")
   createdAt       DateTime @default(now()) @map("createdAt")
