@@ -61,7 +61,9 @@ function deriveAvailability(id: string): AvailStatus {
 
 /* ── Main component ─────────────────────────────────────────── */
 export function Step2Instructor() {
-  const { selectedInstructor, setInstructor, nextStep, prevStep, transmission } = useBookingStore();
+  const { selectedInstructor, setInstructor, nextStep, prevStep, lessonType } = useBookingStore();
+  const transmissionFilter =
+    lessonType === "MANUAL" ? "manual" : lessonType === "AUTOMATIC" ? "automatic" : null;
   const [postcode, setPostcode] = useState("");
   const [instructors, setInstructors] = useState<InstructorPublic[]>([]);
   const [loading, setLoading] = useState(false);
@@ -89,10 +91,10 @@ export function Step2Instructor() {
   }, []);
 
   const filteredInstructors = instructors.filter((inst) => {
-    // Filter by transmission type chosen in step 1
-    if (transmission) {
+    // Filter by transmission derived from lesson type chosen in step 1
+    if (transmissionFilter) {
       const hasTransmission = inst.transmission.some(
-        (t) => t.toLowerCase() === transmission.toLowerCase()
+        (t) => t.toLowerCase() === transmissionFilter
       );
       if (!hasTransmission) return false;
     }
@@ -114,8 +116,8 @@ export function Step2Instructor() {
           Choose your instructor
         </h2>
         <p className="text-brand-muted mt-1 text-sm">
-          {transmission
-            ? `Showing ${transmission} instructors only. Search by name or area/postcode to narrow further.`
+          {transmissionFilter
+            ? `Showing ${transmissionFilter} instructors only. Search by name or area/postcode to narrow further.`
             : "All instructors are shown below. Use search to quickly filter by name or area/postcode."}
         </p>
       </div>
