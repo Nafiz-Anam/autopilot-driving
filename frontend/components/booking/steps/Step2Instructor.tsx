@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-import { Star, Check, MapPin, Clock, Search } from "lucide-react";
+import { Check, MapPin, Clock, Search } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import type { InstructorPublic } from "@/types";
 import { backendApiUrl } from "@/lib/backend-api";
@@ -64,6 +64,7 @@ export function Step2Instructor() {
   const { selectedInstructor, setInstructor, nextStep, prevStep, lessonType } = useBookingStore();
   const transmissionFilter =
     lessonType === "MANUAL" ? "manual" : lessonType === "AUTOMATIC" ? "automatic" : null;
+  const [femaleOnly, setFemaleOnly] = useState(false);
   const [postcode, setPostcode] = useState("");
   const [instructors, setInstructors] = useState<InstructorPublic[]>([]);
   const [loading, setLoading] = useState(false);
@@ -91,14 +92,10 @@ export function Step2Instructor() {
   }, []);
 
   const filteredInstructors = instructors.filter((inst) => {
-    // Filter by transmission derived from lesson type chosen in step 1
     if (transmissionFilter) {
-      const hasTransmission = inst.transmission.some(
-        (t) => t.toLowerCase() === transmissionFilter
-      );
-      if (!hasTransmission) return false;
+      if (!inst.transmission.some((t) => t.toLowerCase() === transmissionFilter)) return false;
     }
-    // Filter by name/area search
+    if (femaleOnly && !inst.isFemale) return false;
     const q = postcode.trim().toLowerCase();
     if (!q) return true;
     const name = (inst.user.name ?? "").toLowerCase();
@@ -123,7 +120,7 @@ export function Step2Instructor() {
       </div>
 
       {/* Filter bar */}
-      <div className="mb-8">
+      <div className="mb-8 flex gap-3 items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-muted pointer-events-none" />
           <input
@@ -135,6 +132,18 @@ export function Step2Instructor() {
             maxLength={32}
           />
         </div>
+        <button
+          type="button"
+          onClick={() => setFemaleOnly((v) => !v)}
+          className={cn(
+            "shrink-0 px-4 py-3 rounded-xl border text-sm font-semibold transition-colors duration-150 whitespace-nowrap",
+            femaleOnly
+              ? "bg-brand-red border-brand-red text-white"
+              : "border-brand-border text-brand-muted hover:border-brand-red hover:text-brand-red bg-white"
+          )}
+        >
+          Female instructor
+        </button>
       </div>
 
       {error && (
@@ -232,13 +241,6 @@ export function Step2Instructor() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-bold text-brand-black text-sm truncate">{inst.user.name}</h3>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                      <span className="text-xs text-brand-muted">
-                        {inst.rating.toFixed(1)}{" "}
-                        <span className="text-brand-border">·</span> {inst.reviewCount} reviews
-                      </span>
-                    </div>
                   </div>
                 </div>
 
