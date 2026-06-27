@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAppAuth, useAppSession } from "@/components/providers/AppAuthProvider";
+import { useAppSession } from "@/components/providers/AppAuthProvider";
+import { setAppJwt } from "@/lib/app-auth-token";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, Eye, EyeOff, UserCheck, LogIn, Mail } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Mail, UserCheck, LogIn } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import { studentDetailsSchema, type StudentDetailsInput } from "@/lib/validations/booking.schema";
 import { backendApiUrl } from "@/lib/backend-api";
@@ -48,7 +49,6 @@ const inputClass =
 
 /* ── Sign-in tab form ──────────────────────────────────────── */
 function SignInForm({ onSuccess }: { onSuccess: () => void }) {
-  const { login } = useAppAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -59,12 +59,25 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await login(email, password);
-    setLoading(false);
-    if (!res.ok) {
-      setError(res.error ?? "Invalid email or password. Please try again.");
-    } else {
+    try {
+      const res = await fetch(backendApiUrl("/auth/app-login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "omit",
+      });
+      const json = await res.json().catch(() => ({})) as { data?: { token?: string }; error?: { message?: string }; message?: string };
+      const token = json?.data?.token;
+      if (!res.ok || !token) {
+        setError(json?.error?.message ?? json?.message ?? "Invalid email or password.");
+        return;
+      }
+      setAppJwt(token);
       onSuccess();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -121,7 +134,6 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 /* ── Main component ─────────────────────────────────────────── */
 export function Step5StudentDetails() {
   const { data: session } = useAppSession();
-  const { login } = useAppAuth();
   const { setStudentDetails, nextStep, prevStep } = useBookingStore();
   const [tab, setTab] = useState<"new" | "existing">("new");
   const [showPw, setShowPw] = useState(false);
@@ -201,29 +213,44 @@ export function Step5StudentDetails() {
     setOtpVerifying(true);
     setOtpError("");
     try {
-      const res = await fetch(backendApiUrl("/auth/verify-email-otp"), {
+      const verifyRes = await fetch(backendApiUrl("/auth/verify-email-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: otpState.token, otp: otpCode.trim() }),
         credentials: "omit",
       });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({})) as { message?: string; error?: { message?: string } };
+      if (!verifyRes.ok) {
+        const json = await verifyRes.json().catch(() => ({})) as { message?: string; error?: { message?: string } };
         setOtpError(json?.error?.message ?? json?.message ?? "Invalid or expired code. Please try again.");
         return;
       }
     } catch {
       setOtpError("Network error. Please try again.");
       return;
+    }
+
+    // OTP verified — get JWT directly without triggering auth context (avoids re-render cascade)
+    try {
+      const loginRes = await fetch(backendApiUrl("/auth/app-login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpState.email, password: otpState.password }),
+        credentials: "omit",
+      });
+      const loginJson = await loginRes.json().catch(() => ({})) as { data?: { token?: string }; error?: { message?: string }; message?: string };
+      const token = loginJson?.data?.token;
+      if (!loginRes.ok || !token) {
+        setOtpError(loginJson?.error?.message ?? loginJson?.message ?? "Login failed. Please try signing in.");
+        return;
+      }
+      setAppJwt(token);
+    } catch {
+      setOtpError("Login failed after verification. Please try signing in.");
+      return;
     } finally {
       setOtpVerifying(false);
     }
-    // OTP verified — now login and proceed
-    const loginResult = await login(otpState.email, otpState.password);
-    if (!loginResult.ok) {
-      setOtpError(loginResult.error ?? "Login failed. Please try signing in.");
-      return;
-    }
+
     setStudentDetails({
       firstName: otpState.details.firstName,
       lastName: otpState.details.lastName,
@@ -267,10 +294,23 @@ export function Step5StudentDetails() {
       setSubmitError("Network error — please check your connection and try again.");
       return;
     }
-    // Fallback: no token (e.g. email already registered) — try login directly
-    const loginResult = await login(data.email, data.password);
-    if (!loginResult.ok) {
-      setSubmitError(loginResult.error ?? "Login failed after registration. Please try signing in.");
+    // Fallback: no token (email already registered) — get JWT directly
+    try {
+      const loginRes = await fetch(backendApiUrl("/auth/app-login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.email, password: data.password }),
+        credentials: "omit",
+      });
+      const loginJson = await loginRes.json().catch(() => ({})) as { data?: { token?: string }; error?: { message?: string }; message?: string };
+      const token = loginJson?.data?.token;
+      if (!loginRes.ok || !token) {
+        setSubmitError(loginJson?.error?.message ?? loginJson?.message ?? "Login failed. Please try signing in.");
+        return;
+      }
+      setAppJwt(token);
+    } catch {
+      setSubmitError("Login failed. Please try again.");
       return;
     }
     setStudentDetails({
