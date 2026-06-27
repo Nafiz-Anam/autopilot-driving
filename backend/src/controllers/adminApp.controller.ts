@@ -4,6 +4,7 @@ import catchAsync from '../utils/catchAsync';
 import adminAppService from '../services/adminApp.service';
 import emailService from '../services/email.service';
 import { geocodePostcode } from '../utils/geocodePostcode';
+import rescheduleService from '../services/reschedule.service';
 
 /** Express 5 `req.params.id` can be `string | string[]`. */
 const pid = (req: Request) => {
@@ -127,6 +128,30 @@ const patchBookingById = catchAsync(async (req: Request, res: Response) => {
   }
 
   return res.status(httpStatus.OK).send({ data });
+});
+
+const respondToBookingReschedule = catchAsync(async (req: Request, res: Response) => {
+  const bookingId = pid(req);
+  const { requestId, accept } = req.body as { requestId?: string; accept?: boolean };
+  if (!requestId || accept === undefined) {
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'requestId and accept are required' });
+  }
+  const userId = req.drivingUser?.id;
+  if (!userId) return res.status(httpStatus.UNAUTHORIZED).send({ error: 'Unauthorised' });
+
+  const result = await rescheduleService.respondToRequest({
+    requestId,
+    respondedByUserId: userId,
+    respondedByRole: 'ADMIN',
+    accept: Boolean(accept),
+  });
+
+  if ('error' in result) {
+    const codes: Record<string, number> = { NOT_FOUND: 404, FORBIDDEN: 403, BAD_STATE: 400 };
+    return res.status(codes[result.error] ?? 400).send({ error: result.error });
+  }
+  void bookingId; // bookingId available for logging if needed
+  return res.status(httpStatus.OK).send({ success: true, data: result.data });
 });
 
 const getUsers = catchAsync(async (req: Request, res: Response) => {
@@ -616,6 +641,7 @@ export default {
   patchBookings,
   getBookingById,
   patchBookingById,
+  respondToBookingReschedule,
   getUsers,
   patchUsers,
   postUsers,

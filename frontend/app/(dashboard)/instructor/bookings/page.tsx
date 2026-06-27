@@ -34,6 +34,7 @@ const STATUS_TABS = [
   { value: "", label: "All" },
   { value: "PENDING", label: "Pending" },
   { value: "CONFIRMED", label: "Confirmed" },
+  { value: "RESCHEDULE", label: "Reschedule Requests" },
   { value: "COMPLETED", label: "Completed" },
   { value: "CANCELLED", label: "Cancelled" },
 ];
@@ -309,13 +310,22 @@ export default function InstructorBookingsPage() {
         </motion.div>
 
         <motion.div variants={itemVariants} className="flex gap-1 flex-wrap mb-6">
-          {STATUS_TABS.map((tab) => (
-            <button key={tab.value} onClick={() => { setStatusFilter(tab.value); setPage(1); }}
-              className={cn("px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
-                statusFilter === tab.value ? "bg-brand-black text-white" : "text-brand-muted hover:text-brand-black")}>
-              {tab.label}
-            </button>
-          ))}
+          {STATUS_TABS.map((tab) => {
+            const rescheduleCount = tab.value === "RESCHEDULE" ? bookings.filter(b => !!b.pendingReschedule).length : 0;
+            return (
+              <button key={tab.value} onClick={() => { setStatusFilter(tab.value); setPage(1); }}
+                className={cn("flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
+                  statusFilter === tab.value ? "bg-brand-black text-white" : "text-brand-muted hover:text-brand-black")}>
+                {tab.label}
+                {tab.value === "RESCHEDULE" && rescheduleCount > 0 && (
+                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                    statusFilter === tab.value ? "bg-white text-brand-black" : "bg-amber-100 text-amber-700")}>
+                    {rescheduleCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </motion.div>
 
         <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
@@ -356,15 +366,15 @@ export default function InstructorBookingsPage() {
                       <p className="text-brand-muted text-sm">No bookings found</p>
                     </td>
                   </tr>
-                ) : bookings.map((booking) => {
+                ) : (statusFilter === "RESCHEDULE" ? bookings.filter(b => !!b.pendingReschedule) : bookings).map((booking) => {
                   const sc = STATUS_CONFIG[booking.status] ?? { label: booking.status, classes: "bg-gray-100 text-brand-muted border border-gray-200" };
                   const pc = PAYMENT_CONFIG[booking.paymentStatus] ?? "bg-gray-100 text-brand-muted border border-gray-200";
                   const typeLabel = LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType;
                   const isActive = ["PENDING", "CONFIRMED"].includes(booking.status);
                   const busy = updatingId === booking.id;
                   const pr = booking.pendingReschedule;
-                  // Reschedule requested by the student is "action required" for the instructor
                   const actionRequired = pr && pr.requestedByRole === "STUDENT";
+                  const awaitingResponse = pr && pr.requestedByRole === "INSTRUCTOR";
 
                   return (
                     <tr key={booking.id} className={cn("hover:bg-brand-surface/50 transition-colors", busy && "opacity-60")}>
@@ -374,6 +384,11 @@ export default function InstructorBookingsPage() {
                           {actionRequired && (
                             <span className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-full">
                               <CalendarClock className="w-2.5 h-2.5" />Action required
+                            </span>
+                          )}
+                          {awaitingResponse && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
+                              <CalendarClock className="w-2.5 h-2.5" />Reschedule pending
                             </span>
                           )}
                         </div>
@@ -418,7 +433,7 @@ export default function InstructorBookingsPage() {
                               </button>
                             </div>
                           )}
-                          {isActive && !actionRequired && (
+                          {isActive && !actionRequired && !awaitingResponse && (
                             <>
                               <button onClick={() => setRescheduleBooking(booking)}
                                 className="text-xs px-2.5 py-1 border border-brand-border text-brand-muted rounded-lg font-medium hover:bg-brand-surface hover:text-brand-black transition-colors">

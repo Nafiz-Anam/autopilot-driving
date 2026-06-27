@@ -35,6 +35,7 @@ const STATUS_TABS = [
   { value: "", label: "All" },
   { value: "PENDING", label: "Pending" },
   { value: "CONFIRMED", label: "Confirmed" },
+  { value: "RESCHEDULE", label: "Reschedule Requests" },
   { value: "COMPLETED", label: "Completed" },
   { value: "CANCELLED", label: "Cancelled" },
   { value: "NO_SHOW", label: "No Show" },
@@ -423,7 +424,7 @@ export default function AdminBookingsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page) });
-      if (statusFilter) params.set("status", statusFilter);
+      if (statusFilter && statusFilter !== "RESCHEDULE") params.set("status", statusFilter);
       const res = await adminApiFetch(`/bookings?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -459,22 +460,17 @@ export default function AdminBookingsPage() {
   async function respondToReschedule(bookingId: string, requestId: string, accept: boolean) {
     setUpdatingId(bookingId);
     try {
-      const res = await adminApiFetch(`/bookings/${bookingId}`, {
+      const res = await adminApiFetch(`/bookings/${bookingId}/reschedule`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: accept ? undefined : "PENDING" }),
-      });
-      // For admin, just cancel the pending reschedule request directly
-      await adminApiFetch(`/bookings/${bookingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(accept
-          ? { scheduledAt: bookings.find(b => b.id === bookingId)?.pendingReschedule?.proposedDateTime }
-          : {}),
+        body: JSON.stringify({ requestId, accept }),
       });
       if (res.ok) {
         toast.success(accept ? "Reschedule accepted" : "Reschedule declined");
         fetchBookings();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Failed to respond");
       }
     } catch { toast.error("Failed to respond"); }
     finally { setUpdatingId(null); }
@@ -491,13 +487,22 @@ export default function AdminBookingsPage() {
         </motion.div>
 
         <motion.div variants={itemVariants} className="flex gap-1 flex-wrap mb-6">
-          {STATUS_TABS.map((tab) => (
-            <button key={tab.value} onClick={() => { setStatusFilter(tab.value); setPage(1); }}
-              className={cn("px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
-                statusFilter === tab.value ? "bg-brand-black text-white" : "text-brand-muted hover:text-brand-black")}>
-              {tab.label}
-            </button>
-          ))}
+          {STATUS_TABS.map((tab) => {
+            const rescheduleCount = tab.value === "RESCHEDULE" ? bookings.filter(b => !!b.pendingReschedule).length : 0;
+            return (
+              <button key={tab.value} onClick={() => { setStatusFilter(tab.value); setPage(1); }}
+                className={cn("flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
+                  statusFilter === tab.value ? "bg-brand-black text-white" : "text-brand-muted hover:text-brand-black")}>
+                {tab.label}
+                {tab.value === "RESCHEDULE" && rescheduleCount > 0 && (
+                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                    statusFilter === tab.value ? "bg-white text-brand-black" : "bg-amber-100 text-amber-700")}>
+                    {rescheduleCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </motion.div>
 
         <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
@@ -532,7 +537,7 @@ export default function AdminBookingsPage() {
                       <p className="text-brand-muted text-sm">No bookings found</p>
                     </td>
                   </tr>
-                ) : bookings.map((booking) => {
+                ) : (statusFilter === "RESCHEDULE" ? bookings.filter(b => !!b.pendingReschedule) : bookings).map((booking) => {
                   const busy = updatingId === booking.id;
                   const isActive = ["PENDING", "CONFIRMED"].includes(booking.status);
                   const pr = booking.pendingReschedule;

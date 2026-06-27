@@ -152,17 +152,20 @@ export function Step3Package() {
 
                 <div className="flex items-baseline gap-2 mb-1">
                   <span className="text-4xl font-extrabold text-brand-black">£{pkg.price}</span>
-                  {pkg.lessons > 1 && (
+                  {pkg.lessons > 1 && pkg.pricePerLesson != null && (
                     <span className="text-sm text-brand-muted">£{pkg.pricePerLesson}/lesson</span>
                   )}
                 </div>
 
                 <div className="flex items-center gap-3 mb-2">
-                  {pkg.pricePerHour != null && (
-                    <span className="text-xs font-semibold text-brand-muted bg-brand-surface border border-brand-border px-2 py-0.5 rounded-full">
-                      £{pkg.pricePerHour}/hr
-                    </span>
-                  )}
+                  {(() => {
+                    const ratePerHour = pkg.pricePerHour ?? (pkg.hours ? Math.round(pkg.price / pkg.hours) : null);
+                    return ratePerHour != null ? (
+                      <span className="text-xs font-semibold text-brand-muted bg-brand-surface border border-brand-border px-2 py-0.5 rounded-full">
+                        £{ratePerHour}/hr
+                      </span>
+                    ) : null;
+                  })()}
                   {pkg.savings > 0 ? (
                     <p className="text-sm font-bold text-brand-orange">Save £{pkg.savings}</p>
                   ) : (

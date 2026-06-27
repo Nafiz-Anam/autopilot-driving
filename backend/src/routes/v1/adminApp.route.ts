@@ -13,6 +13,7 @@ router.get('/bookings', adminAppController.getBookings);
 router.patch('/bookings', adminAppController.patchBookings);
 router.get('/bookings/:id', adminAppController.getBookingById);
 router.patch('/bookings/:id', adminAppController.patchBookingById);
+router.patch('/bookings/:id/reschedule', adminAppController.respondToBookingReschedule);
 
 router.get('/users', adminAppController.getUsers);
 router.post('/users', adminAppController.postUsers);
