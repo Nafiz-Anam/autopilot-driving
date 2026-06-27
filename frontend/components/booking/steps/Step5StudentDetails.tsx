@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppAuth, useAppSession } from "@/components/providers/AppAuthProvider";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, Eye, EyeOff, UserCheck, LogIn } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, UserCheck, LogIn, Mail } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import { studentDetailsSchema, type StudentDetailsInput } from "@/lib/validations/booking.schema";
 import { backendApiUrl } from "@/lib/backend-api";
@@ -127,6 +127,11 @@ export function Step5StudentDetails() {
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  // OTP verification state
+  const [otpState, setOtpState] = useState<{ token: string; email: string; password: string; details: StudentDetailsInput } | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpVerifying, setOtpVerifying] = useState(false);
 
   const {
     register,
@@ -190,6 +195,46 @@ export function Step5StudentDetails() {
     );
   }
 
+  /* ── OTP verification ── */
+  async function verifyOtp() {
+    if (!otpState || !otpCode.trim()) return;
+    setOtpVerifying(true);
+    setOtpError("");
+    try {
+      const res = await fetch(backendApiUrl("/auth/verify-email-otp"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: otpState.token, otp: otpCode.trim() }),
+        credentials: "omit",
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({})) as { message?: string; error?: { message?: string } };
+        setOtpError(json?.error?.message ?? json?.message ?? "Invalid or expired code. Please try again.");
+        return;
+      }
+    } catch {
+      setOtpError("Network error. Please try again.");
+      return;
+    } finally {
+      setOtpVerifying(false);
+    }
+    // OTP verified — now login and proceed
+    const loginResult = await login(otpState.email, otpState.password);
+    if (!loginResult.ok) {
+      setOtpError(loginResult.error ?? "Login failed. Please try signing in.");
+      return;
+    }
+    setStudentDetails({
+      firstName: otpState.details.firstName,
+      lastName: otpState.details.lastName,
+      email: otpState.details.email,
+      phone: otpState.details.phone,
+      dateOfBirth: otpState.details.dateOfBirth,
+      provisionalLicence: otpState.details.provisionalLicence,
+    });
+    nextStep();
+  }
+
   /* ── Guest flow ── */
   async function onSubmit(data: StudentDetailsInput) {
     setSubmitError("");
@@ -204,18 +249,25 @@ export function Step5StudentDetails() {
         }),
         credentials: "omit",
       });
+      const json = await registerRes.json().catch(() => ({})) as { success?: boolean; data?: { verificationToken?: string }; error?: { message?: string }; message?: string };
       if (!registerRes.ok) {
-        const json = await registerRes.json().catch(() => ({})) as { error?: { message?: string }; message?: string };
-        const msg = json?.error?.message ?? json?.message ?? "";
+        const msg = json?.error?.message ?? (json as { message?: string })?.message ?? "";
         if (!msg.toLowerCase().includes("already")) {
           setSubmitError(msg || "Could not create account. Please try again.");
           return;
         }
       }
+      // Show OTP verification screen
+      const verificationToken = json?.data?.verificationToken;
+      if (verificationToken) {
+        setOtpState({ token: verificationToken, email: data.email, password: data.password, details: data });
+        return;
+      }
     } catch {
       setSubmitError("Network error — please check your connection and try again.");
       return;
     }
+    // Fallback: no token (e.g. email already registered) — try login directly
     const loginResult = await login(data.email, data.password);
     if (!loginResult.ok) {
       setSubmitError(loginResult.error ?? "Login failed after registration. Please try signing in.");
@@ -230,6 +282,50 @@ export function Step5StudentDetails() {
       provisionalLicence: data.provisionalLicence,
     });
     nextStep();
+  }
+
+  /* ── OTP screen ── */
+  if (otpState) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h2 className="text-2xl font-extrabold text-brand-black" style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}>
+            Verify your email
+          </h2>
+          <p className="text-brand-muted mt-1 text-sm">
+            We sent a 6-digit code to <span className="font-semibold text-brand-black">{otpState.email}</span>. Enter it below to continue.
+          </p>
+        </div>
+        <div className="max-w-sm">
+          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+            <Mail className="w-5 h-5 text-blue-600 shrink-0" />
+            <p className="text-sm text-blue-700">Check your inbox — the code expires in 5 minutes.</p>
+          </div>
+          <label className="block text-sm font-medium text-brand-black mb-2">Verification code</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={otpCode}
+            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+            placeholder="000000"
+            className="w-full px-4 py-3 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-center text-2xl font-bold tracking-widest mb-2"
+          />
+          {otpError && <p className="text-xs text-red-500 mb-4">{otpError}</p>}
+          <button
+            type="button"
+            disabled={otpCode.length !== 6 || otpVerifying}
+            onClick={verifyOtp}
+            className="w-full py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange active:scale-95 transition-all duration-200 disabled:opacity-50 mt-2"
+          >
+            {otpVerifying ? "Verifying…" : "Verify & Continue"}
+          </button>
+          <button type="button" onClick={() => setOtpState(null)} className="w-full mt-3 text-sm text-brand-muted hover:text-brand-red transition-colors">
+            ← Back to details
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
