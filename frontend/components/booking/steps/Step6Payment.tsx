@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import {
   Elements,
   PaymentElement,
-  ExpressCheckoutElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
@@ -33,7 +32,6 @@ function PaymentForm({
   const paymentIntentIdFromStore = useBookingStore((s) => s.paymentIntentId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [hasWallets, setHasWallets] = useState(false);
 
   async function confirmPayment() {
     if (!stripe || !elements) return false;
@@ -78,31 +76,8 @@ function PaymentForm({
     else setLoading(false);
   }
 
-  async function handleExpressConfirm() {
-    setLoading(true);
-    const ok = await confirmPayment();
-    if (ok) onSuccess();
-    else setLoading(false);
-  }
-
   return (
     <form onSubmit={handleSubmit}>
-      <ExpressCheckoutElement
-        onConfirm={handleExpressConfirm}
-        onReady={({ availablePaymentMethods }) =>
-          setHasWallets(availablePaymentMethods != null)
-        }
-        options={{ buttonHeight: 52 }}
-      />
-
-      {hasWallets && (
-        <div className="flex items-center gap-3 my-4">
-          <div className="h-px flex-1 bg-brand-border" />
-          <span className="text-xs text-brand-muted">or pay by card</span>
-          <div className="h-px flex-1 bg-brand-border" />
-        </div>
-      )}
-
       <div className="mb-5">
         <PaymentElement options={{ layout: "tabs" }} />
       </div>
