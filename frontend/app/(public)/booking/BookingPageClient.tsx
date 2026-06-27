@@ -1,8 +1,24 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Component, type ReactNode } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
+
+class StepErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(e: Error) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="p-6 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
+          <strong>Payment step error (debug):</strong> {(this.state.error as Error).message}
+          <pre className="mt-2 text-xs overflow-auto whitespace-pre-wrap">{(this.state.error as Error).stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 import { AnimatePresence, motion } from "framer-motion";
@@ -100,7 +116,9 @@ export default function BookingPageClient() {
               exit={{ opacity: 0, x: -60 }}
               transition={{ duration: 0.3 }}
             >
-              <StepContent step={currentStep} />
+              <StepErrorBoundary>
+                <StepContent step={currentStep} />
+              </StepErrorBoundary>
             </motion.div>
           </AnimatePresence>
         </div>
