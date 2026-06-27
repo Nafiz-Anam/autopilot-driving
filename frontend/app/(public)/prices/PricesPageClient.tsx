@@ -422,14 +422,16 @@ function IntensiveSection({ packages }: { packages: PublicPricingPackage[] }) {
                 </span>
               </div>
               <p className="text-white/50 text-sm">{pkg.footerNote ?? ""}</p>
-              <Link
-                href="/booking?lessonType=INTENSIVE"
-                className="mt-4 block text-center py-2.5 border border-white/20 text-white text-sm font-semibold rounded-xl hover:border-brand-red hover:bg-brand-red/10 transition-colors duration-200"
-              >
-                Book Package
-              </Link>
             </motion.div>
           ))}
+        </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/booking?lessonType=INTENSIVE"
+            className="inline-flex items-center gap-2 px-8 py-3 bg-brand-red text-white rounded-full font-bold hover:bg-brand-orange transition-colors duration-200"
+          >
+            Book Now
+          </Link>
         </div>
       </div>
     </section>
