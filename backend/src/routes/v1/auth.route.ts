@@ -364,6 +364,13 @@ router.post(
 );
 
 /**
+ * @route POST /v1/auth/app-refresh
+ * @desc Refresh driving-school app access token using a refresh token
+ * @access Public
+ */
+router.post('/app-refresh', drivingAuthController.appRefresh);
+
+/**
  * @route GET /v1/auth/app-session
  * @desc Current driving-school user from Bearer token
  * @access Private (bridge JWT)

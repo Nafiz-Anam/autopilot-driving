@@ -28,7 +28,17 @@ const appSession = catchAsync(async (req: Request, res: Response) => {
   );
 });
 
+const appRefresh = catchAsync(async (req: Request, res: Response) => {
+  const { refreshToken } = req.body as { refreshToken?: string };
+  if (!refreshToken) {
+    return res.status(400).json({ success: false, error: 'refreshToken required' });
+  }
+  const result = await drivingAuthService.refreshAccessToken(refreshToken);
+  return sendSuccess(res, result, 'Token refreshed', httpStatus.OK, req.requestId);
+});
+
 export default {
   appLogin,
   appSession,
+  appRefresh,
 };

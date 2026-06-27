@@ -10,7 +10,14 @@ import {
   type ReactNode,
 } from "react";
 import { backendApiUrl } from "@/lib/backend-api";
-import { clearAppJwt, getAppJwt, isAppJwtExpired, setAppJwt } from "@/lib/app-auth-token";
+import {
+  clearAppJwt,
+  clearAppRefreshToken,
+  getAppJwt,
+  isAppJwtExpired,
+  setAppJwt,
+  setAppRefreshToken,
+} from "@/lib/app-auth-token";
 
 export type AppUser = {
   id: string;
@@ -115,11 +122,12 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
       });
       const json = (await res.json().catch(() => ({}))) as {
         success?: boolean;
-        data?: { token?: string };
+        data?: { token?: string; refreshToken?: string };
         message?: string;
         error?: { message?: string };
       };
       const token = json?.data?.token;
+      const refreshToken = json?.data?.refreshToken;
       if (!res.ok || !token) {
         const msg =
           json?.error?.message ??
@@ -133,6 +141,7 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
         };
       }
       setAppJwt(token);
+      if (refreshToken) setAppRefreshToken(refreshToken);
       await loadSession();
       return { ok: true as const };
     },
@@ -141,6 +150,7 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearAppJwt();
+    clearAppRefreshToken();
     setData(null);
     setStatus("unauthenticated");
   }, []);

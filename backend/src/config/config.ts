@@ -27,6 +27,8 @@ const envVarsSchema = z.object({
   REDIS_DB: z.string().transform(Number).pipe(z.number().default(0)),
   /** Shared with Next.js — short-lived JWT for app User ids until full API JWT auth. */
   NEXTAUTH_BRIDGE_SECRET: z.string().optional(),
+  /** Separate secret for refresh tokens — falls back to NEXTAUTH_BRIDGE_SECRET + '_refresh'. */
+  NEXTAUTH_BRIDGE_REFRESH_SECRET: z.string().optional(),
   GOOGLE_PLACES_API_KEY: z.string().optional(),
   GOOGLE_PLACE_ID: z.string().optional(),
   GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
@@ -77,6 +79,9 @@ const config = {
   clientUrl: envVars.CLIENT_URL,
   nextAuthBridge: {
     secret: (envVars.NEXTAUTH_BRIDGE_SECRET && envVars.NEXTAUTH_BRIDGE_SECRET.trim()) || envVars.JWT_SECRET,
+    refreshSecret:
+      (envVars.NEXTAUTH_BRIDGE_REFRESH_SECRET && envVars.NEXTAUTH_BRIDGE_REFRESH_SECRET.trim()) ||
+      ((envVars.NEXTAUTH_BRIDGE_SECRET && envVars.NEXTAUTH_BRIDGE_SECRET.trim()) || envVars.JWT_SECRET) + '_refresh',
   },
   google: {
     placesApiKey: envVars.GOOGLE_PLACES_API_KEY,

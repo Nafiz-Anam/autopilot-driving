@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppSession } from "@/components/providers/AppAuthProvider";
-import { setAppJwt } from "@/lib/app-auth-token";
+import { setAppJwt, setAppRefreshToken } from "@/lib/app-auth-token";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Eye, EyeOff, Mail, UserCheck, LogIn } from "lucide-react";
@@ -66,13 +66,15 @@ function SignInForm({ onSuccess }: { onSuccess: () => void }) {
         body: JSON.stringify({ email, password }),
         credentials: "omit",
       });
-      const json = await res.json().catch(() => ({})) as { data?: { token?: string }; error?: { message?: string }; message?: string };
+      const json = await res.json().catch(() => ({})) as { data?: { token?: string; refreshToken?: string }; error?: { message?: string }; message?: string };
       const token = json?.data?.token;
+      const refreshToken = json?.data?.refreshToken;
       if (!res.ok || !token) {
         setError(json?.error?.message ?? json?.message ?? "Invalid email or password.");
         return;
       }
       setAppJwt(token);
+      if (refreshToken) setAppRefreshToken(refreshToken);
       onSuccess();
     } catch {
       setError("Network error. Please try again.");
@@ -237,13 +239,15 @@ export function Step5StudentDetails() {
         body: JSON.stringify({ email: otpState.email, password: otpState.password }),
         credentials: "omit",
       });
-      const loginJson = await loginRes.json().catch(() => ({})) as { data?: { token?: string }; error?: { message?: string }; message?: string };
+      const loginJson = await loginRes.json().catch(() => ({})) as { data?: { token?: string; refreshToken?: string }; error?: { message?: string }; message?: string };
       const token = loginJson?.data?.token;
+      const refreshToken = loginJson?.data?.refreshToken;
       if (!loginRes.ok || !token) {
         setOtpError(loginJson?.error?.message ?? loginJson?.message ?? "Login failed. Please try signing in.");
         return;
       }
       setAppJwt(token);
+      if (refreshToken) setAppRefreshToken(refreshToken);
     } catch {
       setOtpError("Login failed after verification. Please try signing in.");
       return;
@@ -302,13 +306,15 @@ export function Step5StudentDetails() {
         body: JSON.stringify({ email: data.email, password: data.password }),
         credentials: "omit",
       });
-      const loginJson = await loginRes.json().catch(() => ({})) as { data?: { token?: string }; error?: { message?: string }; message?: string };
+      const loginJson = await loginRes.json().catch(() => ({})) as { data?: { token?: string; refreshToken?: string }; error?: { message?: string }; message?: string };
       const token = loginJson?.data?.token;
+      const refreshToken = loginJson?.data?.refreshToken;
       if (!loginRes.ok || !token) {
         setSubmitError(loginJson?.error?.message ?? loginJson?.message ?? "Login failed. Please try signing in.");
         return;
       }
       setAppJwt(token);
+      if (refreshToken) setAppRefreshToken(refreshToken);
     } catch {
       setSubmitError("Login failed. Please try again.");
       return;
