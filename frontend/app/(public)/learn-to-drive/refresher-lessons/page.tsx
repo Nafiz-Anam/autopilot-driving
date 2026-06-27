@@ -96,7 +96,7 @@ const articleSections = [
     title: "How much are refresher lessons?",
     body: [],
     livePrice: true,
-    cta: { text: "Get a quote online", href: "/booking" },
+    cta: { text: "Get a quote online", href: "/booking?lessonType=REFRESHER" },
   },
 ];
 

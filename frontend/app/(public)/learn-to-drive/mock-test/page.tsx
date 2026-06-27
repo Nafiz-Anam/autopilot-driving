@@ -97,7 +97,7 @@ const articleSections = [
       "If your instructor is using a feedback sheet, they'll be noting down every slight miscalculation and mistake — giving you a clear list of what to work on before your actual test.",
       "You'll leave the mock with a focused plan: what's already solid, what to drill, and whether you're ready to book.",
     ],
-    cta: { text: "Book a mock test", href: "/booking" },
+    cta: { text: "Book a mock test", href: "/booking?lessonType=MOCK_TEST" },
   },
 ];
 
