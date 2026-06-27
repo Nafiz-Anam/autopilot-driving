@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, AlertTriangle, X, Loader2 } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle, X, Loader2, User, Lock, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
@@ -26,6 +26,14 @@ interface SidebarStats {
   hoursTotal: number;
   theoryScore: number;
 }
+
+type Tab = "details" | "password" | "calendar";
+
+const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: "details", label: "Personal Details", icon: User },
+  { id: "password", label: "Change Password", icon: Lock },
+  { id: "calendar", label: "Calendar", icon: Calendar },
+];
 
 function FormField({
   label,
@@ -191,6 +199,7 @@ function DeleteDialog({ onClose }: { onClose: () => void }) {
 }
 
 export default function StudentProfilePage() {
+  const [activeTab, setActiveTab] = useState<Tab>("details");
   const [profileLoading, setProfileLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
@@ -201,7 +210,6 @@ export default function StudentProfilePage() {
 
   const [profile, setProfile] = useState<ProfileForm>({ name: "", email: "", phone: "" });
   const [stats, setStats] = useState<SidebarStats>({ lessonsCompleted: 0, hoursTotal: 0, theoryScore: 0 });
-
   const [passwords, setPasswords] = useState<PasswordForm>({ current: "", next: "", confirm: "" });
 
   useEffect(() => {
@@ -232,7 +240,6 @@ export default function StudentProfilePage() {
         setProfileLoading(false);
       }
     }
-
     loadProfileAndStats();
   }, []);
 
@@ -298,12 +305,6 @@ export default function StudentProfilePage() {
   const passwordMatch = passwords.next && passwords.confirm && passwords.next === passwords.confirm;
   const passwordMismatch = passwords.next && passwords.confirm && passwords.next !== passwords.confirm;
 
-  const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.08 } } };
-  const itemVariants = {
-    hidden: { opacity: 0, y: 14 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.35 } },
-  };
-
   if (profileLoading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -313,26 +314,28 @@ export default function StudentProfilePage() {
   }
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible">
-      <motion.div variants={itemVariants} className="mb-8">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <div className="mb-8">
         <h1 className="text-3xl font-extrabold text-brand-black">My Profile</h1>
         <p className="text-brand-muted mt-1 text-sm">Manage your personal details and preferences.</p>
-      </motion.div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Avatar card */}
-        <motion.div variants={itemVariants} className="lg:col-span-1">
+        {/* Avatar card — always visible */}
+        <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-6 flex flex-col items-center text-center">
             <div className="w-24 h-24 rounded-full bg-linear-to-br from-brand-red to-brand-orange flex items-center justify-center text-white text-3xl font-extrabold shadow-lg mb-4">
               {initials}
             </div>
-
             <p className="font-bold text-brand-black text-lg leading-tight">{profile.name || "Your Name"}</p>
             <p className="text-xs text-brand-muted mt-0.5">{profile.email}</p>
             <span className="mt-2 text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-red-50 text-brand-red">
               STUDENT
             </span>
-
             <div className="mt-6 w-full border-t border-brand-border pt-4 space-y-2 text-left">
               <div className="flex justify-between text-xs">
                 <span className="text-brand-muted">Lessons completed</span>
@@ -348,156 +351,208 @@ export default function StudentProfilePage() {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Calendar integrations */}
-        <motion.div variants={itemVariants} className="lg:col-span-1 space-y-4">
-          <GoogleCalendarConnect />
-          <CalendarSubscribeCard role="student" />
-        </motion.div>
-
-        {/* Forms */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* Personal details */}
-          <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm p-6">
-            <h3 className="font-bold text-brand-black mb-5">Personal Details</h3>
-            <form onSubmit={handleProfileSave} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  label="Full Name"
-                  name="name"
-                  value={profile.name}
-                  onChange={handleProfileChange}
-                  placeholder="Jane Smith"
-                />
-                <FormField
-                  label="Email Address"
-                  name="email"
-                  value={profile.email}
-                  readOnly
-                />
-                <FormField
-                  label="Phone Number"
-                  name="phone"
-                  value={profile.phone}
-                  onChange={handleProfileChange}
-                  type="tel"
-                  placeholder="07700 900000"
-                />
-              </div>
-
-              <div className="flex items-center gap-4 pt-1">
+        {/* Tabbed content */}
+        <div className="lg:col-span-2">
+          {/* Tab bar */}
+          <div className="flex gap-1 bg-brand-surface border border-brand-border rounded-2xl p-1 mb-5">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const active = activeTab === tab.id;
+              return (
                 <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm disabled:opacity-60"
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all duration-200",
+                    active
+                      ? "bg-white text-brand-black shadow-sm border border-brand-border"
+                      : "text-brand-muted hover:text-brand-black"
+                  )}
                 >
-                  {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Save Changes
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
-                <AnimatePresence>
-                  {saved && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="text-sm text-green-600 font-medium"
-                    >
-                      ✓ Saved successfully
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
-            </form>
-          </motion.div>
+              );
+            })}
+          </div>
 
-          {/* Password change */}
-          <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm p-6">
-            <h3 className="font-bold text-brand-black mb-5">Change Password</h3>
-            <form onSubmit={handlePasswordSave} className="space-y-4">
-              <PasswordInput
-                label="Current Password"
-                name="current"
-                value={passwords.current}
-                onChange={handlePasswordChange}
-                placeholder="Enter current password"
-              />
-              <PasswordInput
-                label="New Password"
-                name="next"
-                value={passwords.next}
-                onChange={handlePasswordChange}
-                placeholder="At least 8 characters"
-              />
-              <div>
-                <PasswordInput
-                  label="Confirm New Password"
-                  name="confirm"
-                  value={passwords.confirm}
-                  onChange={handlePasswordChange}
-                  placeholder="Repeat new password"
-                />
-                <AnimatePresence>
-                  {passwordMismatch && (
-                    <motion.p
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="text-xs text-brand-red mt-1"
-                    >
-                      Passwords do not match
-                    </motion.p>
-                  )}
-                  {passwordError && (
-                    <motion.p
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="text-xs text-brand-red mt-1"
-                    >
-                      {passwordError}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </div>
-              <div className="flex items-center gap-4 pt-1">
-                <button
-                  type="submit"
-                  disabled={!passwordMatch || !passwords.current || savingPassword}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {savingPassword && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Update Password
-                </button>
-                <AnimatePresence>
-                  {passwordSaved && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="text-sm text-green-600 font-medium"
-                    >
-                      ✓ Password updated
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
-            </form>
-          </motion.div>
+          {/* Tab panels */}
+          <AnimatePresence mode="wait">
+            {activeTab === "details" && (
+              <motion.div
+                key="details"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-5"
+              >
+                <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-6">
+                  <h3 className="font-bold text-brand-black mb-5">Personal Details</h3>
+                  <form onSubmit={handleProfileSave} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                        label="Full Name"
+                        name="name"
+                        value={profile.name}
+                        onChange={handleProfileChange}
+                        placeholder="Jane Smith"
+                      />
+                      <FormField
+                        label="Email Address"
+                        name="email"
+                        value={profile.email}
+                        readOnly
+                      />
+                      <FormField
+                        label="Phone Number"
+                        name="phone"
+                        value={profile.phone}
+                        onChange={handleProfileChange}
+                        type="tel"
+                        placeholder="07700 900000"
+                      />
+                    </div>
+                    <div className="flex items-center gap-4 pt-1">
+                      <button
+                        type="submit"
+                        disabled={saving}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm disabled:opacity-60"
+                      >
+                        {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        Save Changes
+                      </button>
+                      <AnimatePresence>
+                        {saved && (
+                          <motion.span
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="text-sm text-green-600 font-medium"
+                          >
+                            ✓ Saved successfully
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </form>
+                </div>
 
-          {/* Danger zone */}
-          <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-red-200 shadow-sm p-6">
-            <h3 className="font-bold text-brand-red mb-1">Danger Zone</h3>
-            <p className="text-xs text-brand-muted mb-4">
-              Irreversible actions that permanently affect your account.
-            </p>
-            <button
-              onClick={() => setDeleteOpen(true)}
-              className="px-5 py-2.5 text-sm font-semibold text-brand-red border-2 border-brand-red rounded-xl hover:bg-brand-red hover:text-white transition-all duration-200"
-            >
-              Delete My Account
-            </button>
-          </motion.div>
+                {/* Danger zone */}
+                <div className="bg-white rounded-2xl border border-red-200 shadow-sm p-6">
+                  <h3 className="font-bold text-brand-red mb-1">Danger Zone</h3>
+                  <p className="text-xs text-brand-muted mb-4">
+                    Irreversible actions that permanently affect your account.
+                  </p>
+                  <button
+                    onClick={() => setDeleteOpen(true)}
+                    className="px-5 py-2.5 text-sm font-semibold text-brand-red border-2 border-brand-red rounded-xl hover:bg-brand-red hover:text-white transition-all duration-200"
+                  >
+                    Delete My Account
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "password" && (
+              <motion.div
+                key="password"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-6">
+                  <h3 className="font-bold text-brand-black mb-5">Change Password</h3>
+                  <form onSubmit={handlePasswordSave} className="space-y-4">
+                    <PasswordInput
+                      label="Current Password"
+                      name="current"
+                      value={passwords.current}
+                      onChange={handlePasswordChange}
+                      placeholder="Enter current password"
+                    />
+                    <PasswordInput
+                      label="New Password"
+                      name="next"
+                      value={passwords.next}
+                      onChange={handlePasswordChange}
+                      placeholder="At least 8 characters"
+                    />
+                    <div>
+                      <PasswordInput
+                        label="Confirm New Password"
+                        name="confirm"
+                        value={passwords.confirm}
+                        onChange={handlePasswordChange}
+                        placeholder="Repeat new password"
+                      />
+                      <AnimatePresence>
+                        {passwordMismatch && (
+                          <motion.p
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="text-xs text-brand-red mt-1"
+                          >
+                            Passwords do not match
+                          </motion.p>
+                        )}
+                        {passwordError && (
+                          <motion.p
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="text-xs text-brand-red mt-1"
+                          >
+                            {passwordError}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <div className="flex items-center gap-4 pt-1">
+                      <button
+                        type="submit"
+                        disabled={!passwordMatch || !passwords.current || savingPassword}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-brand-red text-white rounded-xl font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {savingPassword && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        Update Password
+                      </button>
+                      <AnimatePresence>
+                        {passwordSaved && (
+                          <motion.span
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="text-sm text-green-600 font-medium"
+                          >
+                            ✓ Password updated
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "calendar" && (
+              <motion.div
+                key="calendar"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-4"
+              >
+                <GoogleCalendarConnect />
+                <CalendarSubscribeCard role="student" />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
