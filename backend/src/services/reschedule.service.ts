@@ -23,6 +23,17 @@ const createRequest = async (params: {
   if (!booking) return { error: 'NOT_FOUND' as const };
   if (!['PENDING', 'CONFIRMED'].includes(booking.status)) return { error: 'BAD_STATE' as const };
 
+  // Verify instructor owns this booking
+  if (params.requestedByRole === 'INSTRUCTOR') {
+    const instRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+      params.requestedByUserId
+    );
+    if (!instRows[0] || booking.instructorId !== instRows[0].id) {
+      return { error: 'FORBIDDEN' as const };
+    }
+  }
+
   // Cancel any existing PENDING reschedule requests for this booking
   try {
     await prisma.$executeRawUnsafe(
@@ -140,6 +151,21 @@ const respondToRequest = async (params: {
     (req.requestedByRole === 'INSTRUCTOR' && params.respondedByRole === 'STUDENT') ||
     params.respondedByRole === 'ADMIN';
   if (!isAuthorised) return { error: 'FORBIDDEN' as const };
+
+  // Verify instructor actually owns the booking (prevents cross-instructor access)
+  if (params.respondedByRole === 'INSTRUCTOR') {
+    const instRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+      params.respondedByUserId
+    );
+    const bookingRows = await prisma.$queryRawUnsafe<Array<{ instructorId: string }>>(
+      `SELECT "instructorId" FROM "Booking" WHERE id = $1 LIMIT 1`,
+      req.bookingId
+    );
+    if (!instRows[0] || bookingRows[0]?.instructorId !== instRows[0].id) {
+      return { error: 'FORBIDDEN' as const };
+    }
+  }
 
   const newStatus = params.accept ? 'ACCEPTED' : 'DECLINED';
 

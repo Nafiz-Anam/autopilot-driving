@@ -551,8 +551,12 @@ const getUserById = async (id: string) => {
 };
 
 const deleteUserById = async (id: string) => {
-  await prisma.$executeRawUnsafe(`DELETE FROM users WHERE id = $1`, id);
-  return true;
+  try {
+    await prisma.$executeRawUnsafe(`DELETE FROM users WHERE id = $1`, id);
+    return true;
+  } catch (err) {
+    throw new Error(`Failed to delete user: ${err instanceof Error ? err.message : String(err)}`);
+  }
 };
 
 const listApplications = async (params: { status?: string; page?: number }) => {
@@ -758,8 +762,12 @@ const updateAreaById = async (
 };
 
 const deleteAreaById = async (id: string) => {
-  await prisma.$executeRawUnsafe(`DELETE FROM "Area" WHERE id = $1`, id);
-  return true;
+  try {
+    await prisma.$executeRawUnsafe(`DELETE FROM "Area" WHERE id = $1`, id);
+    return true;
+  } catch (err) {
+    throw new Error(`Failed to delete area: ${err instanceof Error ? err.message : String(err)}`);
+  }
 };
 
 const listContacts = async (params: { page?: number }) => {
@@ -795,8 +803,12 @@ const listContacts = async (params: { page?: number }) => {
 };
 
 const deleteContactById = async (id: string) => {
-  await prisma.$executeRawUnsafe(`DELETE FROM "ContactSubmission" WHERE id = $1`, id);
-  return true;
+  try {
+    await prisma.$executeRawUnsafe(`DELETE FROM "ContactSubmission" WHERE id = $1`, id);
+    return true;
+  } catch (err) {
+    throw new Error(`Failed to delete contact: ${err instanceof Error ? err.message : String(err)}`);
+  }
 };
 
 const listCoupons = async () => {
@@ -1748,8 +1760,12 @@ const createInstructor = async (payload: {
 };
 
 const deleteInstructorById = async (id: string) => {
-  await prisma.$executeRawUnsafe(`DELETE FROM "Instructor" WHERE id = $1`, id);
-  return true;
+  try {
+    await prisma.$executeRawUnsafe(`DELETE FROM "Instructor" WHERE id = $1`, id);
+    return true;
+  } catch (err) {
+    throw new Error(`Failed to delete instructor: ${err instanceof Error ? err.message : String(err)}`);
+  }
 };
 
 const getInstructorScheduleById = async (instructorId: string) => {
