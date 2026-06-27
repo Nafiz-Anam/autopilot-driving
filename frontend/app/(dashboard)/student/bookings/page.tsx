@@ -36,12 +36,13 @@ interface Booking {
 }
 
 const STATUS_TABS = [
-  { value: "ALL",       label: "All" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "PENDING",   label: "Pending" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "CANCELLED", label: "Cancelled" },
-  { value: "NO_SHOW",   label: "No Show" },
+  { value: "ALL",        label: "All" },
+  { value: "CONFIRMED",  label: "Confirmed" },
+  { value: "PENDING",    label: "Pending" },
+  { value: "RESCHEDULE", label: "Reschedule Requests" },
+  { value: "COMPLETED",  label: "Completed" },
+  { value: "CANCELLED",  label: "Cancelled" },
+  { value: "NO_SHOW",    label: "No Show" },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
@@ -301,7 +302,11 @@ export default function StudentBookingsPage() {
 
   const filtered = statusFilter === "ALL"
     ? bookings
+    : statusFilter === "RESCHEDULE"
+    ? bookings.filter((b) => !!b.pendingReschedule)
     : bookings.filter((b) => b.status === statusFilter);
+
+  const rescheduleCount = bookings.filter((b) => !!b.pendingReschedule).length;
 
   return (
     <>
@@ -316,9 +321,15 @@ export default function StudentBookingsPage() {
         <motion.div variants={itemVariants} className="flex gap-1 flex-wrap mb-6">
           {STATUS_TABS.map((tab) => (
             <button key={tab.value} onClick={() => setStatusFilter(tab.value)}
-              className={cn("px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
+              className={cn("flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
                 statusFilter === tab.value ? "bg-brand-black text-white" : "text-brand-muted hover:text-brand-black")}>
               {tab.label}
+              {tab.value === "RESCHEDULE" && rescheduleCount > 0 && (
+                <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                  statusFilter === tab.value ? "bg-white text-brand-black" : "bg-amber-100 text-amber-700")}>
+                  {rescheduleCount}
+                </span>
+              )}
             </button>
           ))}
         </motion.div>
@@ -371,6 +382,7 @@ export default function StudentBookingsPage() {
                   const busy = updatingId === booking.id;
                   const pr = booking.pendingReschedule;
                   const actionRequired = pr && pr.requestedByRole === "INSTRUCTOR";
+                  const awaitingResponse = pr && pr.requestedByRole === "STUDENT";
 
                   return (
                     <tr key={booking.id} className={cn("hover:bg-brand-surface/50 transition-colors", busy && "opacity-60")}>
@@ -382,7 +394,17 @@ export default function StudentBookingsPage() {
                               <CalendarClock className="w-2.5 h-2.5" />Action required
                             </span>
                           )}
+                          {awaitingResponse && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
+                              <CalendarClock className="w-2.5 h-2.5" />Reschedule pending
+                            </span>
+                          )}
                         </div>
+                        {awaitingResponse && pr && (
+                          <p className="text-[10px] text-blue-600 mt-0.5">
+                            Proposed: {formatDate(pr.proposedDateTime)} {formatTime(pr.proposedDateTime)}
+                          </p>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-brand-black hidden md:table-cell">
                         {booking.instructor.user.name ?? "—"}
@@ -425,7 +447,7 @@ export default function StudentBookingsPage() {
                               </button>
                             </div>
                           )}
-                          {isActive && !actionRequired && (
+                          {isActive && !actionRequired && !awaitingResponse && (
                             <>
                               <button
                                 onClick={() => {
