@@ -43,9 +43,13 @@ export default function BookingPageClient() {
 
     reset();
 
-    if (ltParam === "THEORY") {
-      setLessonType("THEORY");
-      setStep(3);
+    const VALID = ["MANUAL","AUTOMATIC","INTENSIVE","REFRESHER","PASS_PLUS","THEORY","MOTORWAY","MOCK_TEST"] as const;
+    type LT = typeof VALID[number];
+    if (ltParam && (VALID as readonly string[]).includes(ltParam)) {
+      const lt = ltParam as LT;
+      setLessonType(lt);
+      // THEORY skips instructor + date → step 3; all others skip only step 1 → step 2
+      setStep(lt === "THEORY" ? 3 : 2);
       router.replace("/booking", { scroll: false });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

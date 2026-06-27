@@ -181,7 +181,7 @@ export default function PassPlusPage() {
                 ))}
               </ul>
               <Link
-                href="/booking"
+                href="/booking?lessonType=PASS_PLUS"
                 className="mt-8 block text-center px-6 py-3 bg-brand-red text-white rounded-full font-bold hover:bg-brand-orange transition-colors duration-200"
               >
                 Book Pass Plus
@@ -201,7 +201,7 @@ export default function PassPlusPage() {
         </h2>
         <p className="text-brand-muted mb-8">Book your Pass Plus course today and take your driving to the next level.</p>
         <Link
-          href="/booking"
+          href="/booking?lessonType=PASS_PLUS"
           className="inline-block px-8 py-3 bg-brand-red text-white rounded-full font-bold hover:bg-brand-orange transition-colors duration-200"
         >
           Book Pass Plus —{" "}

@@ -140,7 +140,7 @@ export function PublicCategoryPricingCards({
       </div>
       <div className="text-center mt-8">
         <Link
-          href="/booking"
+          href={`/booking?lessonType=${lessonType}`}
           className="inline-flex items-center gap-2 px-8 py-3 bg-brand-red text-white rounded-full font-bold text-sm hover:bg-brand-orange transition-colors"
         >
           Book Now

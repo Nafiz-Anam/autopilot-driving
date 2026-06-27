@@ -244,7 +244,7 @@ function Quiz() {
               {recommendation!.reason}
             </p>
             <Link
-              href="/booking"
+              href={`/booking?lessonType=${recommendation!.type.toUpperCase()}`}
               className="block w-full text-center px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors duration-200"
             >
               Book {recommendation!.type} Lessons
@@ -404,7 +404,7 @@ export default function AutomaticManualPage() {
               instructor will adapt lessons to suit you.
             </p>
             <Link
-              href="/booking"
+              href="/booking?lessonType=AUTOMATIC"
               className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"
             >
               Find an instructor <ArrowRight className="w-4 h-4" />
@@ -575,7 +575,7 @@ export default function AutomaticManualPage() {
             Check availability and book your first automatic lesson with AutoPilot — no commitment needed.
           </p>
           <Link
-            href="/booking"
+            href="/booking?lessonType=AUTOMATIC"
             className="inline-flex items-center gap-2 bg-white text-brand-red px-8 py-3 rounded-full font-bold hover:bg-brand-surface transition-colors"
           >
             See Prices <ArrowRight className="w-4 h-4" />

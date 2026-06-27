@@ -201,7 +201,7 @@ export default function IntensiveCoursesPage() {
             ))}
 
             <Link
-              href="/booking"
+              href="/booking?lessonType=INTENSIVE"
               className="inline-flex items-center gap-2 mt-3 px-6 py-3 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors"
             >
               Find an instructor <ArrowRight className="w-4 h-4" />
@@ -341,7 +341,7 @@ export default function IntensiveCoursesPage() {
             Book your lessons today and begin building the skills you need to become a safe, confident driver.
           </p>
           <Link
-            href="/booking"
+            href="/booking?lessonType=INTENSIVE"
             className="inline-flex items-center gap-2 bg-white text-brand-red px-8 py-3 rounded-full font-bold hover:bg-brand-surface transition-colors"
           >
             See Prices <ArrowRight className="w-4 h-4" />
