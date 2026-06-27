@@ -345,10 +345,12 @@ function AlertBanner() {
 function LessonTypeSection({
   title,
   packages,
+  lessonType,
   bg = "white",
 }: {
   title: string;
   packages: PublicPricingPackage[];
+  lessonType: LessonType;
   bg?: "white" | "surface";
 }) {
   if (packages.length === 0) return null;
@@ -369,7 +371,7 @@ function LessonTypeSection({
         </div>
         <div className="mt-8 text-center">
           <Link
-            href="/booking"
+            href={`/booking?lessonType=${lessonType}`}
             className="inline-flex items-center gap-2 px-8 py-3 bg-brand-red text-white rounded-full font-bold hover:bg-brand-orange transition-colors duration-200"
           >
             Book Now
@@ -421,7 +423,7 @@ function IntensiveSection({ packages }: { packages: PublicPricingPackage[] }) {
               </div>
               <p className="text-white/50 text-sm">{pkg.footerNote ?? ""}</p>
               <Link
-                href="/booking"
+                href="/booking?lessonType=INTENSIVE"
                 className="mt-4 block text-center py-2.5 border border-white/20 text-white text-sm font-semibold rounded-xl hover:border-brand-red hover:bg-brand-red/10 transition-colors duration-200"
               >
                 Book Package
@@ -745,11 +747,13 @@ export default function PricesPageClient() {
           <LessonTypeSection
             title="Manual Driving Lessons"
             packages={manual}
+            lessonType="MANUAL"
             bg="white"
           />
           <LessonTypeSection
             title="Automatic Driving Lessons"
             packages={automatic}
+            lessonType="AUTOMATIC"
             bg="surface"
           />
           <IntensiveSection packages={intensive} />

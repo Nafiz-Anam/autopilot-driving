@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Car, Zap, Rocket, RefreshCw, Award, BookOpen, Check } from "lucide-react";
+import { Car, Zap, Rocket, RefreshCw, Award, BookOpen, Navigation, ClipboardCheck, Check } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import type { LessonType } from "@/types";
 import { cn } from "@/lib/utils";
@@ -48,6 +48,18 @@ const LESSON_TYPES: {
     label: "Theory Test Prep",
     description: "Guided practice to ace the theory test",
     icon: BookOpen,
+  },
+  {
+    id: "MOTORWAY",
+    label: "Motorway Lesson",
+    description: "Build confidence on high-speed roads",
+    icon: Navigation,
+  },
+  {
+    id: "MOCK_TEST",
+    label: "Mock Test",
+    description: "Full test simulation with feedback",
+    icon: ClipboardCheck,
   },
 ];
 
