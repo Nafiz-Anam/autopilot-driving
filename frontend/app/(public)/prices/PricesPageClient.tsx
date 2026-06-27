@@ -719,6 +719,11 @@ export default function PricesPageClient() {
   const manual = byLt("MANUAL");
   const automatic = byLt("AUTOMATIC");
   const intensive = [...byLt("INTENSIVE")].sort((a, b) => a.price - b.price);
+  const refresher = byLt("REFRESHER");
+  const passPlus = byLt("PASS_PLUS");
+  const theory = byLt("THEORY");
+  const motorway = byLt("MOTORWAY");
+  const mockTest = byLt("MOCK_TEST");
 
   const singleManual = pkgBySlug(cats, "MANUAL", "single");
 
@@ -757,6 +762,36 @@ export default function PricesPageClient() {
             bg="surface"
           />
           <IntensiveSection packages={intensive} />
+          <LessonTypeSection
+            title="Refresher Lessons"
+            packages={refresher}
+            lessonType="REFRESHER"
+            bg="white"
+          />
+          <LessonTypeSection
+            title="Pass Plus"
+            packages={passPlus}
+            lessonType="PASS_PLUS"
+            bg="surface"
+          />
+          <LessonTypeSection
+            title="Theory Training"
+            packages={theory}
+            lessonType="THEORY"
+            bg="white"
+          />
+          <LessonTypeSection
+            title="Motorway Lessons"
+            packages={motorway}
+            lessonType="MOTORWAY"
+            bg="surface"
+          />
+          <LessonTypeSection
+            title="Mock Test"
+            packages={mockTest}
+            lessonType="MOCK_TEST"
+            bg="white"
+          />
         </>
       )}
       <TestDayFeesSection centres={testCentres} />
