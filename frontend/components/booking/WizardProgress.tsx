@@ -47,7 +47,7 @@ export function WizardProgress({ currentStep, lessonType }: WizardProgressProps)
 
         {steps.map((step) => {
           const isActive = step.num === currentStep;
-          const isCompleted = step.num < currentStep && !THEORY_SKIP.has(step.num);
+          const isCompleted = step.num < currentStep;
 
           return (
             <div key={step.num} className="flex flex-col items-center gap-2 z-10 relative">
