@@ -21,7 +21,7 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section className="relative min-h-[calc(100vh-5rem)] flex flex-col overflow-hidden bg-white">
+    <section className="relative min-h-[calc(100dvh-4rem)] lg:min-h-[calc(100dvh-5rem)] flex flex-col overflow-hidden bg-white">
       {/* Dot-grid background */}
       <div
         className="absolute inset-0 pointer-events-none"

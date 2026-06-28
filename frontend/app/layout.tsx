@@ -1,7 +1,22 @@
 import type { Metadata } from "next";
+import { Barlow, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { AppAuthProvider } from "@/components/providers/AppAuthProvider";
+
+const barlow = Barlow({
+  weight: ["700", "800"],
+  subsets: ["latin"],
+  variable: "--font-barlow",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  weight: ["400", "500", "700"],
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -29,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="en" className={`${barlow.variable} ${dmSans.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         <AppAuthProvider>
           {children}
@@ -38,7 +53,7 @@ export default function RootLayout({
             toastOptions={{
               duration: 4000,
               style: {
-                fontFamily: "'Metropolis', 'DM Sans', sans-serif",
+                fontFamily: "var(--font-dm-sans), 'DM Sans', sans-serif",
                 borderRadius: "12px",
               },
               success: {

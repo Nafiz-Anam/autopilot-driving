@@ -4,38 +4,9 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Brand Font Faces */
-@font-face {
-  font-family: 'Moderniz';
-  src: url('/fonts/Moderniz.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Metropolis';
-  src: url('/fonts/Metropolis-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Metropolis';
-  src: url('/fonts/Metropolis-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Metropolis';
-  src: url('/fonts/Metropolis-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+/* Fonts loaded via next/font/google in app/layout.tsx:
+   --font-barlow  → Barlow 700/800 (headings, replaces Moderniz)
+   --font-dm-sans → DM Sans 400/500/700 (body, replaces Metropolis) */
 
 /* Brand CSS Variables */
 :root {
@@ -82,8 +53,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Metropolis', 'DM Sans', sans-serif;
-  --font-display: 'Moderniz', 'Barlow', 'Exo 2', sans-serif;
+  --font-sans: var(--font-dm-sans), 'DM Sans', sans-serif;
+  --font-display: var(--font-barlow), 'Barlow', sans-serif;
   --font-mono: ui-monospace, monospace;
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
@@ -133,15 +104,15 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Metropolis', 'DM Sans', sans-serif;
+    font-family: var(--font-sans);
   }
   h1, h2 {
-    font-family: 'Moderniz', 'Barlow', 'Exo 2', sans-serif;
+    font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: -0.02em;
   }
   h3, h4, h5, h6 {
-    font-family: 'Metropolis', 'DM Sans', sans-serif;
+    font-family: var(--font-sans);
     font-weight: 700;
   }
 }
