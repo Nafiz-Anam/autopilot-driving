@@ -59,12 +59,12 @@ export function Navbar() {
         )}
       >
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-20">
+          <div className="flex items-center justify-between h-16 min-[1400px]:h-20">
             {/* Logo */}
             <AutopilotLogo />
 
             {/* Desktop nav */}
-            <div className="hidden lg:flex items-center gap-8">
+            <div className="hidden min-[1400px]:flex items-center gap-8">
               {/* Learn to Drive dropdown */}
               <div
                 className="relative"
@@ -135,7 +135,7 @@ export function Navbar() {
             </div>
 
             {/* Desktop right actions */}
-            <div className="hidden lg:flex items-center gap-8">
+            <div className="hidden min-[1400px]:flex items-center gap-8">
               <a
                 href="tel:07450556963"
                 className="flex items-center gap-1.5 text-sm font-medium text-[#0D0D0D] hover:text-[#E8200A] transition-colors"
@@ -168,7 +168,7 @@ export function Navbar() {
 
             {/* Mobile hamburger */}
             <button
-              className="lg:hidden p-2 text-[#0D0D0D]"
+              className="min-[1400px]:hidden p-2 text-[#0D0D0D]"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
             >
@@ -267,7 +267,7 @@ export function Navbar() {
       </AnimatePresence>
 
       {/* Spacer for fixed navbar */}
-      <div className="h-16 lg:h-20" />
+      <div className="h-16 min-[1400px]:h-20" />
     </>
   );
 }
