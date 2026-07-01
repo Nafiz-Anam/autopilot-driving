@@ -222,12 +222,14 @@ function BlogFormModal({
   onSave,
   initial,
   saving,
+  editorKey,
 }: {
   open: boolean;
   onClose: () => void;
   onSave: (data: BlogFormData) => void;
   initial: BlogFormData | null;
   saving: boolean;
+  editorKey: string;
 }) {
   const [form, setForm] = useState<BlogFormData>(initial ?? emptyForm);
   const [slugEdited, setSlugEdited] = useState(false);
@@ -379,6 +381,7 @@ function BlogFormModal({
                       Content <span className="text-brand-red">*</span>
                     </label>
                     <BlogEditor
+                      key={editorKey}
                       value={form.contentJson}
                       htmlFallback={form.contentHtml}
                       onChange={(json, html) => {
@@ -685,6 +688,7 @@ export default function AdminBlogsPage() {
         onSave={handleSave}
         initial={editForm}
         saving={saving}
+        editorKey={editId ?? "new"}
       />
 
       {/* Header */}
@@ -845,16 +849,20 @@ export default function AdminBlogsPage() {
                   >
                     <Pencil className="w-3.5 h-3.5" /> Edit
                   </button>
-                  {blog.published && (
-                    <a
-                      href={`/blog/${blog.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-blue-100 text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> View
-                    </a>
-                  )}
+                  <a
+                    href={`/blog/${blog.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors",
+                      blog.published
+                        ? "border-blue-100 text-blue-600 bg-blue-50 hover:bg-blue-100"
+                        : "border-gray-200 text-gray-500 bg-gray-50 hover:bg-gray-100"
+                    )}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    {blog.published ? "View" : "Preview"}
+                  </a>
                   <button
                     onClick={() => setDeleteId(blog.id)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-100 text-brand-red bg-red-50 hover:bg-red-100 transition-colors"
