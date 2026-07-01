@@ -72,6 +72,7 @@ export function Footer() {
               {[
 { label: "Prices", href: "/prices" },
                 { label: "Areas We Cover", href: "/areas" },
+                { label: "Blog", href: "/blog" },
                 { label: "Become an Instructor", href: "/become-an-instructor" },
                 { label: "Contact", href: "/contact" },
                 { label: "Privacy Policy", href: "/privacy" },

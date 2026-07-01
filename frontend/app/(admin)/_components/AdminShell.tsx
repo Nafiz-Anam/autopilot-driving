@@ -17,6 +17,7 @@ import {
   CreditCard,
   Tag,
   PoundSterling,
+  Newspaper,
   ChevronRight,
   ChevronDown,
   Menu,
@@ -44,6 +45,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/areas", label: "Service Areas", icon: MapPin },
   { href: "/admin/applications", label: "Applications", icon: FileText },
   { href: "/admin/contact", label: "Contact", icon: MessageSquare },
+  { href: "/admin/blogs", label: "Blog Posts", icon: Newspaper },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -59,6 +61,7 @@ const pageTitles: Record<string, string> = {
   "/admin/areas": "Service Areas",
   "/admin/applications": "Applications",
   "/admin/contact": "Contact",
+  "/admin/blogs": "Blog Posts",
 };
 
 function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {

@@ -1,7 +1,46 @@
+import path from 'path';
+import fs from 'fs';
 import express from 'express';
+import multer from 'multer';
 import adminAppController from '../../controllers/adminApp.controller';
+import blogController from '../../controllers/blog.controller';
 import nextAuthBridge from '../../middlewares/nextAuthBridge';
 import { loadDrivingSchoolUser, requireDrivingRoles } from '../../middlewares/drivingSchoolUser';
+
+const blogImgDir = path.join(process.cwd(), 'uploads', 'blog');
+const blogCoverDir = path.join(process.cwd(), 'uploads', 'blog-covers');
+if (!fs.existsSync(blogImgDir)) fs.mkdirSync(blogImgDir, { recursive: true });
+if (!fs.existsSync(blogCoverDir)) fs.mkdirSync(blogCoverDir, { recursive: true });
+
+const blogImageUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, blogImgDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, `blog-img-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`);
+    },
+  }),
+  fileFilter: (_req, file, cb) => {
+    if (/^image\/(jpeg|png|webp|gif|svg\+xml)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid image type'));
+  },
+  limits: { fileSize: 8 * 1024 * 1024 },
+});
+
+const blogCoverUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, blogCoverDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, `cover-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`);
+    },
+  }),
+  fileFilter: (_req, file, cb) => {
+    if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid image type'));
+  },
+  limits: { fileSize: 8 * 1024 * 1024 },
+});
 
 const router = express.Router();
 
@@ -77,5 +116,14 @@ router.post('/theory', adminAppController.postTheory);
 router.get('/theory/:id', adminAppController.getTheoryById);
 router.put('/theory/:id', adminAppController.putTheoryById);
 router.delete('/theory/:id', adminAppController.deleteTheoryById);
+
+router.get('/blogs', blogController.adminListBlogs);
+router.post('/blogs', blogController.adminCreateBlog);
+router.post('/blogs/upload-image', blogImageUpload.single('file'), blogController.adminUploadImage);
+router.post('/blogs/upload-cover', blogCoverUpload.single('file'), blogController.adminUploadCoverImage);
+router.get('/blogs/:id', blogController.adminGetBlog);
+router.put('/blogs/:id', blogController.adminUpdateBlog);
+router.delete('/blogs/:id', blogController.adminDeleteBlog);
+router.patch('/blogs/:id/publish', blogController.adminTogglePublish);
 
 export default router;

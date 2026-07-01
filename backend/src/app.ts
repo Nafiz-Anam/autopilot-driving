@@ -1,3 +1,4 @@
+import path from 'path';
 import express from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -154,6 +155,9 @@ app.use('/v1/bookings', sensitiveOperationLimiter);
 // Student / instructor profile mutations
 app.use('/v1/student/profile', sensitiveOperationLimiter);
 app.use('/v1/instructor/profile', sensitiveOperationLimiter);
+
+// ── Static uploads ────────────────────────────────────────────────────────────
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/v1/instructor', instructorAppRoute);

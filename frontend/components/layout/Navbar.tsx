@@ -24,6 +24,7 @@ const learnLinks: { label: string; href: string; divider?: boolean }[] = [
 const navLinks = [
   { label: "Prices", href: "/prices" },
   { label: "Areas", href: "/areas" },
+  { label: "Blog", href: "/blog" },
   { label: "Become an Instructor", href: "/become-an-instructor" },
   { label: "Contact", href: "/contact" },
 ];
