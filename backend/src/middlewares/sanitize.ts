@@ -1,13 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import xss from 'xss-filters';
 
+// Fields containing trusted rich-text HTML (admin-only, RBAC-protected).
+// Excluding these prevents double-encoding of TipTap editor output.
+const HTML_PASSTHROUGH_KEYS = new Set(['contentHtml', 'contentJson', 'content_html', 'content_json']);
+
 // Sanitize string inputs to prevent XSS attacks
 const sanitizeString = (value: string): string => {
   return xss.inHTMLData(value.trim());
 };
 
-// Sanitize object recursively
-const sanitizeObject = (obj: any): any => {
+// Sanitize object recursively, skipping trusted HTML fields
+const sanitizeObject = (obj: any, key?: string): any => {
+  if (key && HTML_PASSTHROUGH_KEYS.has(key)) return obj;
+
   if (obj === null || obj === undefined) {
     return obj;
   }
@@ -17,14 +23,14 @@ const sanitizeObject = (obj: any): any => {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(sanitizeObject);
+    return obj.map(item => sanitizeObject(item));
   }
 
   if (typeof obj === 'object') {
     const sanitized: any = {};
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        sanitized[key] = sanitizeObject(obj[key]);
+    for (const k in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, k)) {
+        sanitized[k] = sanitizeObject(obj[k], k);
       }
     }
     return sanitized;
@@ -47,7 +53,7 @@ export const sanitizeInput = (req: Request, res: Response, next: NextFunction): 
 
   // Sanitize URL parameters
   if (req.params) {
-    req.params = sanitizeObject(req.params);
+    req.params = sanitizeObject(req.params) as typeof req.params;
   }
 
   next();
