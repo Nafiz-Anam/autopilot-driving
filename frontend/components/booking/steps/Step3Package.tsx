@@ -49,7 +49,7 @@ export function Step3Package() {
           setError("No packages configured for this lesson type. Please contact support.");
           return;
         }
-        const list = data.data.map(publicPackageToBookingPackage);
+        const list = data.data.map(publicPackageToBookingPackage).sort((a, b) => a.price - b.price);
         setPackages(list);
 
         const sel = useBookingStore.getState().selectedPackage;
