@@ -900,28 +900,44 @@ const sendInstructorApplicationReceivedEmail = async (params: {
 const sendInstructorApplicationApprovedEmail = async (params: {
   to: string;
   applicantName: string;
-  tempPassword?: string;
+  passwordResetUrl: string | null;
+  isExistingUser?: boolean;
 }) => {
   const subject = 'Congratulations — Your Application Has Been Approved!';
-  const credentialsHtml = params.tempPassword
-    ? `
-      <p>Your instructor account has been created. Use these credentials to log in:</p>
-      <table style="background:#F5F5F5;border-radius:8px;padding:12px 16px;margin:12px 0;width:100%;border-collapse:collapse;">
-        <tr><td style="padding:4px 0;font-size:13px;color:#6B7280;">Email</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#0D0D0D;">${escapeHtml(params.to)}</td></tr>
-        <tr><td style="padding:4px 0;font-size:13px;color:#6B7280;">Temp password</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#0D0D0D;">${escapeHtml(params.tempPassword)}</td></tr>
-      </table>
-      <p style="margin:12px 0;font-size:13px;color:#6B7280;">Please change your password after your first login.</p>
-    `
-    : `<p>A member of our team will be in touch shortly with your onboarding details and login credentials.</p>`;
+
+  // Existing user gets a set-password link too, but framed as optional (they
+  // may already remember their password). Fresh users see it as required
+  // since we created their account with an unusable placeholder password.
+  const setPasswordHtml = params.passwordResetUrl
+    ? params.isExistingUser
+      ? `
+        <p>Your account is now upgraded to instructor. Use your existing password to log in. If you've forgotten it, use the link below to set a new one.</p>
+        <p style="margin:12px 0;font-size:13px;color:#6B7280;">Password link expires in 7 days:</p>
+        <p style="margin:12px 0;font-size:13px;">
+          <a href="${escapeHtml(params.passwordResetUrl)}" style="color:#E00027;font-weight:600;">Set a new password</a>
+        </p>
+      `
+      : `
+        <p>Your instructor account has been created. To get started, set your password using the secure link below.</p>
+        <p style="margin:12px 0;font-size:13px;color:#6B7280;">This link expires in 7 days. If it expires, contact us and we'll issue a new one.</p>
+      `
+    : `<p>Your instructor account has been created. Please contact us to set up your password.</p>`;
+
+  const ctaLabel = params.isExistingUser ? 'Log In Now' : 'Set Your Password';
+  const clientBase = 'https://autopilotdrivingschool.co.uk';
+  const ctaUrl = params.isExistingUser
+    ? `${clientBase}/login`
+    : (params.passwordResetUrl ?? `${clientBase}/login`);
+
   const html = renderEmailLayout({
     title: 'Welcome to the Autopilot team!',
     intro: `Hi ${escapeHtml(params.applicantName)}, we're delighted to let you know your instructor application has been approved.`,
     bodyHtml: `
-      ${credentialsHtml}
+      ${setPasswordHtml}
       <p style="margin:12px 0;font-size:13px;color:#6B7280;">If you have any questions please reach out to us at info@autopilotdrivingschool.co.uk</p>
     `,
-    ctaLabel: 'Log In Now',
-    ctaUrl: 'https://autopilotdrivingschool.co.uk/auth/login',
+    ctaLabel,
+    ctaUrl,
     footnote: 'Welcome aboard — we look forward to working with you!',
   });
   await sendEmail(params.to, subject, subject, html);

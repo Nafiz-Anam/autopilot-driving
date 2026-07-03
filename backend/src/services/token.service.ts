@@ -150,15 +150,26 @@ const generateAuthTokens = async (
  * @param {string} email
  * @returns {Promise<string>}
  */
-const generateResetPasswordToken = async (email: string): Promise<string> => {
+const generateResetPasswordToken = async (email: string, expiresInMinutes?: number): Promise<string> => {
   const user = await userService.getUserByEmail(email);
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'No users found with this email');
   }
-  const expires = moment().add(config.jwt.resetPasswordExpirationMinutes, 'minutes');
+  const mins = expiresInMinutes ?? config.jwt.resetPasswordExpirationMinutes;
+  const expires = moment().add(mins, 'minutes');
   const resetPasswordToken = generateToken(user.id, expires, TokenType.RESET_PASSWORD);
   await saveToken(resetPasswordToken, user.id, expires, TokenType.RESET_PASSWORD);
   return resetPasswordToken;
+};
+
+/**
+ * Generate a longer-lived reset token for instructor onboarding (7 days).
+ */
+const generateOnboardingPasswordToken = async (userId: string): Promise<string> => {
+  const expires = moment().add(7, 'days');
+  const token = generateToken(userId, expires, TokenType.RESET_PASSWORD);
+  await saveToken(token, userId, expires, TokenType.RESET_PASSWORD);
+  return token;
 };
 
 /**
@@ -236,6 +247,7 @@ export default {
   verifyToken,
   generateAuthTokens,
   generateResetPasswordToken,
+  generateOnboardingPasswordToken,
   generateVerifyEmailToken,
   blacklistToken,
   removeExpiredTokens,

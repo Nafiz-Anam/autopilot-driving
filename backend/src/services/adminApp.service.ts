@@ -6,6 +6,8 @@ import { createStripeClient } from '../utils/stripeClient';
 import { SETTING_KEYS } from './settings.service';
 import emailService from './email.service';
 import refundService from './refund.service';
+import tokenService from './token.service';
+import config from '../config/config';
 
 const PAGE_SIZE = 20;
 const VALID_BOOKING_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'] as const;
@@ -604,90 +606,114 @@ const listApplications = async (params: { status?: string; page?: number }) => {
 };
 
 const updateApplicationStatus = async (id: string, status: string) => {
+  // Read the current state first — protects against duplicate approve clicks
+  // (which previously fired Branch A on the first call and Branch B on the
+  // second, sending a second email w/o credentials that obscured the first).
+  const before = await prisma.$queryRawUnsafe<any[]>(
+    `SELECT * FROM "InstructorApplication" WHERE id = $1 LIMIT 1`,
+    id
+  );
+  const previous = before[0] ?? null;
+  if (!previous) return null;
+
+  // If nothing is changing, no-op — just return the row.
+  if (previous.status === status) return previous;
+
   await prisma.$executeRawUnsafe(
     `UPDATE "InstructorApplication" SET status = $2 WHERE id = $1`,
     id,
     status
   );
+
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `SELECT * FROM "InstructorApplication" WHERE id = $1 LIMIT 1`,
     id
   );
-  const app = rows[0] ?? null;
+  const app = rows[0] ?? previous;
 
-  if (app?.email && app?.fullName) {
-    if (status === 'approved') {
-      const existingUsers = await prisma.$queryRawUnsafe<any[]>(
-        `SELECT id FROM users WHERE email = $1 LIMIT 1`,
-        app.email.trim().toLowerCase()
-      );
+  if (!(app?.email && app?.fullName)) return app;
 
-      const yearsExp = app.yearsExperience === '10+' ? 10 : app.yearsExperience === '6-10' ? 8 : 4;
-
-      if (!existingUsers[0]) {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-        const tempRaw = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-        const tempPassword = `${tempRaw}!1`;
-        const passwordHash = await bcrypt.hash(tempPassword, 10);
-        const userId = uuidv4();
-        const instructorId = uuidv4();
-
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
-           VALUES ($1, $2, $3, $4, $5, 'USER'::"BackendUserRole", true, NOW(), NOW())`,
-          userId, app.fullName.trim(), app.email.trim().toLowerCase(), app.phone ?? null, passwordHash
-        );
-
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO "Instructor" (id, "userId", "yearsExp", "pricePerHour", transmission, areas, "isActive", rating, "reviewCount", "createdAt")
-           VALUES ($1, $2, $3, 0, '{}'::text[], '{}'::text[], true, 0, 0, NOW())`,
-          instructorId, userId, yearsExp
-        );
-
-        await prisma.$executeRawUnsafe(
-          `UPDATE "InstructorApplication" SET "createdUserId" = $2 WHERE id = $1`,
-          id, userId
-        );
-
-        emailService.sendInstructorApplicationApprovedEmail({
-          to: app.email,
-          applicantName: app.fullName,
-          tempPassword,
-        }).catch(() => {});
-      } else {
-        // Existing user — ensure they have an Instructor profile
-        const existingInstructor = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
-          `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
-          existingUsers[0].id
-        );
-        if (!existingInstructor[0]) {
-          const instructorId = uuidv4();
-          await prisma.$executeRawUnsafe(
-            `INSERT INTO "Instructor" (id, "userId", "yearsExp", "pricePerHour", transmission, areas, "isActive", rating, "reviewCount", "createdAt")
-             VALUES ($1, $2, $3, 0, '{}'::text[], '{}'::text[], true, 0, 0, NOW())`,
-            instructorId, existingUsers[0].id, yearsExp
-          );
-          await prisma.$executeRawUnsafe(
-            `UPDATE "InstructorApplication" SET "createdUserId" = $2 WHERE id = $1`,
-            id, existingUsers[0].id
-          );
-        }
-
-        emailService.sendInstructorApplicationApprovedEmail({
-          to: app.email,
-          applicantName: app.fullName,
-        }).catch(() => {});
-      }
-    } else if (status === 'rejected') {
-      emailService.sendInstructorApplicationRejectedEmail({
-        to: app.email,
-        applicantName: app.fullName,
-      }).catch(() => {});
-    }
+  if (status === 'approved') {
+    await handleApproved(id, app);
+  } else if (status === 'rejected') {
+    emailService.sendInstructorApplicationRejectedEmail({
+      to: app.email,
+      applicantName: app.fullName,
+    }).catch(() => {});
   }
 
   return app;
 };
+
+/**
+ * Runs when an application transitions to `approved`:
+ *   1. Ensure a `users` row exists for the applicant (creates one w/ a
+ *      random unusable password if not — real password is set via the
+ *      reset link in the email).
+ *   2. Ensure an `Instructor` profile exists linked to that user.
+ *   3. Issue a 7-day password reset token and email a "Set your
+ *      password" link. Works uniformly for brand-new applicants and
+ *      existing users being upgraded to instructor.
+ */
+async function handleApproved(applicationId: string, app: any): Promise<void> {
+  const email = app.email.trim().toLowerCase();
+  const yearsExp = app.yearsExperience === '10+' ? 10 : app.yearsExperience === '6-10' ? 8 : 4;
+
+  const existingUsers = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM users WHERE email = $1 LIMIT 1`,
+    email
+  );
+
+  let userId: string;
+  if (existingUsers[0]) {
+    userId = existingUsers[0].id;
+  } else {
+    // Fresh user — create with an unusable password so login is only possible
+    // after the applicant sets their own via the reset link.
+    const randomBytes = Array.from({ length: 32 }, () => Math.floor(Math.random() * 256));
+    const placeholder = Buffer.from(randomBytes).toString('hex');
+    const passwordHash = await bcrypt.hash(placeholder, 10);
+    userId = uuidv4();
+
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, 'USER'::"BackendUserRole", true, NOW(), NOW())`,
+      userId, app.fullName.trim(), email, app.phone ?? null, passwordHash
+    );
+  }
+
+  // Ensure Instructor profile
+  const existingInstructor = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+    userId
+  );
+  if (!existingInstructor[0]) {
+    const instructorId = uuidv4();
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "Instructor" (id, "userId", "yearsExp", "pricePerHour", transmission, areas, "isActive", rating, "reviewCount", "createdAt")
+       VALUES ($1, $2, $3, 0, '{}'::text[], '{}'::text[], true, 0, 0, NOW())`,
+      instructorId, userId, yearsExp
+    );
+  }
+
+  // Issue a 7-day password reset token so the applicant can set their password
+  // via the standard /reset-password flow. Works for both new and existing users.
+  let resetUrl: string | null = null;
+  try {
+    const token = await tokenService.generateOnboardingPasswordToken(userId);
+    const base = config.clientUrl.replace(/\/$/, '');
+    resetUrl = `${base}/reset-password?token=${encodeURIComponent(token)}`;
+  } catch (err) {
+    console.error('[approve] failed to issue reset token', err);
+  }
+
+  emailService.sendInstructorApplicationApprovedEmail({
+    to: app.email,
+    applicantName: app.fullName,
+    passwordResetUrl: resetUrl,
+    isExistingUser: !!existingUsers[0],
+  }).catch(() => {});
+}
 
 const getApplicationById = async (id: string) => {
   const rows = await prisma.$queryRawUnsafe<any[]>(
