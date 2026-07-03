@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useAppSession } from "@/components/providers/AppAuthProvider";
 import { motion } from "framer-motion";
 import {
@@ -431,9 +432,12 @@ export default function InstructorDashboard() {
                       {l.durationMins} min
                     </td>
                     <td className="px-5 py-3">
-                      <button className="text-xs font-medium text-brand-red hover:text-brand-orange transition-colors">
+                      <Link
+                        href={`/instructor/bookings?focus=${l.id}`}
+                        className="text-xs font-medium text-brand-red hover:text-brand-orange transition-colors"
+                      >
                         View &rarr;
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

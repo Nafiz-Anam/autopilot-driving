@@ -6,7 +6,16 @@
       "Bash(docker compose *)",
       "Bash(curl -s http://localhost:8008/v1/public/areas)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f'Total areas: {len\\(d[\\\\\"data\\\\\"]\\)}'\\)\")",
-      "Bash(gh run *)"
+      "Bash(gh run *)",
+      "Bash(code-review-graph build *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(ssh driving *)",
+      "Bash(git add *)",
+      "Bash(docker exec autopilot_db_dev *)",
+      "Bash(docker cp *)",
+      "Bash(curl -s http://localhost:8008/v1/public/blogs)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(b['title']\\) for b in d['blogs']]\")"
     ]
   },
   "enableAllProjectMcpServers": true,
