@@ -12,7 +12,6 @@ import {
   isBefore,
   isToday,
   isSameDay,
-  isSunday,
   startOfWeek,
   endOfWeek,
   addDays,
@@ -23,11 +22,6 @@ import { useBookingStore } from "@/store/bookingStore";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { BookingNavButtons } from "@/components/booking/BookingNavButtons";
-
-const ALL_SLOTS = [
-  "08:00", "09:00", "10:00", "11:00",
-  "13:00", "14:00", "15:00", "16:00", "17:00",
-];
 
 interface SlotInfo {
   time: string;
@@ -64,7 +58,7 @@ export function Step4DateTime() {
   async function handleDateClick(date: Date) {
     const normalized = new Date(date);
     normalized.setHours(0, 0, 0, 0);
-    if (isBefore(normalized, today) || isSunday(date)) return;
+    if (isBefore(normalized, today)) return;
 
     setDate(date);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,10 +88,10 @@ export function Step4DateTime() {
           setSlots([]);
         }
       } catch {
-        setSlots(ALL_SLOTS.map((t) => ({ time: t, available: true })));
+        setSlots([]);
       }
     } else {
-      setSlots(ALL_SLOTS.map((t) => ({ time: t, available: true })));
+      setSlots([]);
     }
     setLoadingSlots(false);
   }
@@ -105,7 +99,7 @@ export function Step4DateTime() {
   const isDisabledDay = (day: Date) => {
     const d = new Date(day);
     d.setHours(0, 0, 0, 0);
-    return isBefore(d, today) || isSunday(day);
+    return isBefore(d, today);
   };
 
   const prevMonthDisabled =
