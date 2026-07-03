@@ -41,6 +41,7 @@ services:
       - .env.production
     environment:
       NODE_ENV: production
+      TZ: Europe/London
       PORT: 8008
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       REDIS_HOST: redis
@@ -94,6 +95,7 @@ services:
       - .env.production
     environment:
       NODE_ENV: production
+      TZ: Europe/London
       PORT: 3008
       HOSTNAME: 0.0.0.0
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
