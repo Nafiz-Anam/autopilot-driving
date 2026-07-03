@@ -212,10 +212,6 @@ export function Step4DateTime() {
               <span className="w-3 h-3 rounded-sm border-2 border-brand-red inline-block" />
               Today
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-brand-muted/20 inline-block" />
-              Unavailable
-            </span>
           </div>
         </div>
 
