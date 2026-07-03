@@ -40,8 +40,8 @@ export default function ResetPasswordPage() {
       );
       setDone(true);
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.data?.error) {
-        setServerError(err.response.data.error);
+      if (axios.isAxiosError(err) && (err.response?.data?.message || err.response?.data?.error)) {
+        setServerError(err.response.data.message ?? err.response.data.error);
       } else {
         setServerError("Something went wrong. Please try again.");
       }
