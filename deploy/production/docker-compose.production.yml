@@ -142,6 +142,8 @@ volumes:
   postgres_prod_data:
   redis_prod_data:
   backend_uploads:
+    external: true
+    name: autopilot_backend_uploads
 
 networks:
   autopilot-prod:
