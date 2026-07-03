@@ -88,7 +88,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 ALTER TABLE "Booking"
     ADD COLUMN IF NOT EXISTS "endsAt" TIMESTAMP GENERATED ALWAYS AS
-        ("scheduledAt" + ("durationMins" || ' minutes')::interval) STORED;
+        ("scheduledAt" + make_interval(mins => "durationMins")) STORED;
 
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'booking_no_overlap') THEN
