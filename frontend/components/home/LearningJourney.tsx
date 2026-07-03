@@ -2,13 +2,13 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import {
   CalendarDays,
   BookOpen,
   CheckCircle2,
   FileText,
-  ClipboardCheck,
 } from "lucide-react";
 
 const steps = [
@@ -41,52 +41,6 @@ const steps = [
     external: true,
   },
 ];
-
-function LearningIllustration() {
-  return (
-    <div className="relative w-full max-w-[400px]">
-      <motion.div
-        className="rounded-[2.2rem] border border-[#ECECEC] bg-white p-4 sm:p-5 shadow-[0_16px_36px_rgba(0,0,0,0.09)]"
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.15 }}
-      >
-        <div className="rounded-[1.6rem] overflow-hidden bg-[#F4F4F4] border border-[#E9E9E9]">
-          <div className="h-[170px] sm:h-[200px] relative bg-[linear-gradient(180deg,#DDEEFF_0%,#EAF4FF_48%,#E6E6E6_49%,#D9D9D9_100%)]">
-            <div className="absolute left-1/2 top-[46%] -translate-x-1/2 w-[3px] h-[26%] rounded-full bg-white/90" />
-            <div className="absolute left-[35%] top-[46%] -translate-x-1/2 w-[2px] h-[26%] rounded-full bg-white/60" />
-            <div className="absolute left-[65%] top-[46%] -translate-x-1/2 w-[2px] h-[26%] rounded-full bg-white/60" />
-          </div>
-          <div className="h-[140px] sm:h-[160px] relative bg-[#242424]">
-            <div className="absolute left-[8%] right-[8%] bottom-[18%] h-[22%] rounded-full bg-[#151515]" />
-            <div className="absolute left-[14%] bottom-[30%] w-[30%] h-[46%] rounded-[1.2rem] bg-[#7F7F7F]" />
-            <div className="absolute right-[14%] bottom-[30%] w-[30%] h-[46%] rounded-[1.2rem] bg-[#7F7F7F]" />
-            <div className="absolute left-[26%] bottom-[52%] w-[11%] h-[14%] rounded-full bg-[#C98A6D]" />
-            <div className="absolute right-[26%] bottom-[52%] w-[11%] h-[14%] rounded-full bg-[#C98A6D]" />
-            <div className="absolute left-[22%] bottom-[36%] w-[19%] h-[18%] rounded-[0.9rem] bg-[#20345C]" />
-            <div className="absolute right-[20%] bottom-[36%] w-[22%] h-[18%] rounded-[0.9rem] bg-[#D49A1A]" />
-            <motion.div
-              className="absolute left-1/2 bottom-[23%] -translate-x-1/2 w-[20%] aspect-square rounded-full border-[7px] border-[#676767] bg-[#1F1F1F]"
-              animate={{ rotate: [0, 7, -7, 0] }}
-              transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          <div className="rounded-xl border border-[#ECECEC] bg-[#FAFAFA] px-3 py-2.5 flex items-center gap-2">
-            <CalendarDays size={14} className="text-[#E8200A]" />
-            <span className="text-xs text-[#4C4C4C] font-medium">Tue 3:30 PM</span>
-          </div>
-          <div className="rounded-xl border border-[#ECECEC] bg-[#FAFAFA] px-3 py-2.5 flex items-center gap-2 justify-start">
-            <CheckCircle2 size={14} className="text-[#1AA255]" />
-            <span className="text-xs text-[#4C4C4C] font-medium">Instructor assigned</span>
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
 
 export function LearningJourney() {
   const ref = useRef<HTMLDivElement>(null);
@@ -153,15 +107,15 @@ export function LearningJourney() {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="relative"
           >
-            <div className="rounded-[2rem] bg-[#F7F7F7] p-6 sm:p-8 min-h-[380px] sm:min-h-[460px] flex items-center justify-center">
-              <div className="relative w-full max-w-[380px]">
-                <LearningIllustration />
-
-                <div className="absolute -bottom-4 right-1 sm:right-0 rounded-2xl bg-[#0D0D0D] text-white px-4 py-3 flex items-center gap-2 shadow-lg">
-                  <ClipboardCheck size={16} />
-                  <span className="text-xs sm:text-sm font-medium">Ready for test day</span>
-                </div>
-              </div>
+            <div className="relative w-full aspect-square rounded-[2rem] overflow-hidden">
+              <Image
+                src="/homepage-section.png"
+                alt="Learn to drive with AutoPilot"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-contain"
+                priority
+              />
             </div>
           </motion.div>
         </div>
