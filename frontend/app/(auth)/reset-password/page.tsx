@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import axios from "axios";
 import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
 import { backendApiUrl } from "@/lib/backend-api";
+import { extractApiError } from "@/lib/api-errors";
 import {
   resetPasswordSchema,
   type ResetPasswordInput,
@@ -40,11 +41,7 @@ export default function ResetPasswordPage() {
       );
       setDone(true);
     } catch (err) {
-      if (axios.isAxiosError(err) && (err.response?.data?.message || err.response?.data?.error)) {
-        setServerError(err.response.data.message ?? err.response.data.error);
-      } else {
-        setServerError("Something went wrong. Please try again.");
-      }
+      setServerError(extractApiError(err));
     }
   }
 

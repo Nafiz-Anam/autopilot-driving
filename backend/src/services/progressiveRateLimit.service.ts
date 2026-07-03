@@ -44,44 +44,42 @@ class ProgressiveRateLimitService {
   }
 
   private initializeConfigs() {
-    // Authentication endpoints - very strict
+    // Authentication endpoints
     this.configs.set('auth', {
-      baseWindowMs: 15 * 60 * 1000, // 15 minutes
-      baseMaxRequests: config.env === 'production' ? 5 : 10,
-      maxPenaltyMultiplier: 8, // Max 8x penalty
-      penaltyIncrementMs: 5 * 60 * 1000, // 5 minutes penalty per violation
-      resetAfterMs: 60 * 60 * 1000, // Reset after 1 hour of no attempts
+      baseWindowMs: 15 * 60 * 1000,
+      baseMaxRequests: config.env === 'production' ? 20 : 40,
+      maxPenaltyMultiplier: 4,
+      penaltyIncrementMs: 5 * 60 * 1000,
+      resetAfterMs: 30 * 60 * 1000,
     });
 
-    // Password reset — moderate. Bucket is shared across the whole
-    // /forgot-password → /verify-reset-otp → /reset-password-otp flow,
-    // so a single legitimate user can spend 3-4 requests before even
-    // finishing one reset. Keep it strict enough to slow abuse but
-    // generous enough that a mistyped OTP doesn't lock users out.
+    // Password reset bucket is shared across /forgot-password,
+    // /verify-reset-otp, /reset-password-otp. Must fit multiple
+    // real attempts (resend, mistyped OTP, etc.) without locking out.
     this.configs.set('password-reset', {
-      baseWindowMs: 60 * 60 * 1000, // 1 hour
-      baseMaxRequests: config.env === 'production' ? 10 : 20,
-      maxPenaltyMultiplier: 8,
-      penaltyIncrementMs: 15 * 60 * 1000, // 15 minutes penalty per violation
-      resetAfterMs: 2 * 60 * 60 * 1000, // Reset after 2 hours
+      baseWindowMs: 60 * 60 * 1000,
+      baseMaxRequests: config.env === 'production' ? 30 : 60,
+      maxPenaltyMultiplier: 4,
+      penaltyIncrementMs: 10 * 60 * 1000,
+      resetAfterMs: 60 * 60 * 1000,
     });
 
-    // Registration - strict
+    // Registration
     this.configs.set('registration', {
-      baseWindowMs: 60 * 60 * 1000, // 1 hour
-      baseMaxRequests: config.env === 'production' ? 30 : 100,
-      maxPenaltyMultiplier: 6, // Max 6x penalty
-      penaltyIncrementMs: 15 * 60 * 1000, // 15 minutes penalty per violation
-      resetAfterMs: 2 * 60 * 60 * 1000, // Reset after 2 hours
+      baseWindowMs: 60 * 60 * 1000,
+      baseMaxRequests: config.env === 'production' ? 60 : 200,
+      maxPenaltyMultiplier: 4,
+      penaltyIncrementMs: 10 * 60 * 1000,
+      resetAfterMs: 60 * 60 * 1000,
     });
 
-    // General API - lenient
+    // General API
     this.configs.set('api', {
-      baseWindowMs: 15 * 60 * 1000, // 15 minutes
-      baseMaxRequests: config.env === 'production' ? 100 : 200,
-      maxPenaltyMultiplier: 4, // Max 4x penalty
-      penaltyIncrementMs: 2 * 60 * 1000, // 2 minutes penalty per violation
-      resetAfterMs: 30 * 60 * 1000, // Reset after 30 minutes
+      baseWindowMs: 15 * 60 * 1000,
+      baseMaxRequests: config.env === 'production' ? 300 : 600,
+      maxPenaltyMultiplier: 3,
+      penaltyIncrementMs: 2 * 60 * 1000,
+      resetAfterMs: 15 * 60 * 1000,
     });
   }
 

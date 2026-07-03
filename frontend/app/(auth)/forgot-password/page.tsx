@@ -8,6 +8,7 @@ import Link from "next/link";
 import axios from "axios";
 import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
 import { backendApiUrl } from "@/lib/backend-api";
+import { extractApiError } from "@/lib/api-errors";
 import {
   forgotPasswordSchema,
   resetPasswordOtpSchema,
@@ -41,11 +42,7 @@ export default function ForgotPasswordPage() {
       setEmail(data.email);
       setStage("otp");
     } catch (err) {
-      if (axios.isAxiosError(err) && (err.response?.data?.message || err.response?.data?.error)) {
-        setServerError(err.response.data.message ?? err.response.data.error);
-      } else {
-        setServerError("Something went wrong. Please try again.");
-      }
+      setServerError(extractApiError(err));
     }
   }
 
@@ -59,11 +56,7 @@ export default function ForgotPasswordPage() {
       });
       setStage("done");
     } catch (err) {
-      if (axios.isAxiosError(err) && (err.response?.data?.message || err.response?.data?.error)) {
-        setServerError(err.response.data.message ?? err.response.data.error);
-      } else {
-        setServerError("Invalid or expired code. Please try again.");
-      }
+      setServerError(extractApiError(err, "Invalid or expired code. Please try again."));
     }
   }
 
@@ -74,11 +67,7 @@ export default function ForgotPasswordPage() {
       await axios.post(backendApiUrl("/auth/resend-password-reset"), { email });
       setResendMsg("New code sent. Check your inbox.");
     } catch (err) {
-      if (axios.isAxiosError(err) && (err.response?.data?.message || err.response?.data?.error)) {
-        setServerError(err.response.data.message ?? err.response.data.error);
-      } else {
-        setServerError("Could not resend code. Please try again shortly.");
-      }
+      setServerError(extractApiError(err, "Could not resend code. Please try again shortly."));
     }
   }
 

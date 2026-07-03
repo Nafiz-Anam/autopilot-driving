@@ -3,13 +3,33 @@ import httpStatus from 'http-status';
 import progressiveRateLimitService from '../services/progressiveRateLimit.service';
 import logger from '../config/logger';
 
+interface RateLimitInfo {
+  retryAfter?: number;
+  resetTime: Date;
+  penaltyLevel: number;
+}
+
 interface ProgressiveRateLimitOptions {
   type: 'auth' | 'password-reset' | 'registration' | 'api';
   skipSuccessfulRequests?: boolean;
   skipFailedRequests?: boolean;
   keyGenerator?: (req: Request) => string;
-  handler?: (req: Request, res: Response) => void;
+  handler?: (req: Request, res: Response, info: RateLimitInfo) => void;
   onLimitReached?: (req: Request, res: Response, options: any) => void;
+}
+
+function buildRateLimitBody(message: string, info: RateLimitInfo) {
+  const retryAfterSeconds = Math.max(
+    0,
+    Math.ceil((info.resetTime.getTime() - Date.now()) / 1000)
+  );
+  return {
+    code: httpStatus.TOO_MANY_REQUESTS,
+    message,
+    retryAfterSeconds,
+    resetAt: info.resetTime.toISOString(),
+    penaltyLevel: info.penaltyLevel,
+  };
 }
 
 /**
@@ -48,24 +68,23 @@ const createProgressiveRateLimiter = (options: ProgressiveRateLimitOptions) => {
           retryAfter: result.retryAfter,
         });
 
-        // Call custom handler if provided
+        const info: RateLimitInfo = {
+          retryAfter: result.retryAfter,
+          resetTime: result.resetTime,
+          penaltyLevel: result.penaltyLevel,
+        };
+
         if (handler) {
-          return handler(req, res);
+          return handler(req, res, info);
         }
 
-        // Call onLimitReached callback if provided
         if (onLimitReached) {
           onLimitReached(req, res, result);
         }
 
-        // Default rate limit response
-        res.status(httpStatus.TOO_MANY_REQUESTS).json({
-          code: httpStatus.TOO_MANY_REQUESTS,
-          message: 'Too many requests, please try again later',
-          retryAfter: result.retryAfter,
-          penaltyLevel: result.penaltyLevel,
-          resetTime: result.resetTime,
-        });
+        res
+          .status(httpStatus.TOO_MANY_REQUESTS)
+          .json(buildRateLimitBody('Too many requests, please try again later', info));
 
         return;
       }
@@ -100,16 +119,10 @@ const createProgressiveRateLimiter = (options: ProgressiveRateLimitOptions) => {
  */
 export const progressiveAuthLimiter = createProgressiveRateLimiter({
   type: 'auth',
-  handler: (req, res) => {
-    res.status(httpStatus.TOO_MANY_REQUESTS).json({
-      code: httpStatus.TOO_MANY_REQUESTS,
-      message: 'Too many authentication attempts, please try again later',
-      retryAfter: 'Progressive penalty applied',
-      details: {
-        penaltyLevel: res.get('X-RateLimit-Penalty-Level'),
-        resetTime: res.get('X-RateLimit-Reset'),
-      },
-    });
+  handler: (req, res, info) => {
+    res
+      .status(httpStatus.TOO_MANY_REQUESTS)
+      .json(buildRateLimitBody('Too many authentication attempts, please try again later', info));
   },
   onLimitReached: (req, res, result) => {
     logger.warn('Authentication rate limit reached', {
@@ -123,48 +136,30 @@ export const progressiveAuthLimiter = createProgressiveRateLimiter({
 
 export const progressivePasswordResetLimiter = createProgressiveRateLimiter({
   type: 'password-reset',
-  handler: (req, res) => {
-    res.status(httpStatus.TOO_MANY_REQUESTS).json({
-      code: httpStatus.TOO_MANY_REQUESTS,
-      message: 'Too many password reset attempts, please try again later',
-      retryAfter: 'Progressive penalty applied',
-      details: {
-        penaltyLevel: res.get('X-RateLimit-Penalty-Level'),
-        resetTime: res.get('X-RateLimit-Reset'),
-      },
-    });
+  handler: (req, res, info) => {
+    res
+      .status(httpStatus.TOO_MANY_REQUESTS)
+      .json(buildRateLimitBody('Too many password reset attempts, please try again later', info));
   },
 });
 
 export const progressiveRegistrationLimiter = createProgressiveRateLimiter({
   type: 'registration',
-  handler: (req, res) => {
-    res.status(httpStatus.TOO_MANY_REQUESTS).json({
-      code: httpStatus.TOO_MANY_REQUESTS,
-      message: 'Too many registration attempts, please try again later',
-      retryAfter: 'Progressive penalty applied',
-      details: {
-        penaltyLevel: res.get('X-RateLimit-Penalty-Level'),
-        resetTime: res.get('X-RateLimit-Reset'),
-      },
-    });
+  handler: (req, res, info) => {
+    res
+      .status(httpStatus.TOO_MANY_REQUESTS)
+      .json(buildRateLimitBody('Too many registration attempts, please try again later', info));
   },
 });
 
 export const progressiveApiLimiter = createProgressiveRateLimiter({
   type: 'api',
-  skipSuccessfulRequests: false, // Count all API requests
+  skipSuccessfulRequests: false,
   skipFailedRequests: false,
-  handler: (req, res) => {
-    res.status(httpStatus.TOO_MANY_REQUESTS).json({
-      code: httpStatus.TOO_MANY_REQUESTS,
-      message: 'Too many requests, please try again later',
-      retryAfter: 'Progressive penalty applied',
-      details: {
-        penaltyLevel: res.get('X-RateLimit-Penalty-Level'),
-        resetTime: res.get('X-RateLimit-Reset'),
-      },
-    });
+  handler: (req, res, info) => {
+    res
+      .status(httpStatus.TOO_MANY_REQUESTS)
+      .json(buildRateLimitBody('Too many requests, please try again later', info));
   },
 });
 
