@@ -21,15 +21,23 @@ const validate =
         )
       );
 
-      const value = combinedSchema.parse(obj);
-      Object.assign(req, value);
+      const value = combinedSchema.parse(obj) as Record<string, unknown>;
+      // In Express 5 `req.query` and `req.params` are getter-only, so a blanket
+      // Object.assign(req, value) throws for those keys ("Cannot set property
+      // query of #<IncomingMessage> which has only a getter"). Only body is
+      // safely writable — assign it back if the schema produced a value.
+      if (value.body !== undefined) {
+        req.body = value.body;
+      }
       return next();
     } catch (error) {
-      const errorMessage =
-        error instanceof z.ZodError
-          ? error.issues.map(err => err.message).join(', ')
-          : 'Validation error';
-      return next(new ApiError(httpStatus.BAD_REQUEST, errorMessage));
+      if (error instanceof z.ZodError) {
+        const errorMessage = error.issues.map(err => err.message).join(', ');
+        return next(new ApiError(httpStatus.BAD_REQUEST, errorMessage));
+      }
+      // Log non-Zod exceptions so the generic fallback doesn't hide the cause
+      console.error('[validate] unexpected error', error);
+      return next(new ApiError(httpStatus.BAD_REQUEST, 'Validation error'));
     }
   };
 
