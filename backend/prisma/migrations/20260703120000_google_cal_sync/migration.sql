@@ -95,7 +95,7 @@ DO $$ BEGIN
         ALTER TABLE "Booking" ADD CONSTRAINT booking_no_overlap
             EXCLUDE USING gist (
                 "instructorId" WITH =,
-                tstzrange("scheduledAt"::timestamptz, "endsAt"::timestamptz) WITH &&
+                tsrange("scheduledAt", "endsAt") WITH &&
             )
             WHERE (status IN ('PENDING','CONFIRMED') AND "instructorId" IS NOT NULL);
     END IF;
