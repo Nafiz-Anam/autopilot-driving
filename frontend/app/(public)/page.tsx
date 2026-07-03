@@ -11,7 +11,7 @@ import { CTABanner } from "@/components/home/CTABanner";
 export const metadata: Metadata = {
   title: "AutoPilot Driving School | Learn to Drive with Autopilot",
   description:
-    "UK's premier driving school covering Slough, Windsor, Reading, Maidenhead and surrounding areas. Expert DVSA-approved instructors. Book your first lesson today.",
+    "UK's premier driving school covering Ilford, Romford, Barking, Dagenham and surrounding areas. Expert DVSA-approved instructors. Book your first lesson today.",
   other: {
     "application/ld+json": JSON.stringify({
       "@context": "https://schema.org",
@@ -22,11 +22,11 @@ export const metadata: Metadata = {
       url: "https://autopilotdrivingschool.co.uk",
       address: {
         "@type": "PostalAddress",
-        addressLocality: "Slough",
+        addressLocality: "Ilford",
         addressRegion: "Berkshire",
         addressCountry: "GB",
       },
-      areaServed: ["Slough", "Windsor", "Maidenhead", "Reading", "Wokingham", "Bracknell"],
+      areaServed: ["Ilford", "Romford", "Barking", "Dagenham", "Wanstead", "Chigwell"],
       description:
         "Premium driving school with DVSA-approved instructors covering East Berkshire and West London.",
     }),

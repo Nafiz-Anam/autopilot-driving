@@ -325,7 +325,7 @@ export default function InstructorProfilePage() {
                 <FormField label="Price / hr (£)" name="pricePerHour" value={profile.pricePerHour} onChange={handleChange} type="number" placeholder="45" />
                 <FormField label="Years Experience" name="yearsExp" value={profile.yearsExp} onChange={handleChange} type="number" placeholder="5" />
               </div>
-              <FormField label="Service Areas (comma-separated)" name="areas" value={profile.areas} onChange={handleChange} placeholder="SL1, SL2, RG1" />
+              <FormField label="Service Areas (comma-separated)" name="areas" value={profile.areas} onChange={handleChange} placeholder="IG1, IG2, E1" />
               <div>
                 <label className="block text-sm font-medium text-brand-black mb-2">Transmission</label>
                 <div className="flex gap-4">

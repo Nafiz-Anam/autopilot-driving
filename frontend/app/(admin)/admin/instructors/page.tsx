@@ -353,7 +353,7 @@ function InstructorModal({
 
           <div>
             <label className="block text-xs font-semibold text-brand-muted mb-1">Areas (comma-separated postcodes)</label>
-            <input value={form.areas} onChange={(e) => set("areas", e.target.value)} placeholder="SL1, SL2, RG1"
+            <input value={form.areas} onChange={(e) => set("areas", e.target.value)} placeholder="IG1, IG2, E1"
               className="w-full px-3 py-2 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red" />
           </div>
 

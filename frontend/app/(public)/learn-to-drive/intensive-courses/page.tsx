@@ -133,7 +133,7 @@ const testimonials = [
     quote:
       "I passed first time after a 2-week intensive. My instructor was patient, organised, and pushed me just the right amount. Couldn't believe how quickly I progressed.",
     course: "2-Week Intensive",
-    location: "Slough",
+    location: "Ilford",
   },
   {
     name: "Amelia K.",

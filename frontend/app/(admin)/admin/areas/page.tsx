@@ -142,7 +142,7 @@ function AreaModal({
                   setForm((f) => ({ ...f, postcodePrefix: e.target.value }))
                 }
                 required
-                placeholder="e.g. SL1"
+                placeholder="e.g. IG1"
                 className="w-full px-4 py-2.5 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
               />
             </div>

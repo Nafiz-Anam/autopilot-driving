@@ -127,7 +127,7 @@ export function Step2Instructor() {
             type="text"
             value={postcode}
             onChange={(e) => setPostcode(e.target.value.toUpperCase())}
-            placeholder="Filter by instructor name or area/postcode (e.g. SL1, Reading)"
+            placeholder="Filter by instructor name or area/postcode (e.g. IG1, Romford)"
             className="w-full pl-10 pr-4 py-3 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm uppercase tracking-wide"
             maxLength={32}
           />

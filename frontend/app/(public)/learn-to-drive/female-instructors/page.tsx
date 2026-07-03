@@ -185,7 +185,7 @@ function RequestForm() {
           <input
             {...register("postcode")}
             className="w-full px-4 py-2.5 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm uppercase"
-            placeholder="SL1 2AB"
+            placeholder="IG1 2AB"
           />
           {errors.postcode && <p className="text-xs text-red-500 mt-1">{errors.postcode.message}</p>}
         </div>

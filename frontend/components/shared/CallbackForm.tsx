@@ -20,7 +20,7 @@ const schema = z.object({
     .string()
     .regex(
       /^[A-Za-z]{1,2}\d{1,2}[A-Za-z]?\s?\d[A-Za-z]{2}$/,
-      "Please enter a valid UK postcode (e.g. SL1 1AA)"
+      "Please enter a valid UK postcode (e.g. IG1 1AA)"
     )
     .optional()
     .or(z.literal("")),
@@ -169,7 +169,7 @@ export function CallbackForm() {
         <input
           id="cb-postcode"
           type="text"
-          placeholder="SL1 1AA"
+          placeholder="IG1 1AA"
           style={inputStyle(!!errors.postcode)}
           {...register("postcode")}
         />

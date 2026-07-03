@@ -65,7 +65,7 @@ function PostcodeChecker() {
             type="text"
             value={postcode}
             onChange={(e) => setPostcode(e.target.value)}
-            placeholder="Enter prefix of your postcode. E.G: SL1"
+            placeholder="Enter prefix of your postcode. E.G: IG1"
             className="flex-1 px-5 py-3 border border-brand-border rounded-full text-brand-black bg-white focus:outline-none focus:ring-2 focus:ring-brand-red text-sm placeholder:text-sm uppercase"
             maxLength={8}
           />

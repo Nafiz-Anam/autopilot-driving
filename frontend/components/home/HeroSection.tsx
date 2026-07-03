@@ -117,7 +117,7 @@ export function HeroSection() {
                 Enter your postcode to see if we offer lessons in your area.
               </p>
               <PostcodeSearch
-                placeholder="Enter prefix of your postcode. E.G: SL1"
+                placeholder="Enter prefix of your postcode. E.G: IG1"
                 buttonLabel="Check Coverage"
                 redirectTo="/booking"
                 checkCoverage
@@ -237,7 +237,7 @@ export function HeroSection() {
                   </div>
 
                   <p className="text-[11px] text-[#6B6B6B] mb-3">
-                    SL1 · SL2 · SL3 · Manual &amp; Automatic
+                    IG1 · IG2 · IG3 · Manual &amp; Automatic
                   </p>
 
                   <p className="text-[10px] font-bold text-[#0D0D0D] mb-2 uppercase tracking-wider">
@@ -326,7 +326,7 @@ export function HeroSection() {
                     Lesson booked!
                   </p>
                   <p className="text-[9px] text-[#6B6B6B] leading-tight">
-                    2 mins ago · Slough
+                    2 mins ago · Ilford
                   </p>
                 </div>
               </motion.div>

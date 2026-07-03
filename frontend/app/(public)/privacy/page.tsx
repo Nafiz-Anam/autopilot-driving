@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
               <p>
                 AutoPilot Driving School is a DVSA-approved driving school operating across East
                 Berkshire, West London, and surrounding areas. Our registered business address is
-                Slough, Berkshire, England. We are the data controller for the personal information
+                Ilford, London, England. We are the data controller for the personal information
                 you provide to us.
               </p>
               <p>

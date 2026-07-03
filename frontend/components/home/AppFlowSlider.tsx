@@ -14,7 +14,7 @@ function Screen1() {
         <p className="text-[11px] text-gray-400 mb-2 font-medium">Your postcode</p>
         <div className="flex items-center gap-2.5 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-100">
           <MapPin className="w-4 h-4 text-brand-red shrink-0" />
-          <span className="text-sm font-semibold text-gray-700">SL1 1AA, Slough</span>
+          <span className="text-sm font-semibold text-gray-700">IG1 1AA, Ilford</span>
         </div>
       </div>
       <div className="px-5 pt-4 flex-1 overflow-hidden">
@@ -132,7 +132,7 @@ function Screen3() {
           {[
             { label: "Instructor",  value: "James Williams" },
             { label: "Lesson",      value: "Manual · 1 hour" },
-            { label: "Location",    value: "SL1 1AA, Slough" },
+            { label: "Location",    value: "IG1 1AA, Ilford" },
           ].map((row) => (
             <div key={row.label} className="flex justify-between items-center py-2.5 border-b border-gray-50">
               <span className="text-[11px] text-gray-400">{row.label}</span>
@@ -216,7 +216,7 @@ function Screen4() {
         {[
           { icon: <CalendarDays className="w-3.5 h-3.5 text-brand-red" />, text: "Wed 29 Apr · 1:00pm · 1 hr" },
           { icon: <div className="w-3.5 h-3.5 rounded-full bg-brand-red flex items-center justify-center text-white text-[7px] font-bold">JW</div>, text: "James Williams · Manual" },
-          { icon: <MapPin className="w-3.5 h-3.5 text-brand-red" />, text: "SL1 1AA, Slough" },
+          { icon: <MapPin className="w-3.5 h-3.5 text-brand-red" />, text: "IG1 1AA, Ilford" },
         ].map((row, i) => (
           <div key={i} className="flex items-center gap-2.5">
             {row.icon}

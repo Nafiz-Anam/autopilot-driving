@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s | AutoPilot Driving School",
   },
   description:
-    "UK's premier driving school. Expert DVSA-approved instructors covering Slough, Windsor, Reading, Maidenhead and surrounding areas. Book your first lesson today.",
+    "UK's premier driving school. Expert DVSA-approved instructors covering Ilford, Romford, Barking, Dagenham and surrounding areas. Book your first lesson today.",
   keywords: ["driving school", "driving lessons", "learn to drive", "UK", "DVSA approved"],
   openGraph: {
     title: "AutoPilot Driving School",
