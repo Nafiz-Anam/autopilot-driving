@@ -53,13 +53,17 @@ class ProgressiveRateLimitService {
       resetAfterMs: 60 * 60 * 1000, // Reset after 1 hour of no attempts
     });
 
-    // Password reset - extremely strict
+    // Password reset — moderate. Bucket is shared across the whole
+    // /forgot-password → /verify-reset-otp → /reset-password-otp flow,
+    // so a single legitimate user can spend 3-4 requests before even
+    // finishing one reset. Keep it strict enough to slow abuse but
+    // generous enough that a mistyped OTP doesn't lock users out.
     this.configs.set('password-reset', {
       baseWindowMs: 60 * 60 * 1000, // 1 hour
-      baseMaxRequests: config.env === 'production' ? 3 : 5,
-      maxPenaltyMultiplier: 16, // Max 16x penalty
-      penaltyIncrementMs: 30 * 60 * 1000, // 30 minutes penalty per violation
-      resetAfterMs: 4 * 60 * 60 * 1000, // Reset after 4 hours
+      baseMaxRequests: config.env === 'production' ? 10 : 20,
+      maxPenaltyMultiplier: 8,
+      penaltyIncrementMs: 15 * 60 * 1000, // 15 minutes penalty per violation
+      resetAfterMs: 2 * 60 * 60 * 1000, // Reset after 2 hours
     });
 
     // Registration - strict
