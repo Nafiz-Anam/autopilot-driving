@@ -95,6 +95,9 @@ importers:
       multer:
         specifier: ^2.1.1
         version: 2.1.1
+      node-ical:
+        specifier: ^0.26.1
+        version: 0.26.1
       nodemailer:
         specifier: ^8.0.2
         version: 8.0.10
@@ -1152,6 +1155,13 @@ packages:
 
   /@js-sdsl/ordered-map@4.4.2:
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
+    dev: false
+
+  /@js-temporal/polyfill@0.5.1:
+    resolution: {integrity: sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ==}
+    engines: {node: '>=12'}
+    dependencies:
+      jsbi: 4.3.2
     dev: false
 
   /@kurkle/color@0.3.4:
@@ -6157,6 +6167,10 @@ packages:
       argparse: 2.0.1
     dev: true
 
+  /jsbi@4.3.2:
+    resolution: {integrity: sha512-9fqMSQbhJykSeii05nxKl4m6Eqn2P6rOlYiS+C5Dr/HPIU/7yZxu5qzbs40tgaFORiw2Amd0mirjxatXYMkIew==}
+    dev: false
+
   /jsesc@3.1.0:
     resolution: {integrity: sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==}
     engines: {node: '>=6'}
@@ -6653,6 +6667,14 @@ packages:
       data-uri-to-buffer: 4.0.1
       fetch-blob: 3.2.0
       formdata-polyfill: 4.0.10
+    dev: false
+
+  /node-ical@0.26.1:
+    resolution: {integrity: sha512-KoYLpsz7Ga9lPDpt9vy0iKcgcb/9Ix7ICRZd0csLXMl2lZOSONGj7HrcktJFR7Jid1l44Zu1H4k/1nB04rWPgQ==}
+    engines: {node: '>=20'}
+    dependencies:
+      rrule-temporal: 1.6.0
+      temporal-polyfill: 0.3.2
     dev: false
 
   /node-int64@0.4.0:
@@ -7567,6 +7589,13 @@ packages:
     transitivePeerDependencies:
       - supports-color
 
+  /rrule-temporal@1.6.0:
+    resolution: {integrity: sha512-tlhiNroletItRVdVP3knk92MCPNdFmPpehQMxf+jSo0CHZpmp1WUsvdVpg2iS++J9+O7/89J64BldN21kbcBqA==}
+    dependencies:
+      '@js-temporal/polyfill': 0.5.1
+      temporal-spec: 1.0.0
+    dev: false
+
   /run-series@1.1.9:
     resolution: {integrity: sha512-Arc4hUN896vjkqCYrUXquBFtRZdv1PfLbTYP71efP6butxyQ0kWpiNJyAgsxscmQg1cqvHY32/UCBzXedTpU2g==}
     dev: false
@@ -8088,6 +8117,20 @@ packages:
     resolution: {integrity: sha512-+G0LLgjjo9BZX2MfdvPfH+MKLCrxlXSYec5DaPYP1fe6Iyhf0/fSmJ0bFiZ1F8BT6cGXl2LpltQptzjXKWEkKA==}
     dependencies:
       bintrees: 1.0.2
+    dev: false
+
+  /temporal-polyfill@0.3.2:
+    resolution: {integrity: sha512-TzHthD/heRK947GNiSu3Y5gSPpeUDH34+LESnfsq8bqpFhsB79HFBX8+Z834IVX68P3EUyRPZK5bL/1fh437Eg==}
+    dependencies:
+      temporal-spec: 0.3.1
+    dev: false
+
+  /temporal-spec@0.3.1:
+    resolution: {integrity: sha512-B4TUhezh9knfSIMwt7RVggApDRJZo73uZdj8AacL2mZ8RP5KtLianh2MXxL06GN9ESYiIsiuoLQhgVfwe55Yhw==}
+    dev: false
+
+  /temporal-spec@1.0.0:
+    resolution: {integrity: sha512-00Ahj1e1ifaERTMOIIGpOCdOo9IEk2m6GGSMedsn9a2SIsGLdOTbmME1Htv6IM82b6VHrzSUTIVc7YHy6hdhFQ==}
     dev: false
 
   /test-exclude@6.0.0:

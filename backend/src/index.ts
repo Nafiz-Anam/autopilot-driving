@@ -7,6 +7,7 @@ import tokenCleanupService from './services/tokenCleanup.service';
 import { initializeWebSocket } from './controllers/websocket.controller';
 import { initializeTracing } from './utils/tracing';
 import googleCalendarSyncService from './services/googleCalendarSync.service';
+import appleCalendarService from './services/appleCalendar.service';
 
 // Initialize OpenTelemetry tracing
 initializeTracing();
@@ -55,6 +56,19 @@ prisma
           logger.warn('busy block cleanup failed', { error: e?.message })
         );
       }, ONE_DAY);
+
+      // Apple Calendar: pull all connected ICS feeds every 15min
+      const FIFTEEN_MIN = 15 * 60 * 1000;
+      setTimeout(() => {
+        appleCalendarService.syncAll().catch(e =>
+          logger.warn('apple ics sync failed', { error: e?.message })
+        );
+      }, 45_000);
+      setInterval(() => {
+        appleCalendarService.syncAll().catch(e =>
+          logger.warn('apple ics sync failed', { error: e?.message })
+        );
+      }, FIFTEEN_MIN);
     });
   })
   .catch((error: Error) => {
