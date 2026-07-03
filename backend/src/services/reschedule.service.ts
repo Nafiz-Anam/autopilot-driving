@@ -44,12 +44,53 @@ const createRequest = async (params: {
 
   // Admin always reschedules directly — no approval needed
   if (params.requestedByRole === 'ADMIN') {
-    await prisma.$executeRawUnsafe(
-      `UPDATE "Booking" SET "scheduledAt" = $2::timestamp, notes = COALESCE($3::text, notes), "updatedAt" = NOW() WHERE id = $1`,
-      params.bookingId,
-      params.proposedDateTime,
-      params.notes ?? null
-    );
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "Booking" SET "scheduledAt" = $2::timestamp, notes = COALESCE($3::text, notes), "updatedAt" = NOW() WHERE id = $1`,
+        params.bookingId,
+        params.proposedDateTime,
+        params.notes ?? null
+      );
+    } catch (err: any) {
+      if (String(err?.message ?? '').includes('booking_no_overlap')) {
+        return { error: 'CONFLICT' as const };
+      }
+      throw err;
+    }
+
+    // Broadcast update to both parties
+    try {
+      const rows = await prisma.$queryRawUnsafe<Array<{
+        studentId: string; studentName: string | null;
+        reference: string; lessonType: string; durationMins: number;
+        instructorUserId: string | null; instructorName: string | null;
+      }>>(
+        `SELECT b."studentId", su.name AS "studentName",
+                b.reference, b."lessonType", b."durationMins",
+                iu.id AS "instructorUserId", iu.name AS "instructorName"
+         FROM "Booking" b
+         LEFT JOIN users su ON su.id = b."studentId"
+         LEFT JOIN "Instructor" i ON i.id = b."instructorId"
+         LEFT JOIN users iu ON iu.id = i."userId"
+         WHERE b.id = $1 LIMIT 1`,
+        params.bookingId
+      );
+      const r = rows[0];
+      if (r) {
+        googleCalendarService.broadcastBookingUpdated({
+          studentId: r.studentId,
+          instructorUserId: r.instructorUserId,
+          bookingId: params.bookingId,
+          reference: r.reference,
+          lessonType: r.lessonType,
+          studentName: r.studentName ?? 'Student',
+          instructorName: r.instructorName ?? 'AutoPilot Instructor',
+          scheduledAt: new Date(params.proposedDateTime),
+          durationMins: r.durationMins,
+        }).catch(() => {});
+      }
+    } catch { /* non-critical */ }
+
     return { data: { type: 'DIRECT' as const, bookingId: params.bookingId } };
   }
 
@@ -179,30 +220,55 @@ const respondToRequest = async (params: {
   );
 
   if (params.accept) {
-    await prisma.$executeRawUnsafe(
-      `UPDATE "Booking" SET "scheduledAt" = $2::timestamp, "updatedAt" = NOW() WHERE id = $1`,
-      req.bookingId,
-      req.proposedDateTime.toISOString()
-    );
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "Booking" SET "scheduledAt" = $2::timestamp, "updatedAt" = NOW() WHERE id = $1`,
+        req.bookingId,
+        req.proposedDateTime.toISOString()
+      );
+    } catch (err: any) {
+      if (String(err?.message ?? '').includes('booking_no_overlap')) {
+        // Roll the reschedule status back — proposed time now clashes with a newer booking
+        await prisma.$executeRawUnsafe(
+          `UPDATE "RescheduleRequest" SET status = 'DECLINED'::"RescheduleStatus", "updatedAt" = NOW() WHERE id = $1`,
+          params.requestId
+        );
+        return { error: 'CONFLICT' as const };
+      }
+      throw err;
+    }
 
-    // Update Google Calendar event with new time (fire-and-forget)
+    // Update Google Calendar event on BOTH parties (fire-and-forget)
     const bookingRows = await prisma.$queryRawUnsafe<
-      Array<{ studentId: string; reference: string; lessonType: string; durationMins: number; instructorName: string | null }>
+      Array<{
+        studentId: string;
+        studentName: string | null;
+        reference: string;
+        lessonType: string;
+        durationMins: number;
+        instructorUserId: string | null;
+        instructorName: string | null;
+      }>
     >(
-      `SELECT b."studentId", b.reference, b."lessonType", b."durationMins",
-              u.name AS "instructorName"
+      `SELECT b."studentId", su.name AS "studentName",
+              b.reference, b."lessonType", b."durationMins",
+              iu.id AS "instructorUserId", iu.name AS "instructorName"
        FROM "Booking" b
+       LEFT JOIN users su ON su.id = b."studentId"
        LEFT JOIN "Instructor" i ON i.id = b."instructorId"
-       LEFT JOIN users u ON u.id = i."userId"
+       LEFT JOIN users iu ON iu.id = i."userId"
        WHERE b.id = $1 LIMIT 1`,
       req.bookingId
     );
     const bRow = bookingRows[0];
     if (bRow) {
-      googleCalendarService.updateCalendarEvent(bRow.studentId, {
+      googleCalendarService.broadcastBookingUpdated({
+        studentId: bRow.studentId,
+        instructorUserId: bRow.instructorUserId,
         bookingId: req.bookingId,
         reference: bRow.reference,
         lessonType: bRow.lessonType,
+        studentName: bRow.studentName ?? 'Student',
         instructorName: bRow.instructorName ?? 'AutoPilot Instructor',
         scheduledAt: new Date(req.proposedDateTime),
         durationMins: bRow.durationMins,

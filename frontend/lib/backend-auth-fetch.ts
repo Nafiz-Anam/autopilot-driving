@@ -95,3 +95,14 @@ export async function getNextAuthBridgeHeaders(): Promise<Record<string, string>
   if (token) return { Authorization: `Bearer ${token}` };
   return {};
 }
+
+/**
+ * Returns just the current app JWT, refreshing proactively if needed.
+ * Use when you need the raw token (e.g. embedding into a URL for a browser redirect).
+ */
+export async function getNextAuthBridgeToken(): Promise<string | null> {
+  let token = getAppJwt();
+  if (token && !isAppJwtExpired(token)) return token;
+  token = await tryRefreshToken();
+  return token;
+}

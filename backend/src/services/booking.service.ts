@@ -8,7 +8,9 @@ import refundService from './refund.service';
 import googleCalendarService from './googleCalendar.service';
 import emailService from './email.service';
 
-const ALL_SLOTS = [
+// Fallback slot grid used only when instructor has no Availability rows w/ startTime/endTime.
+// Kept for backwards compatibility w/ instructors whose profile predates the sync engine.
+const FALLBACK_SLOTS = [
   '08:00',
   '09:00',
   '10:00',
@@ -19,6 +21,26 @@ const ALL_SLOTS = [
   '16:00',
   '17:00',
 ];
+const SLOT_STEP_MINS = 15;
+
+function parseHHMM(s: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s ?? '');
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function formatHHMM(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
+  return aStart < bEnd && bStart < aEnd;
+}
 
 // Fetch pending reschedule requests for a set of booking IDs
 async function fetchPendingReschedules(bookingIds: string[]) {
@@ -157,32 +179,39 @@ const createForStudent = async (input: CreateBookingInput) => {
   const scheduledAt = input.scheduledAt ?? now.toISOString();
   const transmission = input.transmission ?? 'manual';
 
-  await prisma.$executeRawUnsafe(
-    `INSERT INTO "Booking" (
-      id, reference, "studentId", "instructorId", "lessonType", transmission, "scheduledAt",
-      "durationMins", status, "paymentStatus", "totalAmount", "pricingPackageId",
-      "voucherCode", "couponCode", notes, "createdAt", "updatedAt"
-    ) VALUES (
-      $1, $2, $3, $4, $5::"LessonType", $6, $7::timestamp,
-      $8, 'PENDING', 'UNPAID', $9::decimal, $10,
-      $11, $12, $13, $14::timestamp, $15::timestamp
-    )`,
-    id,
-    reference,
-    input.studentId,
-    isTheory ? null : (input.instructorId ?? null),
-    input.lessonType,
-    transmission,
-    scheduledAt,
-    input.durationMins,
-    resolved.totalAmount.toFixed(2),
-    resolved.packageId,
-    input.voucherCode ?? null,
-    input.couponCode ?? null,
-    input.notes ?? null,
-    now.toISOString(),
-    now.toISOString()
-  );
+  try {
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "Booking" (
+        id, reference, "studentId", "instructorId", "lessonType", transmission, "scheduledAt",
+        "durationMins", status, "paymentStatus", "totalAmount", "pricingPackageId",
+        "voucherCode", "couponCode", notes, "createdAt", "updatedAt"
+      ) VALUES (
+        $1, $2, $3, $4, $5::"LessonType", $6, $7::timestamp,
+        $8, 'PENDING', 'UNPAID', $9::decimal, $10,
+        $11, $12, $13, $14::timestamp, $15::timestamp
+      )`,
+      id,
+      reference,
+      input.studentId,
+      isTheory ? null : (input.instructorId ?? null),
+      input.lessonType,
+      transmission,
+      scheduledAt,
+      input.durationMins,
+      resolved.totalAmount.toFixed(2),
+      resolved.packageId,
+      input.voucherCode ?? null,
+      input.couponCode ?? null,
+      input.notes ?? null,
+      now.toISOString(),
+      now.toISOString()
+    );
+  } catch (err: any) {
+    if (String(err?.message ?? '').includes('booking_no_overlap')) {
+      return { conflict: true as const };
+    }
+    throw err;
+  }
 
   return {
     id,
@@ -245,8 +274,29 @@ const cancelForStudent = async (bookingId: string, studentId: string, reason: st
     }
   }
 
-  // Remove from Google Calendar (fire-and-forget)
-  googleCalendarService.deleteCalendarEvent(studentId, bookingId).catch(() => {});
+  // Remove from Google Calendar for both parties (fire-and-forget)
+  void (async () => {
+    try {
+      const cancelParties = await prisma.$queryRawUnsafe<
+        Array<{ studentId: string; instructorUserId: string | null }>
+      >(
+        `SELECT b."studentId", u.id AS "instructorUserId"
+         FROM "Booking" b
+         LEFT JOIN "Instructor" i ON i.id = b."instructorId"
+         LEFT JOIN users u ON u.id = i."userId"
+         WHERE b.id = $1 LIMIT 1`,
+        bookingId
+      );
+      const p = cancelParties[0];
+      if (p) {
+        await googleCalendarService.broadcastBookingDeleted({
+          studentId: p.studentId,
+          instructorUserId: p.instructorUserId,
+          bookingId,
+        });
+      }
+    } catch { /* non-critical */ }
+  })();
 
   // Send cancellation emails (fire-and-forget)
   void (async () => {
@@ -356,49 +406,127 @@ const respondToRescheduleRequest = async (
   return { data: rows[0] };
 };
 
-const getAvailability = async (instructorId: string, startDateStr: string, endDateStr: string) => {
-  const startDate = moment(startDateStr).toDate();
-  const endDate = moment(endDateStr).toDate();
+const getAvailability = async (
+  instructorId: string,
+  startDateStr: string,
+  endDateStr: string,
+  durationMins = 60
+) => {
+  const rangeStart = moment(startDateStr).startOf('day').toDate();
+  const rangeEnd = moment(endDateStr).endOf('day').toDate();
 
-  const availabilityPatterns = await prisma.$queryRawUnsafe<Array<{ dayOfWeek: number }>>(
-    `SELECT "dayOfWeek" FROM "Availability" WHERE "instructorId" = $1 AND "isAvailable" = true`,
-    instructorId
-  );
-
-  const existingBookings = await prisma.$queryRawUnsafe<Array<{ scheduledAt: Date }>>(
-    `SELECT "scheduledAt" FROM "Booking"
-     WHERE "instructorId" = $1
-       AND "scheduledAt" >= $2::timestamp
-       AND "scheduledAt" <= $3::timestamp
-       AND status IN ('CONFIRMED', 'PENDING')`,
-    instructorId,
-    moment(startDateStr).toISOString(),
-    moment(endDateStr).add(1, 'day').toISOString()
-  );
-
-  const bookedSlots = new Set<string>();
-  for (const booking of existingBookings) {
-    const dateStr = moment(booking.scheduledAt).format('YYYY-MM-DD');
-    const timeStr = moment(booking.scheduledAt).format('HH:mm');
-    bookedSlots.add(`${dateStr} ${timeStr}`);
+  // 1. Weekly pattern — keep startTime/endTime where present
+  const patterns = await prisma.availability.findMany({
+    where: { instructorId, isAvailable: true },
+    select: { dayOfWeek: true, startTime: true, endTime: true },
+  });
+  const patternByDow = new Map<number, { startMins: number; endMins: number }[]>();
+  for (const p of patterns) {
+    const s = parseHHMM(p.startTime) ?? parseHHMM('08:00')!;
+    const e = parseHHMM(p.endTime) ?? parseHHMM('18:00')!;
+    if (e <= s) continue;
+    const arr = patternByDow.get(p.dayOfWeek) ?? [];
+    arr.push({ startMins: s, endMins: e });
+    patternByDow.set(p.dayOfWeek, arr);
   }
 
-  const result: { date: string; slots: string[] }[] = [];
-  let current = moment(startDate).startOf('day');
-  const end = moment(endDate).startOf('day');
+  // 2. Existing bookings in range
+  const bookings = await prisma.booking.findMany({
+    where: {
+      instructorId,
+      status: { in: ['CONFIRMED', 'PENDING'] as any },
+      scheduledAt: { gte: rangeStart, lte: rangeEnd },
+    },
+    select: { scheduledAt: true, durationMins: true },
+  });
 
-  while (current.isSameOrBefore(end)) {
-    const dayOfWeek = current.day();
-    const dateStr = current.format('YYYY-MM-DD');
-    const pattern = availabilityPatterns.find((p) => p.dayOfWeek === dayOfWeek);
+  // 3. External busy blocks (from Google Cal sync)
+  const busy = await prisma.instructorBusyBlock.findMany({
+    where: {
+      instructorId,
+      startsAt: { lte: rangeEnd },
+      endsAt: { gte: rangeStart },
+    },
+    select: { startsAt: true, endsAt: true },
+  });
 
-    if (pattern) {
-      const availableSlots = ALL_SLOTS.filter((slot) => !bookedSlots.has(`${dateStr} ${slot}`));
-      result.push({ date: dateStr, slots: availableSlots });
-    } else {
-      result.push({ date: dateStr, slots: [] });
+  // Group blockers by local date (YYYY-MM-DD)
+  const blockersByDate = new Map<string, Array<{ start: number; end: number }>>();
+  const addBlocker = (start: Date, end: Date) => {
+    const dateKey = moment(start).format('YYYY-MM-DD');
+    const s = start.getHours() * 60 + start.getMinutes();
+    const eSameDay = end.getHours() * 60 + end.getMinutes();
+    // If block spans across midnight, clamp per day
+    const e = moment(end).format('YYYY-MM-DD') === dateKey ? eSameDay : 24 * 60;
+    const list = blockersByDate.get(dateKey) ?? [];
+    list.push({ start: s, end: e });
+    blockersByDate.set(dateKey, list);
+    // Continue into next day if needed
+    if (moment(end).format('YYYY-MM-DD') !== dateKey) {
+      const nextKey = moment(start).add(1, 'day').startOf('day').format('YYYY-MM-DD');
+      const nextList = blockersByDate.get(nextKey) ?? [];
+      nextList.push({ start: 0, end: end.getHours() * 60 + end.getMinutes() });
+      blockersByDate.set(nextKey, nextList);
     }
-    current = current.clone().add(1, 'day');
+  };
+  for (const b of bookings) {
+    const end = new Date(b.scheduledAt.getTime() + b.durationMins * 60_000);
+    addBlocker(b.scheduledAt, end);
+  }
+  for (const b of busy) {
+    addBlocker(b.startsAt, b.endsAt);
+  }
+
+  const nowMs = Date.now();
+  const result: { date: string; slots: string[] }[] = [];
+  let cursor = moment(rangeStart).startOf('day');
+  const end = moment(rangeEnd).startOf('day');
+
+  while (cursor.isSameOrBefore(end)) {
+    const dow = cursor.day();
+    const dateStr = cursor.format('YYYY-MM-DD');
+    let windows = patternByDow.get(dow) ?? [];
+    if (!windows.length && patternByDow.size === 0) {
+      // Legacy fallback for instructors w/ no rows at all — use FALLBACK_SLOTS grid
+      windows = [{ startMins: parseHHMM('08:00')!, endMins: parseHHMM('18:00')! }];
+    }
+    if (!windows.length) {
+      result.push({ date: dateStr, slots: [] });
+      cursor = cursor.clone().add(1, 'day');
+      continue;
+    }
+
+    const blockers = blockersByDate.get(dateStr) ?? [];
+    const slots: string[] = [];
+
+    for (const w of windows) {
+      let t = w.startMins;
+      while (t + durationMins <= w.endMins) {
+        const slotEnd = t + durationMins;
+        const conflict = blockers.some(b => overlaps(t, slotEnd, b.start, b.end));
+        if (!conflict) {
+          const slotAt = cursor.clone().hour(Math.floor(t / 60)).minute(t % 60).second(0).valueOf();
+          if (slotAt > nowMs) {
+            slots.push(formatHHMM(t));
+          }
+        }
+        t += SLOT_STEP_MINS;
+      }
+    }
+
+    // If no per-day pattern rows had start/end (legacy), fall back to hourly grid.
+    if (patternByDow.size === 0 && slots.length === 0) {
+      const legacy = FALLBACK_SLOTS.filter(slot => {
+        const mins = parseHHMM(slot)!;
+        const conflict = blockers.some(b => overlaps(mins, mins + 60, b.start, b.end));
+        return !conflict;
+      });
+      result.push({ date: dateStr, slots: legacy });
+    } else {
+      result.push({ date: dateStr, slots });
+    }
+
+    cursor = cursor.clone().add(1, 'day');
   }
 
   return result;

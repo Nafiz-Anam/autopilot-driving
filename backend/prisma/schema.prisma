@@ -109,7 +109,9 @@ model User {
   apiKeys             ApiKey[]
   instructorProfile   Instructor?
   drivingBookings     Booking[]  @relation("BookingStudent")
-  
+  integrations        UserIntegration[]
+  calendarWatches     CalendarWatch[]
+
   @@map("users")
 }
 
@@ -633,8 +635,59 @@ model Instructor {
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   availability  Availability[]
   bookings      Booking[]
+  busyBlocks    InstructorBusyBlock[]
 
   @@map("Instructor")
+}
+
+model UserIntegration {
+  id             String   @id @default(cuid())
+  userId         String   @map("userId")
+  provider       String
+  encryptedToken String   @map("encryptedToken")
+  enabled        Boolean  @default(true)
+  syncCalendarId String   @default("primary") @map("syncCalendarId")
+  externalEmail  String?  @map("externalEmail")
+  createdAt      DateTime @default(now()) @map("createdAt")
+  updatedAt      DateTime @updatedAt @map("updatedAt")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@map("UserIntegration")
+}
+
+model CalendarWatch {
+  id         String   @id @default(cuid())
+  userId     String   @map("userId")
+  provider   String
+  channelId  String   @unique @map("channelId")
+  resourceId String   @map("resourceId")
+  expiration DateTime
+  syncToken  String?  @map("syncToken")
+  createdAt  DateTime @default(now()) @map("createdAt")
+  updatedAt  DateTime @updatedAt @map("updatedAt")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiration])
+  @@index([userId, provider])
+  @@map("CalendarWatch")
+}
+
+model InstructorBusyBlock {
+  id           String   @id @default(cuid())
+  instructorId String   @map("instructorId")
+  source       String   @default("google")
+  externalId   String   @map("externalId")
+  startsAt     DateTime @map("startsAt")
+  endsAt       DateTime @map("endsAt")
+  isAllDay     Boolean  @default(false) @map("isAllDay")
+  createdAt    DateTime @default(now()) @map("createdAt")
+  updatedAt    DateTime @updatedAt @map("updatedAt")
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@unique([instructorId, source, externalId])
+  @@index([instructorId, startsAt, endsAt])
+  @@map("InstructorBusyBlock")
 }
 
 model Availability {

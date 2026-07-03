@@ -1,6 +1,4 @@
 import express, { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import config from '../../config/config';
 import googleCalendarController from '../../controllers/googleCalendar.controller';
 import nextAuthBridge from '../../middlewares/nextAuthBridge';
 import { loadDrivingSchoolUser } from '../../middlewares/drivingSchoolUser';
@@ -9,6 +7,9 @@ const router = express.Router();
 
 // Public — Google redirects here after OAuth consent (no auth needed)
 router.get('/callback', googleCalendarController.callback);
+
+// Public — Google push notification target (verified via X-Goog-Channel-Token = userId)
+router.post('/webhook', express.json({ limit: '32kb' }), googleCalendarController.webhook);
 
 /**
  * /connect is hit via browser redirect (not fetch), so the JWT must come
@@ -24,9 +25,9 @@ function bridgeFromQuery(req: Request, _res: Response, next: NextFunction) {
 
 router.get('/connect', bridgeFromQuery, nextAuthBridge(), loadDrivingSchoolUser(), googleCalendarController.connect);
 
-// Standard authenticated routes
 router.use(nextAuthBridge(), loadDrivingSchoolUser());
 router.get('/status', googleCalendarController.status);
 router.delete('/disconnect', googleCalendarController.disconnect);
+router.post('/resync', googleCalendarController.resync);
 
 export default router;

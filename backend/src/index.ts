@@ -6,7 +6,7 @@ import logger from './config/logger';
 import tokenCleanupService from './services/tokenCleanup.service';
 import { initializeWebSocket } from './controllers/websocket.controller';
 import { initializeTracing } from './utils/tracing';
-import googleCalendarService from './services/googleCalendar.service';
+import googleCalendarSyncService from './services/googleCalendarSync.service';
 
 // Initialize OpenTelemetry tracing
 initializeTracing();
@@ -33,10 +33,28 @@ prisma
       // Schedule token cleanup to run every 15 minutes
       tokenCleanupService.scheduleTokenCleanup(15);
 
-      // Ensure Google Calendar integration table exists
-      googleCalendarService.ensureIntegrationTable().catch((e) =>
-        logger.warn('Could not create UserIntegration table', { error: e?.message })
-      );
+      // Google Calendar sync: renew expiring watches every 6h, cleanup past busy blocks daily.
+      // Kick a first pass 30s after boot so restarts w/ soon-to-expire channels self-heal.
+      const SIX_HOURS = 6 * 60 * 60 * 1000;
+      const ONE_DAY = 24 * 60 * 60 * 1000;
+
+      setTimeout(() => {
+        googleCalendarSyncService.renewExpiringWatches().catch(e =>
+          logger.warn('watch renewal failed', { error: e?.message })
+        );
+      }, 30_000);
+
+      setInterval(() => {
+        googleCalendarSyncService.renewExpiringWatches().catch(e =>
+          logger.warn('watch renewal failed', { error: e?.message })
+        );
+      }, SIX_HOURS);
+
+      setInterval(() => {
+        googleCalendarSyncService.cleanupPastBusyBlocks().catch(e =>
+          logger.warn('busy block cleanup failed', { error: e?.message })
+        );
+      }, ONE_DAY);
     });
   })
   .catch((error: Error) => {

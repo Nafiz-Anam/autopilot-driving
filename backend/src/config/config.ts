@@ -34,6 +34,7 @@ const envVarsSchema = z.object({
   GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
   GOOGLE_CALENDAR_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CALENDAR_REDIRECT_URI: z.string().optional(),
+  GOOGLE_CALENDAR_WEBHOOK_URL: z.string().optional(),
   INTEGRATION_ENCRYPTION_KEY: z.string().optional(),
 });
 
@@ -90,6 +91,7 @@ const config = {
       clientId: envVars.GOOGLE_CALENDAR_CLIENT_ID ?? '',
       clientSecret: envVars.GOOGLE_CALENDAR_CLIENT_SECRET ?? '',
       redirectUri: envVars.GOOGLE_CALENDAR_REDIRECT_URI ?? '',
+      webhookUrl: envVars.GOOGLE_CALENDAR_WEBHOOK_URL ?? '',
     },
   },
   integrationEncryptionKey: envVars.INTEGRATION_ENCRYPTION_KEY ?? envVars.JWT_SECRET,

@@ -61,6 +61,14 @@ const createMine = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
+  if ('conflict' in created) {
+    return res.status(httpStatus.CONFLICT).send({
+      success: false,
+      error: 'SLOT_TAKEN',
+      message: 'That time slot was just booked. Please pick another.',
+    });
+  }
+
   res.status(httpStatus.OK).send({
     success: true,
     data: {
@@ -93,7 +101,10 @@ const getAvailability = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  const data = await bookingService.getAvailability(instructorId, startDate, endDate);
+  const durationRaw = String(req.query.durationMins ?? '60').trim();
+  const durationMins = Math.max(15, Math.min(600, parseInt(durationRaw, 10) || 60));
+
+  const data = await bookingService.getAvailability(instructorId, startDate, endDate, durationMins);
   res.status(httpStatus.OK).send({ success: true, data });
 });
 

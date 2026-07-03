@@ -8,6 +8,7 @@ import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 import { CalendarSubscribeCard } from "@/components/shared/CalendarSubscribeCard";
 import { GoogleCalendarSubscribeCard } from "@/components/shared/GoogleCalendarSubscribeCard";
+import { GoogleCalendarSyncCard } from "@/components/shared/GoogleCalendarSyncCard";
 
 interface ProfileForm {
   name: string;
@@ -556,6 +557,7 @@ export default function InstructorProfilePage() {
                 transition={{ duration: 0.2 }}
                 className="space-y-4"
               >
+                <GoogleCalendarSyncCard role="instructor" />
                 <GoogleCalendarSubscribeCard role="instructor" />
                 <CalendarSubscribeCard role="instructor" />
               </motion.div>

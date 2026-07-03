@@ -50,6 +50,7 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
         studentId: string;
         studentName: string | null;
         studentEmail: string;
+        instructorUserId: string | null;
         instructorName: string | null;
         instructorEmail: string | null;
       }>
@@ -57,6 +58,7 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
       `SELECT b.reference, b."lessonType", b."scheduledAt", b."durationMins", b."totalAmount"::text,
               b."studentId",
               su.name AS "studentName", su.email AS "studentEmail",
+              iu.id AS "instructorUserId",
               iu.name AS "instructorName", iu.email AS "instructorEmail"
        FROM "Booking" b
        INNER JOIN users su ON su.id = b."studentId"
@@ -90,11 +92,14 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
         icsContent,
       });
 
-      // Auto-add to Google Calendar if student has connected their account
-      googleCalendarService.createCalendarEvent(row.studentId, {
+      // Auto-add to Google Calendar for BOTH student + instructor (silent no-op if disconnected)
+      googleCalendarService.broadcastBookingCreated({
+        studentId: row.studentId,
+        instructorUserId: row.instructorUserId,
         bookingId,
         reference: row.reference,
         lessonType: row.lessonType,
+        studentName: row.studentName ?? 'Student',
         instructorName: row.instructorName ?? 'AutoPilot Instructor',
         scheduledAt: new Date(row.scheduledAt),
         durationMins: row.durationMins,
