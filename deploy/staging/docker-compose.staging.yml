@@ -61,6 +61,8 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
+    volumes:
+      - backend_uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -118,6 +120,7 @@ services:
 volumes:
   postgres_staging_data:
   redis_staging_data:
+  backend_uploads:
 
 networks:
   autopilot-staging:
