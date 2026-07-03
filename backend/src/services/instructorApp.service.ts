@@ -85,7 +85,7 @@ const updateInstructorProfileByUserId = async (
 
   if (setClauses.length > 0) {
     await prisma.$executeRawUnsafe(
-      `UPDATE "Instructor" SET ${setClauses.join(', ')}, "updatedAt" = NOW() WHERE id = $${idx}`,
+      `UPDATE "Instructor" SET ${setClauses.join(', ')} WHERE id = $${idx}`,
       ...values,
       instructor.id
     );
