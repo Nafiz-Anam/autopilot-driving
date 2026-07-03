@@ -131,30 +131,39 @@ const refreshAuth = async (refreshToken: string, req: Request) => {
  * @returns {Promise}
  */
 const resetPassword = async (resetPasswordToken: string, newPassword: string, req: Request) => {
+  let resetPasswordTokenDoc;
   try {
-    const resetPasswordTokenDoc = await tokenService.verifyToken(
+    resetPasswordTokenDoc = await tokenService.verifyToken(
       resetPasswordToken,
       TokenType.RESET_PASSWORD
     );
-    const user = (await userService.getUserById(resetPasswordTokenDoc.userId)) as any;
-    if (!user) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
-    }
-
-    await passwordSecurityService.updatePassword(user.id, newPassword);
-    await securityService.logSecurityEvent({
-      userId: user.id,
-      ipAddress: req.ip || '',
-      userAgent: req.get('User-Agent') || 'Unknown',
-      eventType: SecurityEventType.PASSWORD_RESET_COMPLETED,
-      success: true,
-      details: { timestamp: new Date().toISOString() },
-    });
-
-    await tokenService.blacklistToken(resetPasswordTokenDoc.id);
   } catch (error) {
-    throw new ApiError(httpStatus.UNAUTHORIZED, 'Password reset failed');
+    throw new ApiError(
+      httpStatus.UNAUTHORIZED,
+      'This password reset link is invalid or has expired. Please request a new one.'
+    );
   }
+
+  const user = (await userService.getUserById(resetPasswordTokenDoc.userId)) as any;
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  // updatePassword throws ApiError with specific messages (e.g. password
+  // history, complexity). Let those propagate so the client sees the real
+  // reason instead of a generic "Password reset failed".
+  await passwordSecurityService.updatePassword(user.id, newPassword);
+
+  await securityService.logSecurityEvent({
+    userId: user.id,
+    ipAddress: req.ip || '',
+    userAgent: req.get('User-Agent') || 'Unknown',
+    eventType: SecurityEventType.PASSWORD_RESET_COMPLETED,
+    success: true,
+    details: { timestamp: new Date().toISOString() },
+  });
+
+  await tokenService.blacklistToken(resetPasswordTokenDoc.id);
 };
 
 /**
