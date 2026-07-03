@@ -6,7 +6,6 @@ import { Eye, EyeOff, AlertTriangle, X, Loader2, User, Lock, Calendar } from "lu
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
-import { CalendarSubscribeCard } from "@/components/shared/CalendarSubscribeCard";
 import { GoogleCalendarSyncCard } from "@/components/shared/GoogleCalendarSyncCard";
 import { AppleCalendarSyncCard } from "@/components/shared/AppleCalendarSyncCard";
 
@@ -559,7 +558,6 @@ export default function InstructorProfilePage() {
               >
                 <GoogleCalendarSyncCard role="instructor" />
                 <AppleCalendarSyncCard role="instructor" />
-                <CalendarSubscribeCard role="instructor" />
               </motion.div>
             )}
           </AnimatePresence>
