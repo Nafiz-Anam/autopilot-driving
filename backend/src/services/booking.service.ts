@@ -8,20 +8,14 @@ import refundService from './refund.service';
 import googleCalendarService from './googleCalendar.service';
 import emailService from './email.service';
 
-// Fallback slot grid used only when instructor has no Availability rows w/ startTime/endTime.
-// Kept for backwards compatibility w/ instructors whose profile predates the sync engine.
-const FALLBACK_SLOTS = [
-  '08:00',
-  '09:00',
-  '10:00',
-  '11:00',
-  '13:00',
-  '14:00',
-  '15:00',
-  '16:00',
-  '17:00',
-];
-const SLOT_STEP_MINS = 15;
+// Availability policy:
+//   - Baseline: full 24h/day for every instructor.
+//   - The ONLY blockers are (a) Google Calendar busy events synced via webhook,
+//     (b) existing PENDING/CONFIRMED Booking rows.
+//   - The old weekday Availability template is intentionally ignored so there is
+//     one source of truth (the instructor's Google Calendar).
+const SLOT_STEP_MINS = 60;
+const MAX_BOOKING_HORIZON_DAYS = 60;
 
 function parseHHMM(s: string): number | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(s ?? '');
@@ -178,6 +172,19 @@ const createForStudent = async (input: CreateBookingInput) => {
   const isTheory = input.lessonType === 'THEORY';
   const scheduledAt = input.scheduledAt ?? now.toISOString();
   const transmission = input.transmission ?? 'manual';
+
+  // 60-day booking horizon (matches Google Cal sync window)
+  if (!isTheory) {
+    const scheduled = new Date(scheduledAt);
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + MAX_BOOKING_HORIZON_DAYS);
+    if (scheduled > horizon) {
+      return { horizonExceeded: true as const };
+    }
+    if (scheduled < now) {
+      return { pastDate: true as const };
+    }
+  }
 
   try {
     await prisma.$executeRawUnsafe(
@@ -412,66 +419,52 @@ const getAvailability = async (
   endDateStr: string,
   durationMins = 60
 ) => {
+  const horizon = moment().add(MAX_BOOKING_HORIZON_DAYS, 'day').endOf('day').toDate();
+  const requestedEnd = moment(endDateStr).endOf('day').toDate();
   const rangeStart = moment(startDateStr).startOf('day').toDate();
-  const rangeEnd = moment(endDateStr).endOf('day').toDate();
+  const rangeEnd = requestedEnd > horizon ? horizon : requestedEnd;
 
-  // 1. Weekly pattern — keep startTime/endTime where present
-  const patterns = await prisma.availability.findMany({
-    where: { instructorId, isAvailable: true },
-    select: { dayOfWeek: true, startTime: true, endTime: true },
-  });
-  const patternByDow = new Map<number, { startMins: number; endMins: number }[]>();
-  for (const p of patterns) {
-    const s = parseHHMM(p.startTime) ?? parseHHMM('08:00')!;
-    const e = parseHHMM(p.endTime) ?? parseHHMM('18:00')!;
-    if (e <= s) continue;
-    const arr = patternByDow.get(p.dayOfWeek) ?? [];
-    arr.push({ startMins: s, endMins: e });
-    patternByDow.set(p.dayOfWeek, arr);
-  }
+  const [bookings, busy] = await Promise.all([
+    prisma.booking.findMany({
+      where: {
+        instructorId,
+        status: { in: ['CONFIRMED', 'PENDING'] as any },
+        scheduledAt: { gte: rangeStart, lte: rangeEnd },
+      },
+      select: { scheduledAt: true, durationMins: true },
+    }),
+    prisma.instructorBusyBlock.findMany({
+      where: {
+        instructorId,
+        startsAt: { lte: rangeEnd },
+        endsAt: { gte: rangeStart },
+      },
+      select: { startsAt: true, endsAt: true },
+    }),
+  ]);
 
-  // 2. Existing bookings in range
-  const bookings = await prisma.booking.findMany({
-    where: {
-      instructorId,
-      status: { in: ['CONFIRMED', 'PENDING'] as any },
-      scheduledAt: { gte: rangeStart, lte: rangeEnd },
-    },
-    select: { scheduledAt: true, durationMins: true },
-  });
-
-  // 3. External busy blocks (from Google Cal sync)
-  const busy = await prisma.instructorBusyBlock.findMany({
-    where: {
-      instructorId,
-      startsAt: { lte: rangeEnd },
-      endsAt: { gte: rangeStart },
-    },
-    select: { startsAt: true, endsAt: true },
-  });
-
-  // Group blockers by local date (YYYY-MM-DD)
   const blockersByDate = new Map<string, Array<{ start: number; end: number }>>();
   const addBlocker = (start: Date, end: Date) => {
-    const dateKey = moment(start).format('YYYY-MM-DD');
-    const s = start.getHours() * 60 + start.getMinutes();
-    const eSameDay = end.getHours() * 60 + end.getMinutes();
-    // If block spans across midnight, clamp per day
-    const e = moment(end).format('YYYY-MM-DD') === dateKey ? eSameDay : 24 * 60;
-    const list = blockersByDate.get(dateKey) ?? [];
-    list.push({ start: s, end: e });
-    blockersByDate.set(dateKey, list);
-    // Continue into next day if needed
-    if (moment(end).format('YYYY-MM-DD') !== dateKey) {
-      const nextKey = moment(start).add(1, 'day').startOf('day').format('YYYY-MM-DD');
-      const nextList = blockersByDate.get(nextKey) ?? [];
-      nextList.push({ start: 0, end: end.getHours() * 60 + end.getMinutes() });
-      blockersByDate.set(nextKey, nextList);
+    let cursorDay = moment(start).startOf('day');
+    const finalDay = moment(end).startOf('day');
+    while (cursorDay.isSameOrBefore(finalDay)) {
+      const dateKey = cursorDay.format('YYYY-MM-DD');
+      const dayStart = cursorDay.clone().valueOf();
+      const dayEnd = cursorDay.clone().add(1, 'day').valueOf();
+      const segStart = Math.max(start.getTime(), dayStart);
+      const segEnd = Math.min(end.getTime(), dayEnd);
+      if (segEnd > segStart) {
+        const startMins = Math.floor((segStart - dayStart) / 60000);
+        const endMins = Math.ceil((segEnd - dayStart) / 60000);
+        const list = blockersByDate.get(dateKey) ?? [];
+        list.push({ start: startMins, end: endMins });
+        blockersByDate.set(dateKey, list);
+      }
+      cursorDay = cursorDay.clone().add(1, 'day');
     }
   };
   for (const b of bookings) {
-    const end = new Date(b.scheduledAt.getTime() + b.durationMins * 60_000);
-    addBlocker(b.scheduledAt, end);
+    addBlocker(b.scheduledAt, new Date(b.scheduledAt.getTime() + b.durationMins * 60_000));
   }
   for (const b of busy) {
     addBlocker(b.startsAt, b.endsAt);
@@ -483,49 +476,25 @@ const getAvailability = async (
   const end = moment(rangeEnd).startOf('day');
 
   while (cursor.isSameOrBefore(end)) {
-    const dow = cursor.day();
     const dateStr = cursor.format('YYYY-MM-DD');
-    let windows = patternByDow.get(dow) ?? [];
-    if (!windows.length && patternByDow.size === 0) {
-      // Legacy fallback for instructors w/ no rows at all — use FALLBACK_SLOTS grid
-      windows = [{ startMins: parseHHMM('08:00')!, endMins: parseHHMM('18:00')! }];
-    }
-    if (!windows.length) {
-      result.push({ date: dateStr, slots: [] });
-      cursor = cursor.clone().add(1, 'day');
-      continue;
-    }
-
     const blockers = blockersByDate.get(dateStr) ?? [];
     const slots: string[] = [];
 
-    for (const w of windows) {
-      let t = w.startMins;
-      while (t + durationMins <= w.endMins) {
-        const slotEnd = t + durationMins;
-        const conflict = blockers.some(b => overlaps(t, slotEnd, b.start, b.end));
-        if (!conflict) {
-          const slotAt = cursor.clone().hour(Math.floor(t / 60)).minute(t % 60).second(0).valueOf();
-          if (slotAt > nowMs) {
-            slots.push(formatHHMM(t));
-          }
+    let t = 0;
+    const dayEndMins = 24 * 60;
+    while (t + durationMins <= dayEndMins) {
+      const slotEnd = t + durationMins;
+      const conflict = blockers.some(b => overlaps(t, slotEnd, b.start, b.end));
+      if (!conflict) {
+        const slotAt = cursor.clone().hour(Math.floor(t / 60)).minute(t % 60).second(0).valueOf();
+        if (slotAt > nowMs) {
+          slots.push(formatHHMM(t));
         }
-        t += SLOT_STEP_MINS;
       }
+      t += SLOT_STEP_MINS;
     }
 
-    // If no per-day pattern rows had start/end (legacy), fall back to hourly grid.
-    if (patternByDow.size === 0 && slots.length === 0) {
-      const legacy = FALLBACK_SLOTS.filter(slot => {
-        const mins = parseHHMM(slot)!;
-        const conflict = blockers.some(b => overlaps(mins, mins + 60, b.start, b.end));
-        return !conflict;
-      });
-      result.push({ date: dateStr, slots: legacy });
-    } else {
-      result.push({ date: dateStr, slots });
-    }
-
+    result.push({ date: dateStr, slots });
     cursor = cursor.clone().add(1, 'day');
   }
 

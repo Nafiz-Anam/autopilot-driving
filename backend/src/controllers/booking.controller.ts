@@ -69,6 +69,22 @@ const createMine = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
+  if ('horizonExceeded' in created) {
+    return res.status(httpStatus.BAD_REQUEST).send({
+      success: false,
+      error: 'HORIZON_EXCEEDED',
+      message: 'Bookings can only be made up to 60 days ahead.',
+    });
+  }
+
+  if ('pastDate' in created) {
+    return res.status(httpStatus.BAD_REQUEST).send({
+      success: false,
+      error: 'PAST_DATE',
+      message: 'Cannot book a lesson in the past.',
+    });
+  }
+
   res.status(httpStatus.OK).send({
     success: true,
     data: {

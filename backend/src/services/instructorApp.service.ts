@@ -125,6 +125,77 @@ const getInstructorScheduleByUserId = async (userId: string) => {
   return availabilityRows.map(a => a.row);
 };
 
+const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toStr: string) => {
+  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+    userId
+  );
+  const instructor = instructorRows[0];
+  if (!instructor) return null;
+
+  const from = new Date(fromStr + 'T00:00:00Z');
+  const to = new Date(toStr + 'T23:59:59Z');
+
+  const [bookings, busy, integration] = await Promise.all([
+    prisma.$queryRawUnsafe<Array<{
+      id: string;
+      reference: string;
+      scheduledAt: Date;
+      durationMins: number;
+      status: string;
+      studentName: string | null;
+    }>>(
+      `SELECT b.id, b.reference, b."scheduledAt", b."durationMins", b.status::text AS status,
+              su.name AS "studentName"
+       FROM "Booking" b
+       INNER JOIN users su ON su.id = b."studentId"
+       WHERE b."instructorId" = $1
+         AND b.status IN ('PENDING', 'CONFIRMED')
+         AND b."scheduledAt" >= $2::timestamp
+         AND b."scheduledAt" <= $3::timestamp
+       ORDER BY b."scheduledAt" ASC`,
+      instructor.id,
+      from.toISOString(),
+      to.toISOString()
+    ),
+    prisma.instructorBusyBlock.findMany({
+      where: {
+        instructorId: instructor.id,
+        startsAt: { lte: to },
+        endsAt: { gte: from },
+      },
+      orderBy: { startsAt: 'asc' },
+      select: { id: true, startsAt: true, endsAt: true, isAllDay: true, source: true },
+    }),
+    prisma.userIntegration.findUnique({
+      where: { userId_provider: { userId, provider: 'google_calendar' } },
+      select: { enabled: true, externalEmail: true },
+    }),
+  ]);
+
+  return {
+    from: fromStr,
+    to: toStr,
+    calendarConnected: !!integration?.enabled,
+    calendarEmail: integration?.externalEmail ?? null,
+    bookings: bookings.map(b => ({
+      id: b.id,
+      reference: b.reference,
+      scheduledAt: b.scheduledAt.toISOString(),
+      durationMins: b.durationMins,
+      status: b.status,
+      studentName: b.studentName,
+    })),
+    busy: busy.map(b => ({
+      id: b.id,
+      startsAt: b.startsAt.toISOString(),
+      endsAt: b.endsAt.toISOString(),
+      isAllDay: b.isAllDay,
+      source: b.source,
+    })),
+  };
+};
+
 const replaceInstructorScheduleByUserId = async (userId: string, slots: AvailabilityInput[]) => {
   const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
     `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
@@ -604,6 +675,7 @@ export default {
   updateInstructorProfileByUserId,
   getInstructorScheduleByUserId,
   replaceInstructorScheduleByUserId,
+  getScheduleOverviewByUserId,
   getInstructorStudentsByUserId,
   getInstructorStatsByUserId,
   listMyBookings,

@@ -48,6 +48,27 @@ const getSchedule = async (req: Request, res: Response) => {
   }
 };
 
+const getScheduleOverview = async (req: Request, res: Response) => {
+  try {
+    const userId = req.drivingUser?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorised' });
+
+    const from = String(req.query.from ?? '').trim();
+    const to = String(req.query.to ?? '').trim();
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    if (!DATE_RE.test(from) || !DATE_RE.test(to)) {
+      return res.status(400).json({ error: 'from and to must be YYYY-MM-DD' });
+    }
+
+    const data = await instructorAppService.getScheduleOverviewByUserId(userId, from, to);
+    if (!data) return res.status(404).json({ error: 'Instructor profile not found' });
+    return res.json({ data });
+  } catch (err) {
+    console.error('[instructor/schedule/overview GET]', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 const postSchedule = async (req: Request, res: Response) => {
   try {
     const userId = req.drivingUser?.id;
@@ -227,6 +248,7 @@ export default {
   putProfile,
   changePassword,
   getSchedule,
+  getScheduleOverview,
   postSchedule,
   getStudents,
   getStats,

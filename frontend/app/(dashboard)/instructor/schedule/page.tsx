@@ -1,401 +1,319 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAppSession } from "@/components/providers/AppAuthProvider";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, Info, CalendarPlus, Copy, CheckCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { backendApiUrl } from "@/lib/backend-api";
-import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { ChevronLeft, ChevronRight, Info, RefreshCw, CalendarDays } from "lucide-react";
+import { backendApiFetch } from "@/lib/backend-auth-fetch";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type CellState = "available" | "unavailable" | "booked";
-type AvailabilityGrid = Record<string, CellState>;
-type ApiAvailabilitySlot = {
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  isAvailable: boolean;
+type Booking = {
+  id: string;
+  reference: string;
+  scheduledAt: string;
+  durationMins: number;
+  status: string;
+  studentName: string | null;
 };
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const DAYS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-] as const;
-
-const HOURS = Array.from({ length: 18 }, (_, i) =>
-  String(i + 6).padStart(2, "0") + ":00"
-); // 06:00 – 23:00
-
-const DAY_TO_INDEX: Record<string, number> = {
-  Monday: 1,
-  Tuesday: 2,
-  Wednesday: 3,
-  Thursday: 4,
-  Friday: 5,
-  Saturday: 6,
-  Sunday: 0,
+type BusyBlock = {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  isAllDay: boolean;
+  source: string;
 };
 
-const INDEX_TO_DAY: Record<number, string> = {
-  0: "Sunday",
-  1: "Monday",
-  2: "Tuesday",
-  3: "Wednesday",
-  4: "Thursday",
-  5: "Friday",
-  6: "Saturday",
+type Overview = {
+  from: string;
+  to: string;
+  calendarConnected: boolean;
+  calendarEmail: string | null;
+  bookings: Booking[];
+  busy: BusyBlock[];
 };
 
-// ─── Build default grid ───────────────────────────────────────────────────────
-function buildDefaultGrid(): AvailabilityGrid {
-  const grid: AvailabilityGrid = {};
-  for (const day of DAYS) {
-    for (const hour of HOURS) {
-      const key = `${day}-${hour}`;
-      const h = parseInt(hour);
-      const isWeekend = day === "Sunday";
-      grid[key] = !isWeekend && h >= 8 && h < 21 ? "available" : "unavailable";
-    }
-  }
-  return grid;
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MAX_HORIZON_DAYS = 60;
+
+function startOfWeek(d: Date): Date {
+  const copy = new Date(d);
+  copy.setHours(0, 0, 0, 0);
+  const day = copy.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  copy.setDate(copy.getDate() + diff);
+  return copy;
 }
 
-// ─── Cell component ───────────────────────────────────────────────────────────
-function Cell({
-  state,
-  onToggle,
-  dayLabel,
-  hour,
-}: {
-  state: CellState;
-  onToggle: () => void;
-  dayLabel: string;
-  hour: string;
-}) {
-  if (state === "booked") {
-    return (
-      <div
-        className="w-full h-9 rounded-lg bg-brand-red flex items-center justify-center cursor-not-allowed"
-        title={`${dayLabel} ${hour} — Booked`}
-        aria-label={`${dayLabel} ${hour} booked`}
-      >
-        <span className="text-[10px] font-bold text-white tracking-wide">
-          BOOKED
-        </span>
-      </div>
-    );
-  }
-
-  const isAvailable = state === "available";
-
-  return (
-    <button
-      onClick={onToggle}
-      title={`${dayLabel} ${hour} — ${isAvailable ? "Click to mark unavailable" : "Click to mark available"}`}
-      aria-label={`${dayLabel} ${hour} ${isAvailable ? "available" : "unavailable"}`}
-      className={cn(
-        "w-full h-9 rounded-lg border-2 transition-all duration-150 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-1",
-        isAvailable
-          ? "bg-green-100 border-green-300 text-green-700 hover:bg-green-200 focus:ring-green-400"
-          : "bg-white border-brand-border text-brand-border hover:border-brand-red hover:bg-red-50 focus:ring-brand-red"
-      )}
-    >
-      {isAvailable && <Check className="w-3.5 h-3.5" />}
-    </button>
-  );
+function addDays(d: Date, n: number): Date {
+  const copy = new Date(d);
+  copy.setDate(copy.getDate() + n);
+  return copy;
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function fmtDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+type Segment = {
+  kind: "booking" | "busy";
+  startMins: number;
+  endMins: number;
+  label: string;
+  title: string;
+};
+
+function segmentsForDay(day: Date, bookings: Booking[], busy: BusyBlock[]): Segment[] {
+  const dayStart = new Date(day);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(day);
+  dayEnd.setHours(24, 0, 0, 0);
+  const segs: Segment[] = [];
+
+  for (const b of bookings) {
+    const s = new Date(b.scheduledAt);
+    const e = new Date(s.getTime() + b.durationMins * 60_000);
+    if (e <= dayStart || s >= dayEnd) continue;
+    const segStart = Math.max(s.getTime(), dayStart.getTime());
+    const segEnd = Math.min(e.getTime(), dayEnd.getTime());
+    segs.push({
+      kind: "booking",
+      startMins: (segStart - dayStart.getTime()) / 60_000,
+      endMins: (segEnd - dayStart.getTime()) / 60_000,
+      label: b.studentName ?? "Booking",
+      title: `${b.reference} · ${b.studentName ?? "Student"} · ${b.durationMins}m`,
+    });
+  }
+  for (const b of busy) {
+    const s = new Date(b.startsAt);
+    const e = new Date(b.endsAt);
+    if (e <= dayStart || s >= dayEnd) continue;
+    const segStart = Math.max(s.getTime(), dayStart.getTime());
+    const segEnd = Math.min(e.getTime(), dayEnd.getTime());
+    segs.push({
+      kind: "busy",
+      startMins: (segStart - dayStart.getTime()) / 60_000,
+      endMins: (segEnd - dayStart.getTime()) / 60_000,
+      label: "Busy",
+      title: `Blocked in Google Calendar${b.isAllDay ? " (all day)" : ""}`,
+    });
+  }
+
+  return segs.sort((a, b) => a.startMins - b.startMins);
+}
+
 export default function InstructorSchedulePage() {
-  useAppSession();
-  const [grid, setGrid] = useState<AvailabilityGrid>(buildDefaultGrid);
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [loadingInitial, setLoadingInitial] = useState(true);
-  const [webcalUrl, setWebcalUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  // Fetch existing availability on mount
-  useEffect(() => {
-    async function fetchSchedule() {
-      try {
-        const headers = await getNextAuthBridgeHeaders();
-        const res = await fetch(backendApiUrl("/instructor/schedule"), { headers });
-        if (res.ok) {
-          const data = await res.json();
-          const slots: ApiAvailabilitySlot[] = Array.isArray(data) ? data : data.data ?? [];
-          if (slots.length > 0) {
-            const newGrid = buildDefaultGrid();
-            for (const slot of slots) {
-              const day = INDEX_TO_DAY[slot.dayOfWeek];
-              if (!day) continue;
-              const hour = slot.startTime.slice(0, 5);
-              const key = `${day}-${hour}`;
-              if (key in newGrid) {
-                newGrid[key] = slot.isAvailable ? "available" : "unavailable";
-              }
-            }
-            setGrid(newGrid);
-          }
-        }
-      } finally {
-        setLoadingInitial(false);
-      }
-    }
-    fetchSchedule();
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
   }, []);
+  const horizonMax = useMemo(() => addDays(today, MAX_HORIZON_DAYS), [today]);
+  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
+  const [data, setData] = useState<Overview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchCalendarUrl() {
-      try {
-        const headers = await getNextAuthBridgeHeaders();
-        const res = await fetch(backendApiUrl("/instructor/calendar-url"), { headers });
-        if (res.ok) {
-          const data = await res.json();
-          setWebcalUrl(data.data?.webcalUrl ?? null);
-        }
-      } catch {
-        // non-critical
-      }
-    }
-    fetchCalendarUrl();
-  }, []);
+  const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
 
-  async function copyCalendarUrl() {
-    if (!webcalUrl) return;
-    await navigator.clipboard.writeText(webcalUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  }
+  const canGoBack = weekStart > startOfWeek(today);
+  const canGoForward = addDays(weekStart, 7) <= horizonMax;
 
-  function toggle(day: string, hour: string) {
-    const key = `${day}-${hour}`;
-    if (grid[key] === "booked") return;
-    setGrid((prev) => ({
-      ...prev,
-      [key]: prev[key] === "available" ? "unavailable" : "available",
-    }));
-    setSaved(false);
-  }
-
-  async function handleSave() {
-    setSaving(true);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const headers = await getNextAuthBridgeHeaders();
-      const slots = Object.entries(grid).map(([key, state]) => {
-        const [day, hour] = key.split(/-(?=\d{2}:)/);
-        const [h] = hour.split(":").map(Number);
-        const endHour = String((h + 1) % 24).padStart(2, "0");
-        return {
-          dayOfWeek: DAY_TO_INDEX[day] ?? 1,
-          startTime: `${hour}:00`,
-          endTime: `${endHour}:00:00`,
-          isAvailable: state === "available",
-        };
-      });
-      const res = await fetch(backendApiUrl("/instructor/schedule"), {
-        method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ slots }),
-      });
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+      const from = fmtDate(weekStart);
+      const to = fmtDate(weekEnd);
+      const res = await backendApiFetch(`/instructor/schedule/overview?from=${from}&to=${to}`);
+      if (!res.ok) {
+        setError("Failed to load schedule");
+        return;
       }
+      const json = await res.json();
+      setData(json.data);
+    } catch {
+      setError("Network error");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  }
+  }, [weekStart, weekEnd]);
 
-  const availableCount = Object.values(grid).filter(
-    (v) => v === "available"
-  ).length;
-  const bookedCount = Object.values(grid).filter((v) => v === "booked").length;
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  if (loadingInitial) {
-    return (
-      <div className="space-y-4">
-        <div className="h-12 bg-gray-100 rounded-lg animate-pulse w-64" />
-        <div className="h-96 bg-gray-100 rounded-2xl animate-pulse" />
-      </div>
-    );
-  }
+  const days = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart]
+  );
+
+  const rangeLabel = useMemo(() => {
+    const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+    return `${weekStart.toLocaleDateString(undefined, opts)} — ${weekEnd.toLocaleDateString(undefined, { ...opts, year: "numeric" })}`;
+  }, [weekStart, weekEnd]);
 
   return (
-    <div>
-      {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-3xl font-extrabold text-brand-black">
-            My Availability
-          </h1>
-          <p className="text-brand-muted mt-1 text-sm">
-            Click slots to toggle available / unavailable. Booked lessons are
-            locked.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {webcalUrl && (
-            <div className="flex items-center gap-1.5">
-              <a
-                href={webcalUrl}
-                className="shrink-0 px-4 py-2.5 rounded-xl font-semibold text-sm border border-brand-border text-brand-black hover:bg-brand-surface transition-colors flex items-center gap-2"
-                title="Click to subscribe — opens Apple Calendar, Google Calendar, or Outlook"
-              >
-                <CalendarPlus className="w-4 h-4" />
-                Subscribe to Calendar
-              </a>
-              <button
-                onClick={copyCalendarUrl}
-                title="Copy calendar feed URL"
-                className="p-2.5 rounded-xl border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors"
-              >
-                {copied ? <CheckCheck className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          )}
+    <div className="min-h-screen bg-brand-surface">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-brand-black">My Schedule</h1>
+            <p className="text-sm text-brand-muted mt-1">
+              Read-only view. Bookings and Google Calendar blocks only.
+            </p>
+          </div>
           <button
-            onClick={handleSave}
-            disabled={saving}
-            className={cn(
-              "shrink-0 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2",
-              saved
-                ? "bg-green-500 text-white"
-                : "bg-brand-red text-white hover:bg-brand-orange disabled:opacity-60"
-            )}
+            onClick={load}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 border border-brand-border rounded-xl text-xs font-semibold text-brand-black hover:bg-white transition disabled:opacity-60"
+            title="Refresh"
           >
-            {saving ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Saving…
-              </>
-            ) : saved ? (
-              <>
-                <Check className="w-4 h-4" /> Saved!
-              </>
-            ) : (
-              "Save Availability"
-            )}
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
           </button>
         </div>
-      </motion.div>
 
-      {/* ── Stats bar ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.06 }}
-        className="flex flex-wrap gap-4 mb-5"
-      >
-        {/* Legend */}
-        <div className="flex items-center gap-1.5 text-sm text-brand-muted">
-          <div className="w-4 h-4 bg-green-100 border-2 border-green-300 rounded flex items-center justify-center">
-            <Check className="w-2.5 h-2.5 text-green-600" />
+        {!data?.calendarConnected && !loading && (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+            <Info className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-amber-800">
+              <p className="font-semibold mb-1">Google Calendar not connected</p>
+              <p>
+                Without it, students see your whole 24h open every day. Connect on the{" "}
+                <a href="/instructor/profile" className="underline font-semibold">Profile page</a>{" "}
+                to have your Google Calendar events block booking slots automatically.
+              </p>
+            </div>
           </div>
-          Available
-          <span className="font-semibold text-brand-black ml-1">
-            ({availableCount})
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-sm text-brand-muted">
-          <div className="w-4 h-4 bg-white border-2 border-brand-border rounded" />
-          Unavailable
-        </div>
-        <div className="flex items-center gap-1.5 text-sm text-brand-muted">
-          <div className="w-4 h-4 bg-brand-red rounded" />
-          Booked
-          <span className="font-semibold text-brand-black ml-1">
-            ({bookedCount})
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-brand-muted ml-auto">
-          <Info className="w-3.5 h-3.5" />
-          Weekly availability template
-        </div>
-      </motion.div>
-
-      {/* ── Grid ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-x-auto"
-      >
-        <table className="w-full text-sm border-collapse" style={{ minWidth: 600 }}>
-          <thead>
-            <tr>
-              <th className="sticky left-0 z-10 bg-brand-surface px-4 py-3.5 text-left text-xs font-semibold text-brand-muted w-20 border-b border-brand-border">
-                Time
-              </th>
-              {DAYS.map((day) => (
-                <th
-                  key={day}
-                  className="px-2 py-3.5 text-center text-xs font-semibold text-brand-black bg-brand-surface border-b border-brand-border whitespace-nowrap"
-                >
-                  <span className="hidden sm:inline">{day.slice(0, 3)}</span>
-                  <span className="sm:hidden">{day.slice(0, 1)}</span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {HOURS.map((hour, rowIdx) => (
-              <tr
-                key={hour}
-                className={cn(
-                  "border-t border-brand-border/50",
-                  rowIdx % 2 === 0 ? "bg-white" : "bg-brand-surface/30"
-                )}
-              >
-                <td className="sticky left-0 z-10 bg-inherit px-4 py-1.5 text-xs font-medium text-brand-muted whitespace-nowrap">
-                  {hour}
-                </td>
-                {DAYS.map((day) => {
-                  const key = `${day}-${hour}`;
-                  return (
-                    <td key={day} className="px-1.5 py-1.5">
-                      <Cell
-                        state={grid[key] ?? "unavailable"}
-                        onToggle={() => toggle(day, hour)}
-                        dayLabel={day}
-                        hour={hour}
-                      />
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </motion.div>
-
-      {/* ── Save notice ── */}
-      <AnimatePresence>
-        {saved && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            className="mt-4 flex items-center gap-2 text-sm text-green-700 font-medium"
-          >
-            <Check className="w-4 h-4 text-green-500" />
-            Availability saved — your students can now see your open slots.
-          </motion.div>
         )}
-      </AnimatePresence>
+
+        {data?.calendarConnected && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs text-blue-800">
+            <Info className="w-4 h-4 flex-shrink-0" />
+            <span>
+              Synced with <span className="font-semibold">{data.calendarEmail}</span>. Block time in Google Calendar to make yourself unavailable.
+            </span>
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-brand-muted" />
+              <span className="font-semibold text-brand-black text-sm">{rangeLabel}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setWeekStart(addDays(weekStart, -7))}
+                disabled={!canGoBack}
+                className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Previous week"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setWeekStart(startOfWeek(new Date()))}
+                className="px-3 py-1.5 text-xs font-semibold text-brand-black border border-brand-border rounded-lg hover:bg-brand-surface transition"
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setWeekStart(addDays(weekStart, 7))}
+                disabled={!canGoForward}
+                className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Next week"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 mb-3 text-xs text-brand-muted">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm bg-green-500" />
+            <span>Booking</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm bg-red-400" />
+            <span>Blocked (Google)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm bg-white border border-brand-border" />
+            <span>Free</span>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
+          <div className="grid grid-cols-[60px_repeat(7,minmax(0,1fr))]">
+            <div className="border-b border-r border-brand-border p-2 text-[10px] font-semibold text-brand-muted"> </div>
+            {days.map((d) => {
+              const isToday = fmtDate(d) === fmtDate(today);
+              return (
+                <div
+                  key={d.toISOString()}
+                  className={`border-b border-r last:border-r-0 border-brand-border p-2 text-center ${
+                    isToday ? "bg-brand-red/10" : ""
+                  }`}
+                >
+                  <div className="text-[10px] uppercase text-brand-muted">
+                    {DAY_LABELS[d.getDay() === 0 ? 6 : d.getDay() - 1]}
+                  </div>
+                  <div className={`text-sm font-bold ${isToday ? "text-brand-red" : "text-brand-black"}`}>
+                    {d.getDate()}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="border-r border-brand-border">
+              {HOURS.map((h) => (
+                <div
+                  key={h}
+                  className="h-12 border-b border-brand-border text-[10px] text-brand-muted p-1 text-right"
+                >
+                  {String(h).padStart(2, "0")}:00
+                </div>
+              ))}
+            </div>
+
+            {days.map((d) => {
+              const segs = data ? segmentsForDay(d, data.bookings, data.busy) : [];
+              return (
+                <div key={d.toISOString()} className="relative border-r last:border-r-0 border-brand-border">
+                  {HOURS.map((h) => (
+                    <div key={h} className="h-12 border-b border-brand-border" />
+                  ))}
+                  {segs.map((s, i) => {
+                    const top = (s.startMins / 60) * 48;
+                    const height = Math.max(18, ((s.endMins - s.startMins) / 60) * 48);
+                    const bg = s.kind === "booking" ? "bg-green-500" : "bg-red-400";
+                    return (
+                      <div
+                        key={i}
+                        title={s.title}
+                        className={`absolute left-1 right-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold overflow-hidden ${bg} text-white shadow-sm`}
+                        style={{ top: `${top}px`, height: `${height}px` }}
+                      >
+                        {s.label}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <p className="mt-4 text-xs text-brand-muted">
+          Students can book any free hour within the next {MAX_HORIZON_DAYS} days. To make time unavailable, add an event in your Google Calendar.
+        </p>
+      </div>
     </div>
   );
 }
