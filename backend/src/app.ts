@@ -157,7 +157,11 @@ app.use('/v1/student/profile', sensitiveOperationLimiter);
 app.use('/v1/instructor/profile', sensitiveOperationLimiter);
 
 // ── Static uploads ────────────────────────────────────────────────────────────
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Override CORP header so images load cross-origin (admin on main domain, files on api subdomain)
+app.use('/uploads', (_req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(process.cwd(), 'uploads')));
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/v1/instructor', instructorAppRoute);
