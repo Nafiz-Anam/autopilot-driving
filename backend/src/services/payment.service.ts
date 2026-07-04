@@ -135,11 +135,14 @@ async function createPaymentIntent(params: {
   const stripe = createStripeClient(secretKey);
 
   // Idempotency: if a PI already exists for this booking and is still actionable,
-  // return it rather than creating a duplicate (handles frontend retries / double-clicks).
+  // reuse it — but only if the amount still matches. Otherwise the coupon/voucher
+  // has changed since the PI was created and Stripe would charge the old price.
   if (booking.stripePaymentId) {
     try {
       const existing = await stripe.paymentIntents.retrieve(booking.stripePaymentId);
-      if (!['canceled', 'succeeded'].includes(existing.status)) {
+      const canReuse = !['canceled', 'succeeded'].includes(existing.status);
+
+      if (canReuse && existing.amount === amountPence) {
         return {
           success: true as const,
           data: {
@@ -147,6 +150,45 @@ async function createPaymentIntent(params: {
             paymentIntentId: existing.id,
           },
         };
+      }
+
+      // Amount changed (coupon added/removed/swapped). Try to update the PI in-place
+      // if it's still in a mutable state; otherwise cancel it and fall through to
+      // create a fresh one below.
+      const updatableStates = ['requires_payment_method', 'requires_confirmation', 'requires_action'];
+      if (canReuse && updatableStates.includes(existing.status)) {
+        const updated = await stripe.paymentIntents.update(existing.id, {
+          amount: amountPence,
+          metadata: {
+            bookingId,
+            userId: studentId,
+            voucherCode: normVoucher ?? '',
+            couponCode: normCoupon ?? '',
+            discountAmount: discountAmount.toString(),
+          },
+        });
+        await prisma.$executeRawUnsafe(
+          `UPDATE "Booking"
+             SET "voucherCode" = $2, "couponCode" = $3,
+                 "discountAmount" = $4::decimal, "updatedAt" = NOW()
+           WHERE id = $1`,
+          bookingId,
+          normVoucher ?? null,
+          normCoupon ?? null,
+          discountAmount > 0 ? discountAmount.toFixed(2) : '0'
+        );
+        return {
+          success: true as const,
+          data: {
+            clientSecret: updated.client_secret,
+            paymentIntentId: updated.id,
+          },
+        };
+      }
+
+      // Non-mutable or terminal — cancel and fall through to create a new PI
+      if (canReuse) {
+        try { await stripe.paymentIntents.cancel(existing.id); } catch { /* best-effort */ }
       }
     } catch {
       // Stale PI — fall through and create a new one
