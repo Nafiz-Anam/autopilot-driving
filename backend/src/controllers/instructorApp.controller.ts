@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import instructorAppService from '../services/instructorApp.service';
 import rescheduleService from '../services/reschedule.service';
 import studentAppService from '../services/studentApp.service';
+import ApiError from '../utils/ApiError';
 
 const getProfile = async (req: Request, res: Response) => {
   try {
@@ -28,6 +29,9 @@ const putProfile = async (req: Request, res: Response) => {
 
     return res.json({ data: updated });
   } catch (err) {
+    if (err instanceof ApiError) {
+      return res.status(err.statusCode).json({ error: err.message });
+    }
     console.error('[instructor/profile PUT]', err);
     return res.status(500).json({ error: 'Internal server error' });
   }

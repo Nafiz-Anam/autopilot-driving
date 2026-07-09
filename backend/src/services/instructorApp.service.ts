@@ -1,6 +1,7 @@
 import prisma from '../client';
 import refundService from './refund.service';
 import emailService from './email.service';
+import instructorAvailabilityModeService from './instructorAvailabilityMode.service';
 
 type InstructorProfileRow = {
   instructor: Record<string, unknown>;
@@ -71,6 +72,14 @@ const updateInstructorProfileByUserId = async (
   const instructor = instructorRows[0];
   if (!instructor) return null;
 
+  if (body.availabilityMode !== undefined) {
+    await instructorAvailabilityModeService.assertSafeModeSwitch(
+      instructor.id,
+      body.availabilityMode as 'CUSTOM_SLOTS' | 'CALENDAR_SYNC',
+      body.force === true
+    );
+  }
+
   const setClauses: string[] = [];
   const values: unknown[] = [];
   let idx = 1;
@@ -82,6 +91,7 @@ const updateInstructorProfileByUserId = async (
   if (body.yearsExp !== undefined) { setClauses.push(`"yearsExp" = $${idx}`); values.push(body.yearsExp); idx++; }
   if (body.licenceNumber !== undefined) { setClauses.push(`"licenceNumber" = $${idx}`); values.push(body.licenceNumber); idx++; }
   if (body.isFemale !== undefined) { setClauses.push(`"isFemale" = $${idx}`); values.push(body.isFemale); idx++; }
+  if (body.availabilityMode !== undefined) { setClauses.push(`"availabilityMode" = $${idx}::"AvailabilityMode"`); values.push(body.availabilityMode); idx++; }
 
   if (setClauses.length > 0) {
     await prisma.$executeRawUnsafe(
@@ -126,8 +136,8 @@ const getInstructorScheduleByUserId = async (userId: string) => {
 };
 
 const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toStr: string) => {
-  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
-    `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string; availabilityMode: string }>>(
+    `SELECT id, "availabilityMode"::text AS "availabilityMode" FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
     userId
   );
   const instructor = instructorRows[0];
@@ -176,6 +186,7 @@ const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toSt
   return {
     from: fromStr,
     to: toStr,
+    availabilityMode: instructor.availabilityMode,
     calendarConnected: !!integration?.enabled,
     calendarEmail: integration?.externalEmail ?? null,
     bookings: bookings.map(b => ({
@@ -204,11 +215,10 @@ const replaceInstructorScheduleByUserId = async (userId: string, slots: Availabi
   const instructor = instructorRows[0];
   if (!instructor) return null;
 
-  await prisma.$executeRawUnsafe(`DELETE FROM "Availability" WHERE "instructorId" = $1`, instructor.id);
-
-  if (slots.length > 0) {
-    for (const slot of slots) {
-      await prisma.$executeRawUnsafe(
+  await prisma.$transaction([
+    prisma.$executeRawUnsafe(`DELETE FROM "Availability" WHERE "instructorId" = $1`, instructor.id),
+    ...slots.map(slot =>
+      prisma.$executeRawUnsafe(
         `INSERT INTO "Availability" (
           id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable"
         ) VALUES (
@@ -219,9 +229,9 @@ const replaceInstructorScheduleByUserId = async (userId: string, slots: Availabi
         slot.startTime,
         slot.endTime,
         slot.isAvailable
-      );
-    }
-  }
+      )
+    ),
+  ]);
 
   return { success: true, count: slots.length };
 };

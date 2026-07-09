@@ -384,6 +384,13 @@ enum DrivingCouponType {
   @@map("CouponType")
 }
 
+enum InstructorAvailabilityMode {
+  CUSTOM_SLOTS
+  CALENDAR_SYNC
+
+  @@map("AvailabilityMode")
+}
+
 // Phase 1 Core Features Enums
 enum Permission {
   // User Management
@@ -631,6 +638,7 @@ model Instructor {
   isFemale      Boolean   @default(false) @map("isFemale")
   isActive      Boolean   @default(true) @map("isActive")
   licenceNumber String?   @map("licenceNumber")
+  availabilityMode InstructorAvailabilityMode @default(CUSTOM_SLOTS) @map("availabilityMode")
   createdAt     DateTime  @default(now()) @map("createdAt")
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   availability  Availability[]

@@ -1,9 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Info, RefreshCw, CalendarDays, X, User, Clock, Hash } from "lucide-react";
-import Link from "next/link";
-import { backendApiFetch } from "@/lib/backend-auth-fetch";
+import { useState, useEffect, useCallback } from "react";
+import { Info } from "lucide-react";
+import toast from "react-hot-toast";
+import { instructorApiFetch } from "@/lib/instructor-api";
+import AvailabilityGridEditor from "@/components/shared/AvailabilityGridEditor";
+
+// TODO(calendar-sync): the calendar view (WeekGrid/MonthGrid, bookings + Google
+// busy-block rendering, Calendar tab) and the "Calendar Sync" mode option are
+// commented out for now -- custom slots is the default and only supported
+// availability mechanism until calendar integration is prioritized again.
+// See the commented-out code at the bottom of this file to restore it.
+
+type AvailabilityMode = "CUSTOM_SLOTS" | "CALENDAR_SYNC";
 
 type Booking = {
   id: string;
@@ -25,13 +34,139 @@ type BusyBlock = {
 type Overview = {
   from: string;
   to: string;
+  availabilityMode: AvailabilityMode;
   calendarConnected: boolean;
   calendarEmail: string | null;
   bookings: Booking[];
   busy: BusyBlock[];
 };
 
+function fmtDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export default function InstructorSchedulePage() {
+  const [data, setData] = useState<Overview | null>(null);
+  const [modeSaving, setModeSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const today = new Date();
+      const from = fmtDate(today);
+      const to = fmtDate(today);
+      const res = await instructorApiFetch(`/schedule/overview?from=${from}&to=${to}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      setData(json.data);
+    } catch {
+      // best-effort load of current availabilityMode/calendarConnected for the panel below
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const fetchSchedule = useCallback(() => instructorApiFetch("/schedule"), []);
+  const saveSchedule = useCallback(
+    (slots: unknown) =>
+      instructorApiFetch("/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slots }),
+      }),
+    []
+  );
+
+  async function handleSetMode(next: AvailabilityMode, force = false) {
+    setModeSaving(true);
+    try {
+      const res = await instructorApiFetch("/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ availabilityMode: next, force }),
+      });
+      if (res.status === 409) {
+        if (window.confirm("You have no available slots configured, so students won't be able to book you. Switch anyway?")) {
+          return handleSetMode(next, true);
+        }
+        return;
+      }
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        toast.error(json.error ?? "Failed to update availability mode");
+        return;
+      }
+      setData((prev) => (prev ? { ...prev, availabilityMode: next } : prev));
+      toast.success("Availability mode updated");
+    } finally {
+      setModeSaving(false);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-brand-surface">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-brand-black">My Schedule</h1>
+          <p className="text-sm text-brand-muted mt-1">Manage your weekly availability template.</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-5 mb-4">
+          {/* TODO(calendar-sync): re-add the Custom Slots / Calendar Sync toggle once calendar
+              integration is prioritized again -- only Custom Slots is offered for now.
+          <div className="flex items-center gap-2 mb-4 p-1 bg-brand-surface rounded-xl w-fit">
+            {(["CUSTOM_SLOTS", "CALENDAR_SYNC"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                disabled={modeSaving}
+                onClick={() => handleSetMode(m)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  data?.availabilityMode === m ? "bg-white text-brand-black shadow-sm" : "text-brand-muted hover:text-brand-black"
+                }`}
+              >
+                {m === "CUSTOM_SLOTS" ? "Custom Slots" : "Calendar Sync"}
+              </button>
+            ))}
+          </div>
+          */}
+          {data?.availabilityMode === "CALENDAR_SYNC" ? (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 text-xs text-blue-800">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <p>
+                Your account is currently set to calendar-based availability. Switch to custom slots below to manage your own weekly
+                schedule.
+              </p>
+              <button
+                type="button"
+                disabled={modeSaving}
+                onClick={() => handleSetMode("CUSTOM_SLOTS")}
+                className="ml-auto shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-blue-200 text-blue-800 hover:bg-blue-100 transition-colors"
+              >
+                Switch to Custom Slots
+              </button>
+            </div>
+          ) : (
+            <p className="text-xs text-brand-muted mb-4">Students book against the weekly template below.</p>
+          )}
+          <AvailabilityGridEditor fetchSchedule={fetchSchedule} saveSchedule={saveSchedule} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* TODO(calendar-sync): everything below was the read-only Google/Apple Calendar view
+   (bookings + synced busy blocks, Week/Month grid, "Calendar" tab). Re-enable by restoring
+   this code, re-adding the "Calendar" / "My Availability" tab bar, and the imports it needs
+   (ChevronLeft, ChevronRight, RefreshCw, CalendarDays, X, User, Clock, Hash, Link, backendApiFetch).
+
+import { useMemo } from "react";
+import { ChevronLeft, ChevronRight, RefreshCw, CalendarDays, X, User, Clock, Hash } from "lucide-react";
+import Link from "next/link";
+import { backendApiFetch } from "@/lib/backend-auth-fetch";
+
 type ViewMode = "week" | "month";
+type Section = "calendar" | "availability";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -64,10 +199,6 @@ function addMonths(d: Date, n: number): Date {
   const copy = new Date(d);
   copy.setMonth(copy.getMonth() + n);
   return copy;
-}
-
-function fmtDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function sameDay(a: Date, b: Date): boolean {
@@ -139,223 +270,6 @@ function countsForDay(day: Date, bookings: Booking[], busy: BusyBlock[]) {
     if (e > dayStart && s < dayEnd) busyCount++;
   }
   return { bookingCount, busyCount };
-}
-
-export default function InstructorSchedulePage() {
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
-  const horizonMax = useMemo(() => addDays(today, MAX_HORIZON_DAYS), [today]);
-
-  const [view, setView] = useState<ViewMode>("week");
-  const [cursor, setCursor] = useState<Date>(() => new Date());
-  const [data, setData] = useState<Overview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-
-  const range = useMemo(() => {
-    if (view === "week") {
-      const from = startOfWeek(cursor);
-      const to = addDays(from, 6);
-      return { from, to };
-    }
-    return { from: startOfMonth(cursor), to: endOfMonth(cursor) };
-  }, [view, cursor]);
-
-  const canGoBack = useMemo(() => {
-    if (view === "week") return startOfWeek(cursor) > startOfWeek(today);
-    return startOfMonth(cursor) > startOfMonth(today);
-  }, [view, cursor, today]);
-
-  const canGoForward = useMemo(() => {
-    if (view === "week") return addDays(startOfWeek(cursor), 7) <= horizonMax;
-    return startOfMonth(addMonths(cursor, 1)) <= horizonMax;
-  }, [view, cursor, horizonMax]);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const from = fmtDate(range.from);
-      const to = fmtDate(range.to);
-      const res = await backendApiFetch(`/instructor/schedule/overview?from=${from}&to=${to}`);
-      if (!res.ok) {
-        setError("Failed to load schedule");
-        return;
-      }
-      const json = await res.json();
-      setData(json.data);
-    } catch {
-      setError("Network error");
-    } finally {
-      setLoading(false);
-    }
-  }, [range.from, range.to]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const goPrev = () => setCursor(view === "week" ? addDays(cursor, -7) : addMonths(cursor, -1));
-  const goNext = () => setCursor(view === "week" ? addDays(cursor, 7) : addMonths(cursor, 1));
-  const goToday = () => setCursor(new Date());
-
-  const rangeLabel = useMemo(() => {
-    if (view === "week") {
-      const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-      return `${range.from.toLocaleDateString(undefined, opts)} — ${range.to.toLocaleDateString(undefined, { ...opts, year: "numeric" })}`;
-    }
-    return range.from.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  }, [view, range.from, range.to]);
-
-  return (
-    <div className="min-h-screen bg-brand-surface">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-brand-black">My Schedule</h1>
-            <p className="text-sm text-brand-muted mt-1">
-              Read-only view. Bookings and Google Calendar blocks only.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="inline-flex bg-white border border-brand-border rounded-xl p-0.5 text-xs font-semibold">
-              <button
-                onClick={() => setView("week")}
-                className={`px-3 py-1.5 rounded-lg transition ${
-                  view === "week"
-                    ? "bg-brand-red text-white"
-                    : "text-brand-muted hover:text-brand-black"
-                }`}
-              >
-                Week
-              </button>
-              <button
-                onClick={() => setView("month")}
-                className={`px-3 py-1.5 rounded-lg transition ${
-                  view === "month"
-                    ? "bg-brand-red text-white"
-                    : "text-brand-muted hover:text-brand-black"
-                }`}
-              >
-                Month
-              </button>
-            </div>
-            <button
-              onClick={load}
-              disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 border border-brand-border rounded-xl text-xs font-semibold text-brand-black hover:bg-white transition disabled:opacity-60"
-              title="Refresh"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
-          </div>
-        </div>
-
-        {!data?.calendarConnected && !loading && (
-          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-            <Info className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-amber-800">
-              <p className="font-semibold mb-1">Google Calendar not connected</p>
-              <p>
-                Without it, students see your whole 24h open every day. Connect on the{" "}
-                <a href="/instructor/profile" className="underline font-semibold">Profile page</a>{" "}
-                to have your Google Calendar events block booking slots automatically.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {data?.calendarConnected && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs text-blue-800">
-            <Info className="w-4 h-4 flex-shrink-0" />
-            <span>
-              Synced with <span className="font-semibold">{data.calendarEmail}</span>. Block time in Google Calendar to make yourself unavailable.
-            </span>
-          </div>
-        )}
-
-        <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-4 mb-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-brand-muted" />
-              <span className="font-semibold text-brand-black text-sm">{rangeLabel}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={goPrev}
-                disabled={!canGoBack}
-                className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition disabled:opacity-40 disabled:cursor-not-allowed"
-                title={view === "week" ? "Previous week" : "Previous month"}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={goToday}
-                className="px-3 py-1.5 text-xs font-semibold text-brand-black border border-brand-border rounded-lg hover:bg-brand-surface transition"
-              >
-                Today
-              </button>
-              <button
-                onClick={goNext}
-                disabled={!canGoForward}
-                className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition disabled:opacity-40 disabled:cursor-not-allowed"
-                title={view === "week" ? "Next week" : "Next month"}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 mb-3 text-xs text-brand-muted">
-          <div className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm bg-green-500" />
-            <span>Booking</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm bg-red-400" />
-            <span>Blocked (Google)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm bg-white border border-brand-border" />
-            <span>Free</span>
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
-            {error}
-          </div>
-        )}
-
-        {view === "week" ? (
-          <WeekGrid today={today} weekStart={range.from} data={data} onBookingClick={setSelectedBooking} />
-        ) : (
-          <MonthGrid
-            today={today}
-            monthCursor={cursor}
-            data={data}
-            onDayClick={(d) => { setCursor(d); setView("week"); }}
-            horizonMax={horizonMax}
-          />
-        )}
-
-        <p className="mt-4 text-xs text-brand-muted">
-          Students can book any free hour within the next {MAX_HORIZON_DAYS} days. To make time unavailable, add an event in your Google Calendar.
-        </p>
-      </div>
-
-      {selectedBooking && (
-        <BookingDetailsModal
-          booking={selectedBooking}
-          onClose={() => setSelectedBooking(null)}
-        />
-      )}
-    </div>
-  );
 }
 
 function BookingDetailsModal({ booking, onClose }: { booking: Booking; onClose: () => void }) {
@@ -622,3 +536,4 @@ function MonthGrid({
     </div>
   );
 }
+*/

@@ -85,6 +85,14 @@ const createMine = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
+  if ('outsideAvailability' in created) {
+    return res.status(httpStatus.CONFLICT).send({
+      success: false,
+      error: 'OUTSIDE_AVAILABILITY',
+      message: 'That time is no longer available for this instructor. Please pick another slot.',
+    });
+  }
+
   res.status(httpStatus.OK).send({
     success: true,
     data: {
@@ -121,6 +129,9 @@ const getAvailability = catchAsync(async (req: Request, res: Response) => {
   const durationMins = Math.max(15, Math.min(600, parseInt(durationRaw, 10) || 60));
 
   const data = await bookingService.getAvailability(instructorId, startDate, endDate, durationMins);
+  if (data === null) {
+    return res.status(httpStatus.NOT_FOUND).send({ success: false, error: 'Instructor not found' });
+  }
   res.status(httpStatus.OK).send({ success: true, data });
 });
 

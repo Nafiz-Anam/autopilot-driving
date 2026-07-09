@@ -5,11 +5,14 @@ import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import {
-  Search, GraduationCap, Eye, EyeOff, Plus, Pencil, Trash2, X, Check, Info,
+  Search, GraduationCap, Eye, EyeOff, Plus, Pencil, Trash2, X, Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
 import ConfirmModal from "@/components/admin/ConfirmModal";
+import AvailabilityGridEditor from "@/components/shared/AvailabilityGridEditor";
+
+type AvailabilityMode = "CUSTOM_SLOTS" | "CALENDAR_SYNC";
 
 interface InstructorRecord {
   id: string;
@@ -24,6 +27,7 @@ interface InstructorRecord {
   pricePerHour: number;
   isFemale: boolean;
   isActive: boolean;
+  availabilityMode: AvailabilityMode;
   user: { id: string; name: string | null; email: string; phone: string | null; image: string | null };
   _count: { bookings: number };
 }
@@ -57,22 +61,6 @@ function getInitials(name: string | null) {
 }
 
 
-// ── Schedule types & constants ────────────────────────────────────────────────
-type CellState = "available" | "unavailable";
-type AvailabilityGrid = Record<string, CellState>;
-const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"] as const;
-const HOURS = Array.from({ length: 18 }, (_, i) => String(i + 6).padStart(2, "0") + ":00");
-const DAY_TO_INDEX: Record<string, number> = { Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6,Sunday:0 };
-const INDEX_TO_DAY: Record<number, string> = { 0:"Sunday",1:"Monday",2:"Tuesday",3:"Wednesday",4:"Thursday",5:"Friday",6:"Saturday" };
-function buildDefaultGrid(): AvailabilityGrid {
-  const grid: AvailabilityGrid = {};
-  for (const day of DAYS) for (const hour of HOURS) {
-    const h = parseInt(hour);
-    grid[`${day}-${hour}`] = day !== "Sunday" && h >= 8 && h < 21 ? "available" : "unavailable";
-  }
-  return grid;
-}
-
 function InstructorModal({
   open, editInstructor, onClose, onSaved,
 }: {
@@ -85,35 +73,9 @@ function InstructorModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"profile" | "schedule">("profile");
-  const [grid, setGrid] = useState<AvailabilityGrid>(buildDefaultGrid);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
-  const [scheduleSaving, setScheduleSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  const loadSchedule = useCallback(async (id: string) => {
-    setScheduleLoading(true);
-    try {
-      const res = await adminApiFetch(`/instructors/${id}/schedule`);
-      if (res.ok) {
-        const json = await res.json();
-        const slots: Array<{ dayOfWeek: number; startTime: string; isAvailable: boolean }> = json.data ?? [];
-        const emptyGrid = buildDefaultGrid();
-        Object.keys(emptyGrid).forEach((k) => (emptyGrid[k] = "unavailable"));
-        if (slots.length > 0) {
-          for (const slot of slots) {
-            const day = INDEX_TO_DAY[slot.dayOfWeek];
-            if (!day) continue;
-            const hour = slot.startTime.slice(0, 5);
-            const key = `${day}-${hour}`;
-            if (key in emptyGrid) emptyGrid[key] = slot.isAvailable ? "available" : "unavailable";
-          }
-        }
-        setGrid(emptyGrid);
-      }
-    } finally {
-      setScheduleLoading(false);
-    }
-  }, []);
+  const [mode, setMode] = useState<AvailabilityMode>("CUSTOM_SLOTS");
+  const [modeSaving, setModeSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -137,9 +99,50 @@ function InstructorModal({
             }
           : emptyForm
       );
-      if (editInstructor) loadSchedule(editInstructor.id);
+      if (editInstructor) setMode(editInstructor.availabilityMode);
     }
-  }, [open, editInstructor, loadSchedule]);
+  }, [open, editInstructor]);
+
+  const fetchSchedule = useCallback(
+    () => adminApiFetch(`/instructors/${editInstructor?.id}/schedule`),
+    [editInstructor?.id]
+  );
+  const saveSchedule = useCallback(
+    (slots: unknown) =>
+      adminApiFetch(`/instructors/${editInstructor?.id}/schedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slots }),
+      }),
+    [editInstructor?.id]
+  );
+
+  async function handleSetMode(next: AvailabilityMode, force = false) {
+    if (!editInstructor) return;
+    setModeSaving(true);
+    try {
+      const res = await adminApiFetch(`/instructors/${editInstructor.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ availabilityMode: next, force }),
+      });
+      if (res.status === 409) {
+        if (window.confirm("This instructor has no available slots configured, so students won't be able to book them. Switch anyway?")) {
+          return handleSetMode(next, true);
+        }
+        return;
+      }
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        toast.error(json.error ?? "Failed to update availability mode");
+        return;
+      }
+      setMode(next);
+      toast.success("Availability mode updated");
+    } finally {
+      setModeSaving(false);
+    }
+  }
 
   if (!open) return null;
 
@@ -216,6 +219,7 @@ function InstructorModal({
             pricePerHour: Number(form.pricePerHour) || 0,
             isFemale: form.isFemale,
             isActive: form.isActive,
+            availabilityMode: "CUSTOM_SLOTS" as AvailabilityMode,
             user: { id: "", name: form.name, email: form.email, phone: form.phone || null, image: null },
             _count: { bookings: 0 },
           };
@@ -226,32 +230,6 @@ function InstructorModal({
       setError("Network error");
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleSaveSchedule() {
-    if (!editInstructor) return;
-    setScheduleSaving(true);
-    try {
-      const slots = Object.entries(grid).map(([key, state]) => {
-        const [day, hour] = key.split(/-(?=\d{2}:)/);
-        const [h] = hour.split(":").map(Number);
-        const endHour = String((h + 1) % 24).padStart(2, "0");
-        return { dayOfWeek: DAY_TO_INDEX[day] ?? 1, startTime: `${hour}:00`, endTime: `${endHour}:00:00`, isAvailable: state === "available" };
-      });
-      const res = await adminApiFetch(`/instructors/${editInstructor.id}/schedule`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots }),
-      });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        toast.error(json.error ?? "Failed to save schedule");
-        return;
-      }
-      toast.success("Schedule saved");
-    } finally {
-      setScheduleSaving(false);
     }
   }
 
@@ -385,59 +363,31 @@ function InstructorModal({
         {/* ── Schedule tab panel ── */}
         {editInstructor && activeTab === "schedule" && (
           <div className="p-6 overflow-y-auto flex-1">
-            {scheduleLoading ? (
-              <div className="space-y-2">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />)}
+            {/* TODO(calendar-sync): re-add the Custom Slots / Calendar Sync toggle once calendar
+                integration is prioritized again -- only Custom Slots is offered for now.
+            <div className="flex items-center gap-2 mb-4 p-1 bg-brand-surface rounded-xl w-fit">
+              {(["CUSTOM_SLOTS", "CALENDAR_SYNC"] as const).map((m) => (
+                <button key={m} type="button" disabled={modeSaving} onClick={() => handleSetMode(m)}
+                  className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                    mode === m ? "bg-white text-brand-black shadow-sm" : "text-brand-muted hover:text-brand-black")}>
+                  {m === "CUSTOM_SLOTS" ? "Custom Slots" : "Calendar Sync"}
+                </button>
+              ))}
+            </div>
+            */}
+            {mode === "CALENDAR_SYNC" && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3 text-xs text-blue-800">
+                <span>This instructor is currently set to calendar-based availability.</span>
+                <button type="button" disabled={modeSaving} onClick={() => handleSetMode("CUSTOM_SLOTS")}
+                  className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-blue-200 hover:bg-blue-100 transition-colors">
+                  Switch to Custom Slots
+                </button>
               </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto rounded-xl border border-brand-border">
-                  <table className="w-full text-xs border-collapse" style={{ minWidth: 500 }}>
-                    <thead>
-                      <tr>
-                        <th className="sticky left-0 bg-brand-surface px-3 py-2.5 text-left font-semibold text-brand-muted w-16 border-b border-brand-border">Time</th>
-                        {DAYS.map((d) => (
-                          <th key={d} className="px-1.5 py-2.5 text-center font-semibold text-brand-black bg-brand-surface border-b border-brand-border whitespace-nowrap">
-                            {d.slice(0, 3)}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {HOURS.map((hour, rowIdx) => (
-                        <tr key={hour} className={cn("border-t border-brand-border/50", rowIdx % 2 === 0 ? "bg-white" : "bg-brand-surface/30")}>
-                          <td className="sticky left-0 bg-inherit px-3 py-1 font-medium text-brand-muted whitespace-nowrap">{hour}</td>
-                          {DAYS.map((day) => {
-                            const key = `${day}-${hour}`;
-                            const isAvail = grid[key] === "available";
-                            return (
-                              <td key={day} className="px-1 py-1">
-                                <button type="button"
-                                  onClick={() => setGrid((p) => ({ ...p, [key]: p[key] === "available" ? "unavailable" : "available" }))}
-                                  className={cn("w-full h-8 rounded-lg border-2 transition-all flex items-center justify-center",
-                                    isAvail ? "bg-green-100 border-green-300 text-green-700 hover:bg-green-200" : "bg-white border-brand-border hover:border-brand-red hover:bg-red-50")}>
-                                  {isAvail && <Check className="w-3 h-3" />}
-                                </button>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex gap-4 text-xs text-brand-muted">
-                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-green-100 border-2 border-green-300 rounded inline-block" /> Available</span>
-                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-white border-2 border-brand-border rounded inline-block" /> Unavailable</span>
-                  </div>
-                  <button type="button" onClick={handleSaveSchedule} disabled={scheduleSaving}
-                    className="px-5 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 bg-brand-red text-white hover:bg-brand-orange disabled:opacity-60">
-                    {scheduleSaving ? <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Saving…</> : "Save Schedule"}
-                  </button>
-                </div>
-              </>
             )}
+            <p className="text-xs text-brand-muted mb-4">
+              Students book against the weekly template below.
+            </p>
+            <AvailabilityGridEditor fetchSchedule={fetchSchedule} saveSchedule={saveSchedule} />
           </div>
         )}
       </div>

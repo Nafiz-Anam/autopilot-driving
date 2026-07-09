@@ -7,6 +7,7 @@ import { SETTING_KEYS } from './settings.service';
 import emailService from './email.service';
 import refundService from './refund.service';
 import tokenService from './token.service';
+import instructorAvailabilityModeService from './instructorAvailabilityMode.service';
 import config from '../config/config';
 
 const PAGE_SIZE = 20;
@@ -962,6 +963,7 @@ const listInstructors = async (params: { search?: string; isActive?: string | nu
       pricePerHour: string;
       isFemale: boolean;
       isActive: boolean;
+      availabilityMode: string;
       createdAt: Date;
       userName: string | null;
       userEmail: string;
@@ -973,7 +975,7 @@ const listInstructors = async (params: { search?: string; isActive?: string | nu
     `SELECT
        i.id, i."userId", i.bio, i.rating::text AS rating, i."reviewCount", i."yearsExp",
        i."licenceNumber", i.transmission, i.areas, i."pricePerHour"::text AS "pricePerHour",
-       i."isFemale", i."isActive", i."createdAt",
+       i."isFemale", i."isActive", i."availabilityMode"::text AS "availabilityMode", i."createdAt",
        u.name AS "userName", u.email AS "userEmail", u."profilePicture" AS "userImage", u."createdAt" AS "userCreatedAt",
        COUNT(b.id)::int AS "bookingsCount"
      FROM "Instructor" i
@@ -1001,6 +1003,7 @@ const listInstructors = async (params: { search?: string; isActive?: string | nu
     pricePerHour: Number(inst.pricePerHour),
     isFemale: inst.isFemale,
     isActive: inst.isActive,
+    availabilityMode: inst.availabilityMode,
     createdAt: inst.createdAt,
     user: {
       id: inst.userId,
@@ -1029,8 +1032,18 @@ const patchInstructorById = async (
     name?: string;
     email?: string;
     phone?: string | null;
+    availabilityMode?: 'CUSTOM_SLOTS' | 'CALENDAR_SYNC';
+    force?: boolean;
   }
 ) => {
+  if (payload.availabilityMode !== undefined) {
+    await instructorAvailabilityModeService.assertSafeModeSwitch(
+      id,
+      payload.availabilityMode,
+      payload.force === true
+    );
+  }
+
   // Update user fields if provided
   if (payload.name !== undefined || payload.email !== undefined || payload.phone !== undefined) {
     const userRows = await prisma.$queryRawUnsafe<any[]>(
@@ -1065,7 +1078,8 @@ const patchInstructorById = async (
          areas = COALESCE($8::text[], areas),
          transmission = COALESCE($9::text[], transmission),
          "isFemale" = COALESCE($10, "isFemale"),
-         "licenceNumber" = COALESCE($11::text, "licenceNumber")
+         "licenceNumber" = COALESCE($11::text, "licenceNumber"),
+         "availabilityMode" = COALESCE($12::"AvailabilityMode", "availabilityMode")
      WHERE id = $1
      RETURNING *`,
     id,
@@ -1078,7 +1092,8 @@ const patchInstructorById = async (
     Array.isArray(payload.areas) ? payload.areas : null,
     Array.isArray(payload.transmission) ? payload.transmission : null,
     typeof payload.isFemale === 'boolean' ? payload.isFemale : null,
-    payload.licenceNumber === undefined ? null : payload.licenceNumber
+    payload.licenceNumber === undefined ? null : payload.licenceNumber,
+    payload.availabilityMode ?? null
   );
   return rows[0] ?? null;
 };
@@ -1098,6 +1113,7 @@ const getInstructorById = async (id: string) => {
       pricePerHour: string;
       isFemale: boolean;
       isActive: boolean;
+      availabilityMode: string;
       createdAt: Date;
       userName: string | null;
       userEmail: string;
@@ -1110,7 +1126,7 @@ const getInstructorById = async (id: string) => {
     `SELECT
        i.id, i."userId", i.bio, i.rating::text AS rating, i."reviewCount", i."yearsExp",
        i."licenceNumber", i.transmission, i.areas, i."pricePerHour"::text AS "pricePerHour",
-       i."isFemale", i."isActive", i."createdAt",
+       i."isFemale", i."isActive", i."availabilityMode"::text AS "availabilityMode", i."createdAt",
        u.name AS "userName", u.email AS "userEmail", u.phone AS "userPhone", u."profilePicture" AS "userImage", u."createdAt" AS "userCreatedAt",
        (SELECT COUNT(*)::int FROM "Booking" b WHERE b."instructorId" = i.id) AS "bookingsCount"
      FROM "Instructor" i
@@ -1161,6 +1177,7 @@ const getInstructorById = async (id: string) => {
     pricePerHour: Number(instructor.pricePerHour),
     isFemale: instructor.isFemale,
     isActive: instructor.isActive,
+    availabilityMode: instructor.availabilityMode,
     createdAt: instructor.createdAt,
     user: {
       id: instructor.userId,
@@ -1820,15 +1837,16 @@ const updateInstructorScheduleById = async (
   );
   if (!rows[0]) return null;
 
-  await prisma.$executeRawUnsafe(`DELETE FROM "Availability" WHERE "instructorId" = $1`, instructorId);
-
-  for (const slot of slots) {
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO "Availability" (id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable")
-       VALUES (gen_random_uuid(), $1, $2, $3::time, $4::time, $5)`,
-      instructorId, slot.dayOfWeek, slot.startTime, slot.endTime, slot.isAvailable
-    );
-  }
+  await prisma.$transaction([
+    prisma.$executeRawUnsafe(`DELETE FROM "Availability" WHERE "instructorId" = $1`, instructorId),
+    ...slots.map(slot =>
+      prisma.$executeRawUnsafe(
+        `INSERT INTO "Availability" (id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable")
+         VALUES (gen_random_uuid(), $1, $2, $3::time, $4::time, $5)`,
+        instructorId, slot.dayOfWeek, slot.startTime, slot.endTime, slot.isAvailable
+      )
+    ),
+  ]);
 
   return { success: true, count: slots.length };
 };

@@ -7,34 +7,23 @@ import rescheduleService from './reschedule.service';
 import refundService from './refund.service';
 import googleCalendarService from './googleCalendar.service';
 import emailService from './email.service';
+import {
+  DayWindow,
+  parseHHMM,
+  formatHHMM,
+  overlaps,
+  mergeWindows,
+  getDayWindows,
+  isWithinAvailability,
+} from '../utils/instructorAvailability';
 
-// Availability policy:
-//   - Baseline: full 24h/day for every instructor.
-//   - The ONLY blockers are (a) Google Calendar busy events synced via webhook,
-//     (b) existing PENDING/CONFIRMED Booking rows.
-//   - The old weekday Availability template is intentionally ignored so there is
-//     one source of truth (the instructor's Google Calendar).
+// Availability policy: per-instructor availabilityMode picks the baseline.
+//   - CALENDAR_SYNC: full 24h/day baseline, blocked only by (a) Google Calendar
+//     busy events synced via webhook, (b) existing PENDING/CONFIRMED Bookings.
+//   - CUSTOM_SLOTS: baseline is the instructor's weekly Availability template,
+//     blocked only by existing PENDING/CONFIRMED Bookings (calendar ignored).
 const SLOT_STEP_MINS = 60;
 const MAX_BOOKING_HORIZON_DAYS = 60;
-
-function parseHHMM(s: string): number | null {
-  const m = /^(\d{1,2}):(\d{2})$/.exec(s ?? '');
-  if (!m) return null;
-  const h = Number(m[1]);
-  const min = Number(m[2]);
-  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
-  return h * 60 + min;
-}
-
-function formatHHMM(mins: number): string {
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
-function overlaps(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
-  return aStart < bEnd && bStart < aEnd;
-}
 
 // Fetch pending reschedule requests for a set of booking IDs
 async function fetchPendingReschedules(bookingIds: string[]) {
@@ -183,6 +172,12 @@ const createForStudent = async (input: CreateBookingInput) => {
     }
     if (scheduled < now) {
       return { pastDate: true as const };
+    }
+    if (input.instructorId) {
+      const available = await isWithinAvailability(input.instructorId, scheduled, input.durationMins);
+      if (!available) {
+        return { outsideAvailability: true as const };
+      }
     }
   }
 
@@ -419,12 +414,19 @@ const getAvailability = async (
   endDateStr: string,
   durationMins = 60
 ) => {
+  const instructor = await prisma.instructor.findUnique({
+    where: { id: instructorId },
+    select: { availabilityMode: true },
+  });
+  if (!instructor) return null;
+  const mode = instructor.availabilityMode;
+
   const horizon = moment().add(MAX_BOOKING_HORIZON_DAYS, 'day').endOf('day').toDate();
   const requestedEnd = moment(endDateStr).endOf('day').toDate();
   const rangeStart = moment(startDateStr).startOf('day').toDate();
   const rangeEnd = requestedEnd > horizon ? horizon : requestedEnd;
 
-  const [bookings, busy] = await Promise.all([
+  const [bookings, busy, templateRows] = await Promise.all([
     prisma.booking.findMany({
       where: {
         instructorId,
@@ -433,15 +435,37 @@ const getAvailability = async (
       },
       select: { scheduledAt: true, durationMins: true },
     }),
-    prisma.instructorBusyBlock.findMany({
-      where: {
-        instructorId,
-        startsAt: { lte: rangeEnd },
-        endsAt: { gte: rangeStart },
-      },
-      select: { startsAt: true, endsAt: true },
-    }),
+    mode === 'CALENDAR_SYNC'
+      ? prisma.instructorBusyBlock.findMany({
+          where: {
+            instructorId,
+            startsAt: { lte: rangeEnd },
+            endsAt: { gte: rangeStart },
+          },
+          select: { startsAt: true, endsAt: true },
+        })
+      : Promise.resolve([] as Array<{ startsAt: Date; endsAt: Date }>),
+    mode === 'CUSTOM_SLOTS'
+      ? prisma.$queryRawUnsafe<Array<{ dayOfWeek: number; startTime: string; endTime: string }>>(
+          `SELECT "dayOfWeek", "startTime", "endTime" FROM "Availability" WHERE "instructorId" = $1 AND "isAvailable" = true`,
+          instructorId
+        )
+      : Promise.resolve([] as Array<{ dayOfWeek: number; startTime: string; endTime: string }>),
   ]);
+
+  const rawTemplateByDay = new Map<number, DayWindow[]>();
+  for (const row of templateRows) {
+    const start = parseHHMM(row.startTime.slice(0, 5));
+    const end = parseHHMM(row.endTime.slice(0, 5));
+    if (start === null || end === null || end <= start) continue;
+    const list = rawTemplateByDay.get(row.dayOfWeek) ?? [];
+    list.push({ start, end });
+    rawTemplateByDay.set(row.dayOfWeek, list);
+  }
+  const templateByDay = new Map<number, DayWindow[]>();
+  for (const [day, windows] of rawTemplateByDay) {
+    templateByDay.set(day, mergeWindows(windows));
+  }
 
   const blockersByDate = new Map<string, Array<{ start: number; end: number }>>();
   const addBlocker = (start: Date, end: Date) => {
@@ -479,19 +503,21 @@ const getAvailability = async (
     const dateStr = cursor.format('YYYY-MM-DD');
     const blockers = blockersByDate.get(dateStr) ?? [];
     const slots: string[] = [];
+    const windows = getDayWindows(mode, cursor.day(), templateByDay);
 
-    let t = 0;
-    const dayEndMins = 24 * 60;
-    while (t + durationMins <= dayEndMins) {
-      const slotEnd = t + durationMins;
-      const conflict = blockers.some(b => overlaps(t, slotEnd, b.start, b.end));
-      if (!conflict) {
-        const slotAt = cursor.clone().hour(Math.floor(t / 60)).minute(t % 60).second(0).valueOf();
-        if (slotAt > nowMs) {
-          slots.push(formatHHMM(t));
+    for (const window of windows) {
+      let t = window.start;
+      while (t + durationMins <= window.end) {
+        const slotEnd = t + durationMins;
+        const conflict = blockers.some(b => overlaps(t, slotEnd, b.start, b.end));
+        if (!conflict) {
+          const slotAt = cursor.clone().hour(Math.floor(t / 60)).minute(t % 60).second(0).valueOf();
+          if (slotAt > nowMs) {
+            slots.push(formatHHMM(t));
+          }
         }
+        t += SLOT_STEP_MINS;
       }
-      t += SLOT_STEP_MINS;
     }
 
     result.push({ date: dateStr, slots });

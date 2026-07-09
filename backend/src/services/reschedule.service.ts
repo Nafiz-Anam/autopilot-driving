@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
 import googleCalendarService from './googleCalendar.service';
 import emailService from './email.service';
+import { isWithinAvailability } from '../utils/instructorAvailability';
 
 type Role = 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
 
@@ -14,14 +15,23 @@ const createRequest = async (params: {
   notes?: string;
 }) => {
   const bookings = await prisma.$queryRawUnsafe<
-    Array<{ id: string; status: string; studentId: string; instructorId: string }>
+    Array<{ id: string; status: string; studentId: string; instructorId: string; durationMins: number }>
   >(
-    `SELECT id, status::text AS status, "studentId", "instructorId" FROM "Booking" WHERE id = $1 LIMIT 1`,
+    `SELECT id, status::text AS status, "studentId", "instructorId", "durationMins" FROM "Booking" WHERE id = $1 LIMIT 1`,
     params.bookingId
   );
   const booking = bookings[0];
   if (!booking) return { error: 'NOT_FOUND' as const };
   if (!['PENDING', 'CONFIRMED'].includes(booking.status)) return { error: 'BAD_STATE' as const };
+
+  if (booking.instructorId) {
+    const available = await isWithinAvailability(
+      booking.instructorId,
+      new Date(params.proposedDateTime),
+      booking.durationMins
+    );
+    if (!available) return { error: 'OUTSIDE_AVAILABILITY' as const };
+  }
 
   // Verify instructor owns this booking
   if (params.requestedByRole === 'INSTRUCTOR') {
@@ -205,6 +215,19 @@ const respondToRequest = async (params: {
     );
     if (!instRows[0] || bookingRows[0]?.instructorId !== instRows[0].id) {
       return { error: 'FORBIDDEN' as const };
+    }
+  }
+
+  if (params.accept) {
+    const bookingRows = await prisma.$queryRawUnsafe<Array<{ instructorId: string; durationMins: number }>>(
+      `SELECT "instructorId", "durationMins" FROM "Booking" WHERE id = $1 LIMIT 1`,
+      req.bookingId
+    );
+    const instructorId = bookingRows[0]?.instructorId;
+    const durationMins = bookingRows[0]?.durationMins;
+    if (instructorId && durationMins != null) {
+      const available = await isWithinAvailability(instructorId, req.proposedDateTime, durationMins);
+      if (!available) return { error: 'OUTSIDE_AVAILABILITY' as const };
     }
   }
 
