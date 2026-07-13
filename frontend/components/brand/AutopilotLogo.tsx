@@ -29,6 +29,7 @@ export function AutopilotLogo({
         height={size === "compact" ? 35 : 45}
         className="h-auto w-auto object-contain"
         priority
+        unoptimized
       />
     </Link>
   );
