@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Phone, Mail } from "lucide-react";
+import { AutopilotLogo } from "@/components/brand/AutopilotLogo";
 
 function FacebookIcon({ size = 18 }: { size?: number }) {
   return (
@@ -37,15 +37,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand column */}
           <div className="col-span-1">
-            <Link href="/" className="flex items-center mb-4 transition-opacity hover:opacity-90">
-              <Image
-                src="/autopilot-logo-transparent.png"
-                alt="AutoPilot Driving School"
-                width={160}
-                height={40}
-                className="h-auto w-auto object-contain"
-              />
-            </Link>
+            <AutopilotLogo className="mb-4" size="compact" />
             <p className="text-[#9A9A9A] text-sm leading-relaxed mb-4">
               UK&apos;s premier driving school. Expert DVSA-approved instructors covering East London, Tower Hamlets, Newham, Barking &amp; Dagenham and surrounding areas.
             </p>
