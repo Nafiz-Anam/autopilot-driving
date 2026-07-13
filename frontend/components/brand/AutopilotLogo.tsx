@@ -27,7 +27,7 @@ export function AutopilotLogo({
         alt="AutoPilot Driving School"
         width={size === "compact" ? 140 : 180}
         height={size === "compact" ? 35 : 45}
-        className="h-auto w-auto object-contain"
+        className={cn("w-auto", size === "compact" ? "h-[35px]" : "h-[45px]")}
         priority
         unoptimized
       />
