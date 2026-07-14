@@ -8,15 +8,23 @@ export type AutopilotLogoProps = {
   href?: string;
   /** Extra classes on the root link */
   className?: string;
-  /** Slightly smaller type + icon for sidebars */
-  size?: "default" | "compact";
+  /** Smaller for the navbar, larger for the footer brand mark */
+  size?: "default" | "compact" | "large";
 };
+
+const DIMENSIONS = {
+  compact: { width: 140, height: 35, heightClass: "h-[35px]" },
+  default: { width: 180, height: 45, heightClass: "h-[45px]" },
+  large: { width: 240, height: 60, heightClass: "h-[60px]" },
+} as const;
 
 export function AutopilotLogo({
   href = "/",
   className,
   size = "default",
 }: AutopilotLogoProps) {
+  const { width, height, heightClass } = DIMENSIONS[size];
+
   return (
     <Link
       href={href}
@@ -25,9 +33,9 @@ export function AutopilotLogo({
       <Image
         src="/autopilot-logo-transparent.png"
         alt="Autopilot Driving School"
-        width={size === "compact" ? 140 : 180}
-        height={size === "compact" ? 35 : 45}
-        className={cn("w-auto", size === "compact" ? "h-[35px]" : "h-[45px]")}
+        width={width}
+        height={height}
+        className={cn("w-auto", heightClass)}
         priority
         unoptimized
       />

@@ -37,7 +37,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand column */}
           <div className="col-span-1">
-            <AutopilotLogo className="mb-4" size="compact" />
+            <AutopilotLogo className="mb-4" size="large" />
             <p className="text-[#9A9A9A] text-sm leading-relaxed mb-4">
               UK&apos;s premier driving school. Expert DVSA-approved instructors covering East London, Tower Hamlets, Newham, Barking &amp; Dagenham and surrounding areas.
             </p>
