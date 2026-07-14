@@ -59,11 +59,11 @@ export function WhyAutopilot() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0D0D0D]"
               style={{
-                fontFamily: "'Moderniz', 'Barlow', sans-serif",
+                fontFamily: "var(--font-display)",
                 letterSpacing: "-0.02em",
               }}
             >
-              The AutoPilot
+              The Autopilot
               <br className="hidden sm:block" /> Difference
             </motion.h2>
           </div>

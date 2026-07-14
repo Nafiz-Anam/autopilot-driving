@@ -64,7 +64,7 @@ const articleSections = [
     title: "What are refresher driving lessons?",
     body: [
       "Refresher driving lessons are a perfect way to improve specific skills, bump up your road safety, or boost your confidence behind the wheel.",
-      "We understand there are many reasons drivers seek refresher lessons — from needing reassurance after time away from driving, to rebuilding confidence after an accident, to feeling steadier on a motorway or at night. That's why our AutoPilot instructors listen to your needs and tailor your course accordingly.",
+      "We understand there are many reasons drivers seek refresher lessons — from needing reassurance after time away from driving, to rebuilding confidence after an accident, to feeling steadier on a motorway or at night. That's why our Autopilot instructors listen to your needs and tailor your course accordingly.",
     ],
   },
   {
@@ -79,7 +79,7 @@ const articleSections = [
     id: "specify",
     title: "Can I specify what I'd like to cover during my refresher lessons?",
     body: [
-      "Of course you can. Our AutoPilot instructors know there are many reasons drivers of all ages come to us for refresher lessons — which is why they listen to your requirements and tailor your refresher course accordingly.",
+      "Of course you can. Our Autopilot instructors know there are many reasons drivers of all ages come to us for refresher lessons — which is why they listen to your requirements and tailor your refresher course accordingly.",
       "Whether you want to focus on a single skill or build a broader programme, your instructor will design lessons that match your goals.",
     ],
   },
@@ -105,14 +105,14 @@ const otherCourses = [
     icon: Zap,
     title: "Intensive Courses",
     description:
-      "AutoPilot has been teaching learners across the UK for years. Our instructors create a personalised lesson plan designed to give you the skills you need to pass your practical driving test, while becoming a safe, confident motorist.",
+      "Autopilot has been teaching learners across the UK for years. Our instructors create a personalised lesson plan designed to give you the skills you need to pass your practical driving test, while becoming a safe, confident motorist.",
     href: "/learn-to-drive/intensive-courses",
   },
   {
     icon: Accessibility,
     title: "Motability",
     description:
-      "We have a passion for providing opportunities for people with disabilities to gain independence as drivers. AutoPilot partners with the Motability scheme to make the learning process easier and more affordable.",
+      "We have a passion for providing opportunities for people with disabilities to gain independence as drivers. Autopilot partners with the Motability scheme to make the learning process easier and more affordable.",
     href: "/learn-to-drive/motability",
   },
   {
@@ -149,7 +149,7 @@ function RefresherPriceBody() {
   const block = blockText;
   return (
     <p>
-      The cost of refresher lessons differs across the country. Single AutoPilot refresher lessons
+      The cost of refresher lessons differs across the country. Single Autopilot refresher lessons
       start from <strong>{single}</strong>
       {block && <>, with {block} for those rebuilding skills more fully</>}.
     </p>
@@ -163,7 +163,7 @@ export default function RefresherLessonsPage() {
   return (
     <>
       <PageHero
-        title="Learn with AutoPilot"
+        title="Learn with Autopilot"
         subtitle="Refresher driving lessons to rebuild confidence and sharpen your skills behind the wheel."
         dark={false}
         eyebrow="Refresher Driving Lessons"
@@ -175,7 +175,7 @@ export default function RefresherLessonsPage() {
           <aside className="lg:sticky lg:top-24 self-start">
             <h2
               className="text-3xl lg:text-4xl font-extrabold text-brand-black leading-tight"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Refresher Lessons, Improve your Driving Skills
             </h2>
@@ -198,7 +198,7 @@ export default function RefresherLessonsPage() {
                 <h3
                   id={section.id}
                   className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
-                  style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {section.title}
                 </h3>
@@ -252,7 +252,7 @@ export default function RefresherLessonsPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Who Are Refresher Lessons For?
             </h2>
@@ -292,7 +292,7 @@ export default function RefresherLessonsPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               What a Refresher Lesson Covers
             </h2>
@@ -321,7 +321,7 @@ export default function RefresherLessonsPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2
             className="text-3xl font-bold text-brand-black mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Simple Pricing
           </h2>
@@ -338,11 +338,11 @@ export default function RefresherLessonsPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Explore Other Courses
             </h2>
-            <p className="text-brand-muted">More ways to build your driving skills with AutoPilot.</p>
+            <p className="text-brand-muted">More ways to build your driving skills with Autopilot.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {otherCourses.map((c, i) => {
@@ -385,12 +385,12 @@ export default function RefresherLessonsPage() {
         >
           <h2
             className="text-2xl sm:text-3xl font-bold mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Book your refresher lessons online
           </h2>
           <p className="opacity-90 mb-6 max-w-xl mx-auto text-sm sm:text-base">
-            Check availability and book your first refresher lesson with AutoPilot today.
+            Check availability and book your first refresher lesson with Autopilot today.
           </p>
           <Link
             href="/booking?lessonType=REFRESHER"

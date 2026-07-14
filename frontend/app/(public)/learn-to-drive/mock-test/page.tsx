@@ -66,14 +66,14 @@ const articleSections = [
     showChecklist: true,
     bodyAfter: [
       "Mock tests work best when they include all the parts of the real driving test.",
-      "The emergency stop may not be included in your actual driving test — it's used in around 1 in 3 tests. At AutoPilot we think it's a good idea to practise it in a mock test.",
+      "The emergency stop may not be included in your actual driving test — it's used in around 1 in 3 tests. At Autopilot we think it's a good idea to practise it in a mock test.",
     ],
   },
   {
     id: "routes",
     title: "Will I use a real test route?",
     body: [
-      "AutoPilot will use routes that contain similar types of roads to an actual driving test. You will not use an actual driving test route — examiners change routes regularly, and the goal is to test your judgement, not your memory.",
+      "Autopilot will use routes that contain similar types of roads to an actual driving test. You will not use an actual driving test route — examiners change routes regularly, and the goal is to test your judgement, not your memory.",
     ],
   },
   {
@@ -132,7 +132,7 @@ export default function MockTestPage() {
   return (
     <>
       <PageHero
-        title="Learn with AutoPilot"
+        title="Learn with Autopilot"
         subtitle="Mock driving tests to check you're ready for the real thing — under realistic conditions."
         dark={false}
         eyebrow="Mock Driving Test"
@@ -144,7 +144,7 @@ export default function MockTestPage() {
           <aside className="lg:sticky lg:top-24 self-start">
             <h2
               className="text-3xl lg:text-4xl font-extrabold text-brand-black leading-tight"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Mock Driving Test
             </h2>
@@ -167,7 +167,7 @@ export default function MockTestPage() {
                 <h3
                   id={section.id}
                   className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
-                  style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {section.title}
                 </h3>
@@ -214,7 +214,7 @@ export default function MockTestPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Who Should Take a Mock Test?
             </h2>
@@ -254,7 +254,7 @@ export default function MockTestPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               What a Mock Test Covers
             </h2>
@@ -283,7 +283,7 @@ export default function MockTestPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2
             className="text-3xl font-bold text-brand-black mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Simple Pricing
           </h2>
@@ -300,11 +300,11 @@ export default function MockTestPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Explore Other Courses
             </h2>
-            <p className="text-brand-muted">More ways to build your driving skills with AutoPilot.</p>
+            <p className="text-brand-muted">More ways to build your driving skills with Autopilot.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {otherCourses.map((c, i) => {
@@ -347,7 +347,7 @@ export default function MockTestPage() {
         >
           <h2
             className="text-2xl sm:text-3xl font-bold mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Book your mock driving test
           </h2>

@@ -177,7 +177,7 @@ export function Step5StudentDetails() {
         <div className="mb-8">
           <h2
             className="text-2xl font-extrabold text-brand-black"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Continuing as {session.user.name?.split(" ")[0]}
           </h2>
@@ -335,7 +335,7 @@ export function Step5StudentDetails() {
     return (
       <div>
         <div className="mb-8">
-          <h2 className="text-2xl font-extrabold text-brand-black" style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}>
+          <h2 className="text-2xl font-extrabold text-brand-black" style={{ fontFamily: "var(--font-display)" }}>
             Verify your email
           </h2>
           <p className="text-brand-muted mt-1 text-sm">
@@ -379,12 +379,12 @@ export function Step5StudentDetails() {
       <div className="mb-8">
         <h2
           className="text-2xl font-extrabold text-brand-black"
-          style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           Your details
         </h2>
         <p className="text-brand-muted mt-1 text-sm">
-          Create your AutoPilot account to manage bookings and track progress.
+          Create your Autopilot account to manage bookings and track progress.
         </p>
       </div>
 

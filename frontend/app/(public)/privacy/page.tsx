@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/shared/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | AutoPilot Driving School",
+  title: "Privacy Policy | Autopilot Driving School",
   description:
-    "Read how AutoPilot Driving School collects, uses, and protects your personal data in accordance with UK GDPR.",
+    "Read how Autopilot Driving School collects, uses, and protects your personal data in accordance with UK GDPR.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -13,14 +13,14 @@ export default function PrivacyPolicyPage() {
       badge="Legal"
       title="Privacy Policy"
       lastUpdated="1 June 2026"
-      intro="AutoPilot Driving School ('we', 'us', 'our') is committed to protecting your privacy. This policy explains what personal data we collect, why we collect it, how we use it, and your rights under the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018."
+      intro="Autopilot Driving School ('we', 'us', 'our') is committed to protecting your privacy. This policy explains what personal data we collect, why we collect it, how we use it, and your rights under the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018."
       sections={[
         {
           heading: "Who We Are",
           content: (
             <>
               <p>
-                AutoPilot Driving School is a DVSA-approved driving school operating across East
+                Autopilot Driving School is a DVSA-approved driving school operating across East
                 Berkshire, West London, and surrounding areas. Our registered business address is
                 Ilford, London, England. We are the data controller for the personal information
                 you provide to us.
@@ -28,10 +28,10 @@ export default function PrivacyPolicyPage() {
               <p>
                 For data-related enquiries, contact us at{" "}
                 <a
-                  href="mailto:contact@autopilotdrivingschool.co.uk"
+                  href="mailto:info@autopilotdrivingschool.co.uk"
                   className="text-[#E8200A] hover:underline"
                 >
-                  contact@autopilotdrivingschool.co.uk
+                  info@autopilotdrivingschool.co.uk
                 </a>
                 .
               </p>
@@ -207,10 +207,10 @@ export default function PrivacyPolicyPage() {
               <p>
                 To exercise any of these rights, contact us at{" "}
                 <a
-                  href="mailto:contact@autopilotdrivingschool.co.uk"
+                  href="mailto:info@autopilotdrivingschool.co.uk"
                   className="text-[#E8200A] hover:underline"
                 >
-                  contact@autopilotdrivingschool.co.uk
+                  info@autopilotdrivingschool.co.uk
                 </a>
                 . We will respond within 30 days. You also have the right to lodge a complaint with
                 the Information Commissioner's Office (ICO) at{" "}

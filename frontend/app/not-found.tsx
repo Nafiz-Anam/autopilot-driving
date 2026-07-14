@@ -9,7 +9,7 @@ export default function NotFoundPage() {
           <div
             className="text-[120px] font-extrabold leading-none"
             style={{
-              fontFamily: "'Moderniz','Barlow',sans-serif",
+              fontFamily: "var(--font-display)",
               color: "#E8200A",
               opacity: 0.15,
             }}
@@ -19,7 +19,7 @@ export default function NotFoundPage() {
           <div className="-mt-12 relative z-10">
             <p
               className="text-5xl font-extrabold text-brand-black"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               404
             </p>
@@ -28,7 +28,7 @@ export default function NotFoundPage() {
 
         <h1
           className="text-3xl font-extrabold text-brand-black mb-3"
-          style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           You&apos;ve taken a wrong turn.
         </h1>

@@ -5,16 +5,24 @@ import icalService from '../services/ical.service';
 import prisma from '../client';
 
 function instructorCalToken(instructorId: string): string {
-  return crypto.createHmac('sha256', config.jwt.secret).update(`instructor:${instructorId}`).digest('hex');
+  return crypto
+    .createHmac('sha256', config.jwt.secret)
+    .update(`instructor:${instructorId}`)
+    .digest('hex');
 }
 
 function studentCalToken(studentId: string): string {
-  return crypto.createHmac('sha256', config.jwt.secret).update(`student:${studentId}`).digest('hex');
+  return crypto
+    .createHmac('sha256', config.jwt.secret)
+    .update(`student:${studentId}`)
+    .digest('hex');
 }
 
 function buildBackendBase(): string {
   // The backend serves these ICS feeds directly — use the API base, not the frontend URL
-  return (process.env.NEXT_PUBLIC_BACKEND_API_BASE_URL ?? config.clientUrl).replace(/\/v1\/?$/, '').replace(/\/$/, '');
+  return (process.env.NEXT_PUBLIC_BACKEND_API_BASE_URL ?? config.clientUrl)
+    .replace(/\/v1\/?$/, '')
+    .replace(/\/$/, '');
 }
 
 /**
@@ -70,13 +78,19 @@ const getStudentFeed = async (req: Request, res: Response): Promise<void> => {
  */
 const getInstructorCalendarUrl = async (req: Request, res: Response): Promise<void> => {
   const userId = req.drivingUser?.id;
-  if (!userId) { res.status(401).json({ error: 'Unauthorised' }); return; }
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorised' });
+    return;
+  }
 
   const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
     `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
     userId
   );
-  if (!rows[0]) { res.status(404).json({ error: 'Instructor profile not found' }); return; }
+  if (!rows[0]) {
+    res.status(404).json({ error: 'Instructor profile not found' });
+    return;
+  }
 
   const token = instructorCalToken(rows[0].id);
   const base = buildBackendBase();
@@ -95,7 +109,10 @@ const getInstructorCalendarUrl = async (req: Request, res: Response): Promise<vo
  */
 const getStudentCalendarUrl = async (req: Request, res: Response): Promise<void> => {
   const userId = req.drivingUser?.id;
-  if (!userId) { res.status(401).json({ error: 'Unauthorised' }); return; }
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorised' });
+    return;
+  }
 
   const token = studentCalToken(userId);
   const base = buildBackendBase();

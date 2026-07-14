@@ -97,12 +97,12 @@ function buildIcs(
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//AutoPilot Driving School//EN",
+    "PRODID:-//Autopilot Driving School//EN",
     "BEGIN:VEVENT",
     `UID:${ref}@autopilot.co.uk`,
     `DTSTART:${fmt(dt)}`,
     `DTEND:${fmt(dtEnd)}`,
-    `SUMMARY:AutoPilot Driving Lesson with ${instructorName}`,
+    `SUMMARY:Autopilot Driving Lesson with ${instructorName}`,
     `DESCRIPTION:Booking ref: ${ref}\\nInstructor: ${instructorName}`,
     "LOCATION:As arranged with instructor",
     "END:VEVENT",
@@ -122,7 +122,7 @@ function buildGcUrl(
   const end = format(date, "yyyyMMdd") + "T" + endHour + slot.split(":")[1] + "00";
   const params = new URLSearchParams({
     action: "TEMPLATE",
-    text: `AutoPilot Driving Lesson with ${instructorName}`,
+    text: `Autopilot Driving Lesson with ${instructorName}`,
     dates: `${start}/${end}`,
     details: `Booking ref: ${ref}`,
   });
@@ -201,7 +201,7 @@ export function Step7Confirmation() {
           {/* Heading */}
           <h2
             className="text-4xl font-extrabold text-brand-red mb-2"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Booking Confirmed!
           </h2>
@@ -216,7 +216,7 @@ export function Step7Confirmation() {
             </p>
             <p
               className="text-3xl font-extrabold text-brand-red tracking-[0.15em]"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               {ref}
             </p>

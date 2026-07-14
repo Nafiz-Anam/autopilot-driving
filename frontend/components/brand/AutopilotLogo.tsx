@@ -24,7 +24,7 @@ export function AutopilotLogo({
     >
       <Image
         src="/autopilot-logo-transparent.png"
-        alt="AutoPilot Driving School"
+        alt="Autopilot Driving School"
         width={size === "compact" ? 140 : 180}
         height={size === "compact" ? 35 : 45}
         className={cn("w-auto", size === "compact" ? "h-[35px]" : "h-[45px]")}

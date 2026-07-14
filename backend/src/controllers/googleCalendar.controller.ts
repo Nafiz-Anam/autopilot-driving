@@ -28,7 +28,11 @@ const connect = (req: Request, res: Response): void => {
 
 /** GET /v1/integrations/google-calendar/callback */
 const callback = async (req: Request, res: Response): Promise<void> => {
-  const { code, state: userId, error } = req.query as {
+  const {
+    code,
+    state: userId,
+    error,
+  } = req.query as {
     code?: string;
     state?: string;
     error?: string;

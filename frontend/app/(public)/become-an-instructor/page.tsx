@@ -407,7 +407,7 @@ export default function BecomeInstructorPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl lg:text-4xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Autopilot Training Course
             </h2>
@@ -465,7 +465,7 @@ export default function BecomeInstructorPage() {
           <div>
             <h2
               className="text-3xl font-bold text-brand-black mb-4"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               What will the integrated training give you?
             </h2>
@@ -523,7 +523,7 @@ export default function BecomeInstructorPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Why Join Autopilot?
             </h2>
@@ -563,7 +563,7 @@ export default function BecomeInstructorPage() {
         >
           <h2
             className="text-2xl sm:text-3xl font-bold mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Interested in becoming a Driving Instructor?
           </h2>
@@ -586,7 +586,7 @@ export default function BecomeInstructorPage() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Apply to Join
             </h2>
@@ -608,7 +608,7 @@ export default function BecomeInstructorPage() {
             <Clock className="w-10 h-10 text-brand-red mx-auto mb-3" />
             <h2
               className="text-3xl font-bold text-brand-black"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Frequently Asked Questions
             </h2>

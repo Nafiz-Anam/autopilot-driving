@@ -108,7 +108,7 @@ export function Step2Instructor() {
       <div className="mb-8">
         <h2
           className="text-2xl font-extrabold text-brand-black"
-          style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           Choose your instructor
         </h2>

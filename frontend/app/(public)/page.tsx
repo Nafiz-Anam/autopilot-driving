@@ -9,16 +9,16 @@ import { AreaTeaser } from "@/components/home/AreaTeaser";
 import { CTABanner } from "@/components/home/CTABanner";
 
 export const metadata: Metadata = {
-  title: "AutoPilot Driving School | Learn to Drive with Autopilot",
+  title: "Autopilot Driving School | Learn to Drive with Autopilot",
   description:
     "UK's premier driving school covering Ilford, Romford, Barking, Dagenham and surrounding areas. Expert DVSA-approved instructors. Book your first lesson today.",
   other: {
     "application/ld+json": JSON.stringify({
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
-      name: "AutoPilot Driving School",
+      name: "Autopilot Driving School",
       telephone: "+447450556963",
-      email: "contact@autopilotdrivingschool.co.uk",
+      email: "info@autopilotdrivingschool.co.uk",
       url: "https://autopilotdrivingschool.co.uk",
       address: {
         "@type": "PostalAddress",

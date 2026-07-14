@@ -3,7 +3,10 @@ import httpStatus from 'http-status';
 import catchAsync from '../utils/catchAsync';
 import bookingService from '../services/booking.service';
 import rescheduleService from '../services/reschedule.service';
-import { createBookingBodySchema, cancelBookingBodySchema } from '../validations/booking.validation';
+import {
+  createBookingBodySchema,
+  cancelBookingBodySchema,
+} from '../validations/booking.validation';
 
 const listMine = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.appUserId!;
@@ -138,10 +141,12 @@ const getAvailability = catchAsync(async (req: Request, res: Response) => {
 const cancelMine = catchAsync(async (req: Request, res: Response) => {
   const studentId = req.appUserId!;
   const rawId = req.params.id;
-  const bookingId = typeof rawId === 'string' ? rawId : rawId?.[0] ?? '';
+  const bookingId = typeof rawId === 'string' ? rawId : (rawId?.[0] ?? '');
   const parsed = cancelBookingBodySchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(httpStatus.BAD_REQUEST).send({ error: 'Invalid action', details: parsed.error.flatten() });
+    return res
+      .status(httpStatus.BAD_REQUEST)
+      .send({ error: 'Invalid action', details: parsed.error.flatten() });
   }
 
   const result = await bookingService.cancelForStudent(bookingId, studentId, parsed.data.reason);
@@ -170,7 +175,9 @@ const postReschedule = catchAsync(async (req: Request, res: Response) => {
   const notes: string | undefined = req.body?.notes;
 
   if (!proposedDateTime || !reason) {
-    return res.status(httpStatus.BAD_REQUEST).send({ error: 'proposedDateTime and reason are required' });
+    return res
+      .status(httpStatus.BAD_REQUEST)
+      .send({ error: 'proposedDateTime and reason are required' });
   }
 
   const result = await bookingService.createRescheduleRequest(bookingId, studentId, {
@@ -181,9 +188,11 @@ const postReschedule = catchAsync(async (req: Request, res: Response) => {
 
   if ('error' in result) {
     const code =
-      result.error === 'NOT_FOUND' ? httpStatus.NOT_FOUND :
-      result.error === 'FORBIDDEN' ? httpStatus.FORBIDDEN :
-      httpStatus.BAD_REQUEST;
+      result.error === 'NOT_FOUND'
+        ? httpStatus.NOT_FOUND
+        : result.error === 'FORBIDDEN'
+          ? httpStatus.FORBIDDEN
+          : httpStatus.BAD_REQUEST;
     return res.status(code).send({ error: result.error });
   }
 
@@ -215,9 +224,11 @@ const patchReschedule = catchAsync(async (req: Request, res: Response) => {
 
   if ('error' in result) {
     const code =
-      result.error === 'NOT_FOUND' ? httpStatus.NOT_FOUND :
-      result.error === 'FORBIDDEN' ? httpStatus.FORBIDDEN :
-      httpStatus.BAD_REQUEST;
+      result.error === 'NOT_FOUND'
+        ? httpStatus.NOT_FOUND
+        : result.error === 'FORBIDDEN'
+          ? httpStatus.FORBIDDEN
+          : httpStatus.BAD_REQUEST;
     return res.status(code).send({ error: result.error });
   }
 

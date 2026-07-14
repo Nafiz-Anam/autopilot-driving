@@ -53,7 +53,7 @@ function PostcodeChecker() {
       <div className="max-w-xl mx-auto text-center">
         <h2
           className="text-3xl font-bold text-brand-black mb-3"
-          style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           Check Your Postcode
         </h2>
@@ -133,7 +133,7 @@ function AreaCards({ areas }: { areas: AreaData[] }) {
         <div className="text-center mb-12">
           <h2
             className="text-3xl lg:text-4xl font-bold text-brand-black mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Our Coverage Areas
           </h2>

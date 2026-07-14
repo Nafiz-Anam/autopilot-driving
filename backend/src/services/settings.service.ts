@@ -21,7 +21,8 @@ async function getSetting(key: string): Promise<string | null> {
   return rows[0]?.value ?? null;
 }
 
-const getStripeSecretKey = async (): Promise<string> => (await getSetting(SETTING_KEYS.STRIPE_SECRET_KEY)) ?? '';
+const getStripeSecretKey = async (): Promise<string> =>
+  (await getSetting(SETTING_KEYS.STRIPE_SECRET_KEY)) ?? '';
 const getStripePublishableKey = async (): Promise<string> =>
   (await getSetting(SETTING_KEYS.STRIPE_PUBLISHABLE_KEY)) ?? '';
 const getStripeWebhookSecret = async (): Promise<string> =>

@@ -61,7 +61,7 @@ export function AreaTeaser() {
             <h2
               className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight"
               style={{
-                fontFamily: "'Moderniz', 'Barlow', sans-serif",
+                fontFamily: "var(--font-display)",
                 letterSpacing: "-0.02em",
               }}
             >

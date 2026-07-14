@@ -34,7 +34,10 @@ async function createPaymentIntent(input: Body) {
 
   const secretKey = await settingsService.getStripeSecretKey();
   if (!secretKey) {
-    return { error: 'SERVICE_UNAVAILABLE' as const, message: 'Payment gateway not configured. Contact support.' };
+    return {
+      error: 'SERVICE_UNAVAILABLE' as const,
+      message: 'Payment gateway not configured. Contact support.',
+    };
   }
 
   const stripe = createStripeClient(secretKey);
@@ -87,7 +90,8 @@ async function confirmFromPaymentIntent(paymentIntentId: string) {
   }
 
   const paymentFinalizeService = await import('./paymentFinalize.service');
-  const result = await paymentFinalizeService.default.finalizeGiftVoucherPurchaseFromPayment(paymentIntent);
+  const result =
+    await paymentFinalizeService.default.finalizeGiftVoucherPurchaseFromPayment(paymentIntent);
 
   return {
     success: true as const,

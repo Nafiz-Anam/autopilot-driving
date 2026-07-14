@@ -136,7 +136,7 @@ async function runInitialSync(userId: string, instructorId: string): Promise<voi
   const timeMax = new Date(Date.now() + SYNC_HORIZON_DAYS * 24 * 60 * 60 * 1000);
 
   let pageToken: string | undefined = undefined;
-  let nextSyncToken: string | null | undefined = undefined;
+  let nextSyncToken: string | null | undefined;
 
   do {
     const { data } = await cal.events.list({
@@ -221,7 +221,11 @@ export async function runIncrementalSync(userId: string): Promise<void> {
   }
 }
 
-export async function handleWebhook(channelId: string, channelToken: string, resourceState: string): Promise<void> {
+export async function handleWebhook(
+  channelId: string,
+  channelToken: string,
+  resourceState: string
+): Promise<void> {
   if (resourceState === 'sync') return; // initial handshake
   const watch = await prisma.calendarWatch.findUnique({ where: { channelId } });
   if (!watch) {

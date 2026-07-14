@@ -3,9 +3,9 @@ import { Suspense } from "react";
 import BookingPageClient from "./BookingPageClient";
 
 export const metadata: Metadata = {
-  title: "Book a Lesson | AutoPilot",
+  title: "Book a Lesson | Autopilot",
   description:
-    "Book your driving lesson with AutoPilot Driving School. Choose your instructor, package, and preferred time slot in minutes.",
+    "Book your driving lesson with Autopilot Driving School. Choose your instructor, package, and preferred time slot in minutes.",
 };
 
 export default function BookingPage() {

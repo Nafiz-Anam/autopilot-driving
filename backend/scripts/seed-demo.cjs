@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-const { PrismaClient } = require('@prisma/client');
+ const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -291,14 +290,14 @@ async function seedAuthCore() {
     update: {
       userId: admin.id,
       type: 'WELCOME',
-      title: 'Welcome to AutoPilot Demo',
+      title: 'Welcome to Autopilot Demo',
       message: 'Demo data seeded successfully for admin.',
     },
     create: {
       id: 'seed-note-admin',
       userId: admin.id,
       type: 'WELCOME',
-      title: 'Welcome to AutoPilot Demo',
+      title: 'Welcome to Autopilot Demo',
       message: 'Demo data seeded successfully for admin.',
     },
   });

@@ -99,7 +99,6 @@ const getGoogleReviews = catchAsync(async (_req: Request, res: Response) => {
   }
 });
 
-
 const getPricingCategories = catchAsync(async (_req: Request, res: Response) => {
   try {
     const data = await publicSiteService.getPricingCategories();

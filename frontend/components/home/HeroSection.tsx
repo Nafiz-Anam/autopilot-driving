@@ -68,7 +68,7 @@ export function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-4xl md:text-[2.4rem] lg:text-[3.75rem] font-bold text-[#0D0D0D] leading-[1.05] tracking-tight mb-4"
-              style={{ fontFamily: "'Moderniz', 'Barlow', sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Learn to Drive
               <br />

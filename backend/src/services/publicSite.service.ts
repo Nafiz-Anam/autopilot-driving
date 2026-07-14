@@ -211,7 +211,11 @@ const listActiveAreas = async () => {
   }));
 };
 
-const listInstructors = async (filters: { postcode?: string; transmission?: string; female?: string }) => {
+const listInstructors = async (filters: {
+  postcode?: string;
+  transmission?: string;
+  female?: string;
+}) => {
   const conditions = ['i."isActive" = true'];
   const values: unknown[] = [];
   let paramIndex = 1;
@@ -237,7 +241,6 @@ const listInstructors = async (filters: { postcode?: string; transmission?: stri
       )`
     );
     values.push(filters.transmission);
-    paramIndex += 1;
   }
 
   const rows = await prisma.$queryRawUnsafe<InstructorRow[]>(
@@ -321,23 +324,25 @@ const createInstructorApplication = async (payload: unknown) => {
     message ?? null
   );
 
-  void notifyAdmin(
-    `New Instructor Application — ${fullName}`,
-    {
-      Name: fullName,
-      Email: email,
-      Phone: phone,
-      Postcode: postcode,
-      'Full Licence': hasFullLicence ? 'Yes' : 'No',
-      Experience: `${yearsExperience} years`,
-      'Training Started': trainingStarted ? 'Yes' : 'No',
-      Type: applicantType === 'already_instructor' ? 'Already a qualified ADI' : 'Wants to become an instructor',
-      Message: message ?? 'none',
-    }
-  );
+  void notifyAdmin(`New Instructor Application — ${fullName}`, {
+    Name: fullName,
+    Email: email,
+    Phone: phone,
+    Postcode: postcode,
+    'Full Licence': hasFullLicence ? 'Yes' : 'No',
+    Experience: `${yearsExperience} years`,
+    'Training Started': trainingStarted ? 'Yes' : 'No',
+    Type:
+      applicantType === 'already_instructor'
+        ? 'Already a qualified ADI'
+        : 'Wants to become an instructor',
+    Message: message ?? 'none',
+  });
 
   // Acknowledge receipt to applicant (fire-and-forget)
-  emailService.sendInstructorApplicationReceivedEmail({ to: email, applicantName: fullName, email }).catch(() => {});
+  emailService
+    .sendInstructorApplicationReceivedEmail({ to: email, applicantName: fullName, email })
+    .catch(() => {});
 
   return { id: rows[0]?.id };
 };
@@ -355,9 +360,9 @@ const createContactSubmission = async (payload: unknown, ip: string) => {
   const { name, email, phone, postcode, enquiryType, callTime, message } = parsed.data;
 
   // Add email column if it doesn't exist yet (migration-free approach)
-  await prisma.$executeRawUnsafe(
-    `ALTER TABLE "ContactSubmission" ADD COLUMN IF NOT EXISTS email TEXT`
-  ).catch(() => {});
+  await prisma
+    .$executeRawUnsafe(`ALTER TABLE "ContactSubmission" ADD COLUMN IF NOT EXISTS email TEXT`)
+    .catch(() => {});
 
   const id = randomUUID();
   const rows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
@@ -374,18 +379,15 @@ const createContactSubmission = async (payload: unknown, ip: string) => {
     message
   );
 
-  void notifyAdmin(
-    `New Contact Form Submission — ${enquiryType}`,
-    {
-      Name: name,
-      Email: email,
-      Phone: phone,
-      Postcode: postcode ?? '—',
-      Enquiry: enquiryType,
-      'Best time': callTime ?? 'any',
-      Message: message,
-    }
-  );
+  void notifyAdmin(`New Contact Form Submission — ${enquiryType}`, {
+    Name: name,
+    Email: email,
+    Phone: phone,
+    Postcode: postcode ?? '—',
+    Enquiry: enquiryType,
+    'Best time': callTime ?? 'any',
+    Message: message,
+  });
 
   // Acknowledge receipt to submitter
   emailService.sendContactAcknowledgementEmail({ to: email, name }).catch(() => {});
@@ -554,7 +556,11 @@ const REVIEWS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 let reviewsCache: ReviewsCache | null = null;
 
 // TODO: endpoint is blocked until a valid GOOGLE_PLACE_ID is configured — frontend is using static demo reviews for now
-const getGoogleReviews = async (): Promise<{ reviews: GoogleReview[]; rating: number; totalReviews: number }> => {
+const getGoogleReviews = async (): Promise<{
+  reviews: GoogleReview[];
+  rating: number;
+  totalReviews: number;
+}> => {
   const apiKey = config.google.placesApiKey;
   const placeId = config.google.placeId;
 
@@ -579,7 +585,7 @@ const getGoogleReviews = async (): Promise<{ reviews: GoogleReview[]; rating: nu
     throw new PublicSiteError(502, 'Failed to fetch Google reviews');
   }
 
-  const json = await response.json() as {
+  const json = (await response.json()) as {
     rating?: number;
     userRatingCount?: number;
     reviews?: Array<{
@@ -612,7 +618,6 @@ const getGoogleReviews = async (): Promise<{ reviews: GoogleReview[]; rating: nu
   return result;
 };
 
-
 const getPricingCategories = async () => {
   const categories = await prisma.$queryRawUnsafe<any[]>(
     `SELECT id, "lessonType"::text AS "lessonType", slug, "displayName", description, "sortOrder", "isActive"
@@ -626,7 +631,7 @@ const getPricingCategories = async () => {
             savings::text AS savings, "footerNote", badge, "isPopular", "sortOrder", "isActive"
      FROM "LessonPricingPackage"
      WHERE "isActive" = true
-     ORDER BY "pricePerHour" ASC NULLS LAST, "sortOrder" ASC`
+     ORDER BY price ASC`
   );
 
   const data = categories.map(c => ({

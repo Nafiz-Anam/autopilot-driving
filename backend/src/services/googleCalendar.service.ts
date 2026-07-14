@@ -40,7 +40,11 @@ async function fetchUserEmail(oauth2: any): Promise<string | null> {
   }
 }
 
-async function saveTokens(userId: string, refreshToken: string, email: string | null): Promise<void> {
+async function saveTokens(
+  userId: string,
+  refreshToken: string,
+  email: string | null
+): Promise<void> {
   const encrypted = encrypt(refreshToken);
   await prisma.userIntegration.upsert({
     where: { userId_provider: { userId, provider: PROVIDER } },
@@ -178,7 +182,10 @@ export async function getCalendarClient(userId: string): Promise<calendar_v3.Cal
 }
 
 function stableEventId(bookingId: string, roleSuffix: string): string {
-  const base = bookingId.replace(/-/g, '').toLowerCase().replace(/[^a-v0-9]/g, 'a');
+  const base = bookingId
+    .replace(/-/g, '')
+    .toLowerCase()
+    .replace(/[^a-v0-9]/g, 'a');
   return `${base}${roleSuffix}`.slice(0, 64);
 }
 
@@ -201,8 +208,8 @@ function buildEventBody(params: BookingEventParams, viewer: 'student' | 'instruc
       : `Driving Lesson — ${lessonLabel}`;
   const description =
     viewer === 'instructor'
-      ? `Booking ref: ${params.reference}\nStudent: ${params.studentName ?? 'Student'}\nDuration: ${params.durationMins / 60}hr\n\nManaged by AutoPilot Driving School`
-      : `Booking ref: ${params.reference}\nInstructor: ${params.instructorName}\nDuration: ${params.durationMins / 60}hr\n\nManaged by AutoPilot Driving School`;
+      ? `Booking ref: ${params.reference}\nStudent: ${params.studentName ?? 'Student'}\nDuration: ${params.durationMins / 60}hr\n\nManaged by Autopilot Driving School`
+      : `Booking ref: ${params.reference}\nInstructor: ${params.instructorName}\nDuration: ${params.durationMins / 60}hr\n\nManaged by Autopilot Driving School`;
 
   return {
     summary,
@@ -224,7 +231,7 @@ function buildEventBody(params: BookingEventParams, viewer: 'student' | 'instruc
       },
     },
     source: {
-      title: 'AutoPilot Driving School',
+      title: 'Autopilot Driving School',
       url: 'https://autopilotdrivingschool.co.uk',
     },
   };
@@ -355,7 +362,9 @@ export async function broadcastBookingCreated(params: {
 }): Promise<void> {
   await Promise.all([
     pushCreate(params.studentId, params, 'student'),
-    params.instructorUserId ? pushCreate(params.instructorUserId, params, 'instructor') : Promise.resolve(),
+    params.instructorUserId
+      ? pushCreate(params.instructorUserId, params, 'instructor')
+      : Promise.resolve(),
   ]);
 }
 
@@ -372,7 +381,9 @@ export async function broadcastBookingUpdated(params: {
 }): Promise<void> {
   await Promise.all([
     pushUpdate(params.studentId, params, 'student'),
-    params.instructorUserId ? pushUpdate(params.instructorUserId, params, 'instructor') : Promise.resolve(),
+    params.instructorUserId
+      ? pushUpdate(params.instructorUserId, params, 'instructor')
+      : Promise.resolve(),
   ]);
 }
 

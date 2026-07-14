@@ -6,10 +6,9 @@ import { createStripeClient } from '../utils/stripeClient';
  * Issues a full Stripe refund for a booking and marks it REFUNDED.
  * Also restores gift voucher balance and coupon redemption count if applied.
  */
-async function issueRefundForBooking(bookingId: string): Promise<
-  | { refunded: true; stripeRefundId: string }
-  | { refunded: false; reason: string }
-> {
+async function issueRefundForBooking(
+  bookingId: string
+): Promise<{ refunded: true; stripeRefundId: string } | { refunded: false; reason: string }> {
   const rows = await prisma.$queryRawUnsafe<
     Array<{
       id: string;

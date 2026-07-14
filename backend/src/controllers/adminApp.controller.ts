@@ -9,7 +9,7 @@ import rescheduleService from '../services/reschedule.service';
 /** Express 5 `req.params.id` can be `string | string[]`. */
 const pid = (req: Request) => {
   const raw = req.params.id;
-  return typeof raw === 'string' ? raw : raw?.[0] ?? '';
+  return typeof raw === 'string' ? raw : (raw?.[0] ?? '');
 };
 
 const getStats = catchAsync(async (_req: Request, res: Response) => {
@@ -49,13 +49,26 @@ const getBookingById = catchAsync(async (req: Request, res: Response) => {
 });
 
 const patchBookingById = catchAsync(async (req: Request, res: Response) => {
-  const body = req.body as { status?: string; paymentStatus?: string; notes?: string | null; scheduledAt?: string };
-  const payload: { status?: string; paymentStatus?: string; notes?: string | null; scheduledAt?: string } = {};
+  const body = req.body as {
+    status?: string;
+    paymentStatus?: string;
+    notes?: string | null;
+    scheduledAt?: string;
+  };
+  const payload: {
+    status?: string;
+    paymentStatus?: string;
+    notes?: string | null;
+    scheduledAt?: string;
+  } = {};
 
   if (body.status && adminAppService.VALID_BOOKING_STATUSES.includes(body.status as any)) {
     payload.status = body.status;
   }
-  if (body.paymentStatus && adminAppService.VALID_PAYMENT_STATUSES.includes(body.paymentStatus as any)) {
+  if (
+    body.paymentStatus &&
+    adminAppService.VALID_PAYMENT_STATUSES.includes(body.paymentStatus as any)
+  ) {
     payload.paymentStatus = body.paymentStatus;
   }
   if (body.notes !== undefined) payload.notes = body.notes;
@@ -74,57 +87,67 @@ const patchBookingById = catchAsync(async (req: Request, res: Response) => {
   if (payload.scheduledAt) {
     // Admin direct reschedule — notify both parties
     const newDate = new Date(payload.scheduledAt);
-    emailService.sendRescheduleAcceptedEmail({
-      to: b.student.email,
-      recipientName: studentName,
-      reference: b.reference,
-      newDate,
-      instructorName,
-      durationMins: b.durationMins,
-    }).catch(() => {});
-    emailService.sendRescheduleAcceptedEmail({
-      to: b.instructor.user.email,
-      recipientName: instructorName,
-      reference: b.reference,
-      newDate,
-      instructorName,
-      durationMins: b.durationMins,
-    }).catch(() => {});
+    emailService
+      .sendRescheduleAcceptedEmail({
+        to: b.student.email,
+        recipientName: studentName,
+        reference: b.reference,
+        newDate,
+        instructorName,
+        durationMins: b.durationMins,
+      })
+      .catch(() => {});
+    emailService
+      .sendRescheduleAcceptedEmail({
+        to: b.instructor.user.email,
+        recipientName: instructorName,
+        reference: b.reference,
+        newDate,
+        instructorName,
+        durationMins: b.durationMins,
+      })
+      .catch(() => {});
   }
 
   if (payload.status === 'CONFIRMED') {
-    emailService.sendBookingConfirmationEmail({
-      to: b.student.email,
-      studentName,
-      reference: b.reference,
-      lessonType: b.lessonType,
-      instructorName,
-      scheduledAt: b.scheduledAt,
-      durationMins: b.durationMins,
-      totalAmount: b.totalAmount,
-      icsContent: '',
-    }).catch(() => {});
+    emailService
+      .sendBookingConfirmationEmail({
+        to: b.student.email,
+        studentName,
+        reference: b.reference,
+        lessonType: b.lessonType,
+        instructorName,
+        scheduledAt: b.scheduledAt,
+        durationMins: b.durationMins,
+        totalAmount: b.totalAmount,
+        icsContent: '',
+      })
+      .catch(() => {});
   }
 
   if (payload.status === 'CANCELLED') {
     const refunded = b.paymentStatus === 'REFUNDED';
-    emailService.sendBookingCancellationEmail({
-      to: b.student.email,
-      studentName,
-      reference: b.reference,
-      lessonType: b.lessonType,
-      scheduledAt: b.scheduledAt,
-      refunded,
-      refundAmount: refunded ? b.totalAmount : undefined,
-    }).catch(() => {});
-    emailService.sendInstructorBookingCancellationEmail({
-      to: b.instructor.user.email,
-      instructorName,
-      studentName,
-      reference: b.reference,
-      scheduledAt: b.scheduledAt,
-      reason: 'Cancelled by admin',
-    }).catch(() => {});
+    emailService
+      .sendBookingCancellationEmail({
+        to: b.student.email,
+        studentName,
+        reference: b.reference,
+        lessonType: b.lessonType,
+        scheduledAt: b.scheduledAt,
+        refunded,
+        refundAmount: refunded ? b.totalAmount : undefined,
+      })
+      .catch(() => {});
+    emailService
+      .sendInstructorBookingCancellationEmail({
+        to: b.instructor.user.email,
+        instructorName,
+        studentName,
+        reference: b.reference,
+        scheduledAt: b.scheduledAt,
+        reason: 'Cancelled by admin',
+      })
+      .catch(() => {});
   }
 
   return res.status(httpStatus.OK).send({ data });
@@ -197,14 +220,24 @@ const deleteUserById = catchAsync(async (req: Request, res: Response) => {
 const postUsers = catchAsync(async (req: Request, res: Response) => {
   const { name, email, phone, password, role } = req.body as any;
   if (!name || !email || !password) {
-    return res.status(httpStatus.BAD_REQUEST).send({ error: 'name, email and password are required' });
+    return res
+      .status(httpStatus.BAD_REQUEST)
+      .send({ error: 'name, email and password are required' });
   }
   try {
-    const data = await adminAppService.createUser({ name, email, phone: phone ?? null, password, role });
+    const data = await adminAppService.createUser({
+      name,
+      email,
+      phone: phone ?? null,
+      password,
+      role,
+    });
     return res.status(httpStatus.CREATED).send({ data });
   } catch (err: any) {
     if (err?.code === 'P2002' || err?.message?.includes('unique constraint')) {
-      return res.status(httpStatus.BAD_REQUEST).send({ error: 'An account with this email already exists.' });
+      return res
+        .status(httpStatus.BAD_REQUEST)
+        .send({ error: 'An account with this email already exists.' });
     }
     throw err;
   }
@@ -275,7 +308,9 @@ const postAreas = catchAsync(async (req: Request, res: Response) => {
     isActive?: boolean;
   };
   if (!name || !postcodePrefix) {
-    return res.status(httpStatus.BAD_REQUEST).send({ error: 'name and postcodePrefix are required' });
+    return res
+      .status(httpStatus.BAD_REQUEST)
+      .send({ error: 'name and postcodePrefix are required' });
   }
   const geo = await geocodePostcode(postcodePrefix);
   const data = await adminAppService.createArea({
@@ -300,9 +335,16 @@ const patchAreaById = catchAsync(async (req: Request, res: Response) => {
   let lng: number | undefined;
   if (body.postcodePrefix) {
     const geo = await geocodePostcode(body.postcodePrefix);
-    if (geo) { lat = geo.lat; lng = geo.lng; }
+    if (geo) {
+      lat = geo.lat;
+      lng = geo.lng;
+    }
   }
-  const data = await adminAppService.updateAreaById(pid(req), { ...body, latitude: lat, longitude: lng });
+  const data = await adminAppService.updateAreaById(pid(req), {
+    ...body,
+    latitude: lat,
+    longitude: lng,
+  });
   if (!data) {
     return res.status(httpStatus.NOT_FOUND).send({ error: 'Area not found' });
   }
@@ -397,13 +439,31 @@ const patchInstructorById = catchAsync(async (req: Request, res: Response) => {
 });
 
 const postInstructors = catchAsync(async (req: Request, res: Response) => {
-  const { name, email, phone, password, bio, pricePerHour, transmission, yearsExp, licenceNumber, isFemale, areas, isActive } = req.body as any;
+  const {
+    name,
+    email,
+    phone,
+    password,
+    bio,
+    pricePerHour,
+    transmission,
+    yearsExp,
+    licenceNumber,
+    isFemale,
+    areas,
+    isActive,
+  } = req.body as any;
   if (!name || !email || !password) {
-    return res.status(httpStatus.BAD_REQUEST).send({ error: 'name, email and password are required' });
+    return res
+      .status(httpStatus.BAD_REQUEST)
+      .send({ error: 'name, email and password are required' });
   }
   try {
     const data = await adminAppService.createInstructor({
-      name, email, phone: phone ?? null, password,
+      name,
+      email,
+      phone: phone ?? null,
+      password,
       bio: bio ?? null,
       pricePerHour: Number(pricePerHour) || 0,
       transmission: Array.isArray(transmission) ? transmission : [],
@@ -416,7 +476,9 @@ const postInstructors = catchAsync(async (req: Request, res: Response) => {
     return res.status(httpStatus.CREATED).send({ data });
   } catch (err: any) {
     if (err?.code === 'P2002' || err?.message?.includes('unique constraint')) {
-      return res.status(httpStatus.BAD_REQUEST).send({ error: 'An account with this email already exists.' });
+      return res
+        .status(httpStatus.BAD_REQUEST)
+        .send({ error: 'An account with this email already exists.' });
     }
     throw err;
   }
@@ -429,15 +491,18 @@ const deleteInstructorById = catchAsync(async (req: Request, res: Response) => {
 
 const getInstructorSchedule = catchAsync(async (req: Request, res: Response) => {
   const data = await adminAppService.getInstructorScheduleById(pid(req));
-  if (data === null) return res.status(httpStatus.NOT_FOUND).send({ error: 'Instructor not found' });
+  if (data === null)
+    return res.status(httpStatus.NOT_FOUND).send({ error: 'Instructor not found' });
   return res.status(httpStatus.OK).send({ data });
 });
 
 const postInstructorSchedule = catchAsync(async (req: Request, res: Response) => {
   const slots = req.body?.slots;
-  if (!Array.isArray(slots)) return res.status(httpStatus.BAD_REQUEST).send({ error: 'slots array required' });
+  if (!Array.isArray(slots))
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'slots array required' });
   const data = await adminAppService.updateInstructorScheduleById(pid(req), slots);
-  if (data === null) return res.status(httpStatus.NOT_FOUND).send({ error: 'Instructor not found' });
+  if (data === null)
+    return res.status(httpStatus.NOT_FOUND).send({ error: 'Instructor not found' });
   return res.status(httpStatus.OK).send({ data });
 });
 

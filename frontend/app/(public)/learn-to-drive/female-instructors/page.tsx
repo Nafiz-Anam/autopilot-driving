@@ -28,7 +28,7 @@ const articleIntro = [
   "If you've recently received your provisional driving licence, the next step is usually to start thinking about driving lessons.",
   "Choosing the right driving instructor is an important decision and can make a real difference to your learning experience. While many learners simply choose the nearest instructor available, others may prefer to learn with a female driving instructor.",
   "Feeling comfortable with your instructor is important. You'll spend a significant amount of time together, so finding an instructor who suits your learning style can really help.",
-  "Below, we explain what to consider when choosing a driving instructor and how AutoPilot can support learners who prefer a female instructor.",
+  "Below, we explain what to consider when choosing a driving instructor and how Autopilot can support learners who prefer a female instructor.",
 ];
 
 const articleSections = [
@@ -42,7 +42,7 @@ const articleSections = [
   },
   {
     id: "can-i",
-    title: "Can I learn with a female driving instructor at AutoPilot?",
+    title: "Can I learn with a female driving instructor at Autopilot?",
     body: [
       "Yes. If you would prefer to learn with a female driving instructor, we'll do our best to match you with one where available.",
       "Some learners simply feel more comfortable learning with a female instructor. Others may prefer this for personal, cultural or religious reasons. Whatever your preference, we aim to be as accommodating as possible.",
@@ -63,7 +63,7 @@ const articleSections = [
     body: [
       "That's entirely your decision.",
       "If you would prefer a female instructor, we'll do our best to assign one where available. However, whichever instructor you learn with, you can expect the same professional approach and structured lessons designed to support your progress.",
-      "All AutoPilot instructors are either fully qualified DVSA Approved Driving Instructors (green badge), or in the final stages of qualifying (pink badge). Both badges are displayed in the windscreen so you know your instructor is DVSA-recognised.",
+      "All Autopilot instructors are either fully qualified DVSA Approved Driving Instructors (green badge), or in the final stages of qualifying (pink badge). Both badges are displayed in the windscreen so you know your instructor is DVSA-recognised.",
     ],
   },
   {
@@ -71,7 +71,7 @@ const articleSections = [
     title: "Changing instructors if needed",
     body: [
       "Learning to drive works best when you feel comfortable with your instructor.",
-      "That's why AutoPilot offers a free instructor switch policy. If you feel that your instructor isn't the right fit for any reason, we can arrange for you to change instructors at no extra cost.",
+      "That's why Autopilot offers a free instructor switch policy. If you feel that your instructor isn't the right fit for any reason, we can arrange for you to change instructors at no extra cost.",
       "Our goal is to help you build the confidence, skills and awareness needed to become a safe driver — for life.",
     ],
   },
@@ -355,7 +355,7 @@ export default function FemaleInstructorsPage() {
           <aside className="lg:sticky lg:top-24 self-start">
             <h2
               className="text-3xl lg:text-4xl font-extrabold text-brand-black leading-tight"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Learning to drive with a female instructor
             </h2>
@@ -397,7 +397,7 @@ export default function FemaleInstructorsPage() {
                 <h3
                   id={section.id}
                   className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
-                  style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {section.title}
                 </h3>
@@ -423,12 +423,12 @@ export default function FemaleInstructorsPage() {
         <div className="max-w-4xl mx-auto">
           <h2
             className="text-2xl font-bold text-brand-black text-center mb-2"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Lesson prices
           </h2>
           <p className="text-center text-sm text-brand-muted mb-10 max-w-lg mx-auto">
-            Female instructors use the same published rates as all AutoPilot lessons — updated from admin in one place.
+            Female instructors use the same published rates as all Autopilot lessons — updated from admin in one place.
           </p>
           <div className="space-y-12">
             <PublicCategoryPricingCards lessonType="MANUAL" sectionTitle="Manual lessons" />
@@ -443,7 +443,7 @@ export default function FemaleInstructorsPage() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl font-bold text-brand-black"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Meet Our Female Instructors
             </h2>
@@ -472,7 +472,7 @@ export default function FemaleInstructorsPage() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Request a Female Instructor
             </h2>
@@ -494,12 +494,12 @@ export default function FemaleInstructorsPage() {
         >
           <h2
             className="text-2xl sm:text-3xl font-bold mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Book an instructor online
           </h2>
           <p className="opacity-90 mb-6 max-w-xl mx-auto text-sm sm:text-base">
-            Check availability and book your first AutoPilot driving lesson today.
+            Check availability and book your first Autopilot driving lesson today.
           </p>
           <Link
             href="/booking"

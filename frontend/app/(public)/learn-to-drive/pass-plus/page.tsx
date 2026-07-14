@@ -79,7 +79,7 @@ export default function PassPlusPage() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl font-bold text-brand-black mb-4"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               What is Pass Plus?
             </h2>
@@ -104,7 +104,7 @@ export default function PassPlusPage() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               The 6 Modules
             </h2>
@@ -136,7 +136,7 @@ export default function PassPlusPage() {
             >
               <h2
                 className="text-3xl font-bold text-brand-black mb-4"
-                style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+                style={{ fontFamily: "var(--font-display)" }}
               >
                 Save on Your Car Insurance
               </h2>
@@ -195,7 +195,7 @@ export default function PassPlusPage() {
       <section className="py-16 bg-brand-black px-4 text-center text-white">
         <h2
           className="text-3xl font-bold mb-3"
-          style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           Become a Safer Driver
         </h2>

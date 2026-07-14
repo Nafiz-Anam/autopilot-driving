@@ -20,14 +20,14 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "AutoPilot Driving School | Learn to Drive with Autopilot",
-    template: "%s | AutoPilot Driving School",
+    default: "Autopilot Driving School | Learn to Drive with Autopilot",
+    template: "%s | Autopilot Driving School",
   },
   description:
     "UK's premier driving school. Expert DVSA-approved instructors covering Ilford, Romford, Barking, Dagenham and surrounding areas. Book your first lesson today.",
   keywords: ["driving school", "driving lessons", "learn to drive", "UK", "DVSA approved"],
   openGraph: {
-    title: "AutoPilot Driving School",
+    title: "Autopilot Driving School",
     description: "Learn to Drive with Autopilot — UK's Premier Driving School",
     type: "website",
     locale: "en_GB",

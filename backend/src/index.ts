@@ -40,34 +40,34 @@ prisma
       const ONE_DAY = 24 * 60 * 60 * 1000;
 
       setTimeout(() => {
-        googleCalendarSyncService.renewExpiringWatches().catch(e =>
-          logger.warn('watch renewal failed', { error: e?.message })
-        );
+        googleCalendarSyncService
+          .renewExpiringWatches()
+          .catch(e => logger.warn('watch renewal failed', { error: e?.message }));
       }, 30_000);
 
       setInterval(() => {
-        googleCalendarSyncService.renewExpiringWatches().catch(e =>
-          logger.warn('watch renewal failed', { error: e?.message })
-        );
+        googleCalendarSyncService
+          .renewExpiringWatches()
+          .catch(e => logger.warn('watch renewal failed', { error: e?.message }));
       }, SIX_HOURS);
 
       setInterval(() => {
-        googleCalendarSyncService.cleanupPastBusyBlocks().catch(e =>
-          logger.warn('busy block cleanup failed', { error: e?.message })
-        );
+        googleCalendarSyncService
+          .cleanupPastBusyBlocks()
+          .catch(e => logger.warn('busy block cleanup failed', { error: e?.message }));
       }, ONE_DAY);
 
       // Apple Calendar: pull all connected ICS feeds every 15min
       const FIFTEEN_MIN = 15 * 60 * 1000;
       setTimeout(() => {
-        appleCalendarService.syncAll().catch(e =>
-          logger.warn('apple ics sync failed', { error: e?.message })
-        );
+        appleCalendarService
+          .syncAll()
+          .catch(e => logger.warn('apple ics sync failed', { error: e?.message }));
       }, 45_000);
       setInterval(() => {
-        appleCalendarService.syncAll().catch(e =>
-          logger.warn('apple ics sync failed', { error: e?.message })
-        );
+        appleCalendarService
+          .syncAll()
+          .catch(e => logger.warn('apple ics sync failed', { error: e?.message }));
       }, FIFTEEN_MIN);
     });
   })

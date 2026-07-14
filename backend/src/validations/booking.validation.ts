@@ -15,17 +15,29 @@ export const createBookingBodySchema = z
   })
   .superRefine((d, ctx) => {
     if (d.voucherCode && d.couponCode) {
-      ctx.addIssue({ code: 'custom', message: 'Use either a gift voucher or a coupon, not both', path: ['couponCode'] });
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Use either a gift voucher or a coupon, not both',
+        path: ['couponCode'],
+      });
     }
     if (d.lessonType !== 'THEORY') {
       if (!d.instructorId) {
-        ctx.addIssue({ code: 'custom', message: 'instructorId is required', path: ['instructorId'] });
+        ctx.addIssue({
+          code: 'custom',
+          message: 'instructorId is required',
+          path: ['instructorId'],
+        });
       }
       if (!d.scheduledAt) {
         ctx.addIssue({ code: 'custom', message: 'scheduledAt is required', path: ['scheduledAt'] });
       }
       if (!d.transmission) {
-        ctx.addIssue({ code: 'custom', message: 'transmission is required', path: ['transmission'] });
+        ctx.addIssue({
+          code: 'custom',
+          message: 'transmission is required',
+          path: ['transmission'],
+        });
       }
     }
   });

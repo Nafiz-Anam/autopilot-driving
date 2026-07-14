@@ -13,7 +13,10 @@ async function createPaymentIntent(params: {
   const { studentId, bookingId } = params;
 
   if (params.voucherCode && params.couponCode) {
-    return { error: 'BAD_REQUEST' as const, message: 'Use either a gift voucher or a coupon, not both' };
+    return {
+      error: 'BAD_REQUEST' as const,
+      message: 'Use either a gift voucher or a coupon, not both',
+    };
   }
 
   const brows = await prisma.$queryRawUnsafe<
@@ -50,9 +53,10 @@ async function createPaymentIntent(params: {
   const normCoupon = params.couponCode ? normalizePromoCode(params.couponCode) : undefined;
 
   if (normVoucher) {
-    const vrows = await prisma.$queryRawUnsafe<
-      Array<{ balance: string; isRedeemed: boolean }>
-    >(`SELECT balance::text, "isRedeemed" FROM "GiftVoucher" WHERE code = $1 LIMIT 1`, normVoucher);
+    const vrows = await prisma.$queryRawUnsafe<Array<{ balance: string; isRedeemed: boolean }>>(
+      `SELECT balance::text, "isRedeemed" FROM "GiftVoucher" WHERE code = $1 LIMIT 1`,
+      normVoucher
+    );
 
     const voucher = vrows[0];
     if (voucher && !voucher.isRedeemed && Number(voucher.balance) > 0) {
@@ -129,7 +133,10 @@ async function createPaymentIntent(params: {
   // Non-zero amount — initialize Stripe only when a charge is actually needed
   const secretKey = await settingsService.getStripeSecretKey();
   if (!secretKey) {
-    return { error: 'SERVICE_UNAVAILABLE' as const, message: 'Payment gateway not configured. Contact support.' };
+    return {
+      error: 'SERVICE_UNAVAILABLE' as const,
+      message: 'Payment gateway not configured. Contact support.',
+    };
   }
 
   const stripe = createStripeClient(secretKey);
@@ -155,7 +162,11 @@ async function createPaymentIntent(params: {
       // Amount changed (coupon added/removed/swapped). Try to update the PI in-place
       // if it's still in a mutable state; otherwise cancel it and fall through to
       // create a fresh one below.
-      const updatableStates = ['requires_payment_method', 'requires_confirmation', 'requires_action'];
+      const updatableStates = [
+        'requires_payment_method',
+        'requires_confirmation',
+        'requires_action',
+      ];
       if (canReuse && updatableStates.includes(existing.status)) {
         const updated = await stripe.paymentIntents.update(existing.id, {
           amount: amountPence,
@@ -188,7 +199,11 @@ async function createPaymentIntent(params: {
 
       // Non-mutable or terminal — cancel and fall through to create a new PI
       if (canReuse) {
-        try { await stripe.paymentIntents.cancel(existing.id); } catch { /* best-effort */ }
+        try {
+          await stripe.paymentIntents.cancel(existing.id);
+        } catch {
+          /* best-effort */
+        }
       }
     } catch {
       // Stale PI — fall through and create a new one
@@ -254,7 +269,10 @@ async function createPaymentIntent(params: {
         normCoupon
       );
     }
-    return { error: 'SERVICE_UNAVAILABLE' as const, message: 'Payment gateway error. Please try again.' };
+    return {
+      error: 'SERVICE_UNAVAILABLE' as const,
+      message: 'Payment gateway error. Please try again.',
+    };
   }
 
   await prisma.$executeRawUnsafe(

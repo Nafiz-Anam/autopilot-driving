@@ -34,7 +34,7 @@ export default function ErrorPage({ error, reset }: ErrorProps) {
         >
           <h1
             className="text-3xl font-extrabold text-brand-black mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Something went wrong.
           </h1>

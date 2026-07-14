@@ -193,7 +193,7 @@ export default async function BlogPostPage({
             )}
             <h1
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight"
-              style={{ fontFamily: "'Moderniz', 'Barlow', sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               {blog.title}
             </h1>
@@ -222,7 +222,7 @@ export default async function BlogPostPage({
             )}
             <h1
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight"
-              style={{ fontFamily: "'Moderniz', 'Barlow', sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               {blog.title}
             </h1>

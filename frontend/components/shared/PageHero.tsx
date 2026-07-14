@@ -46,7 +46,7 @@ export function PageHero({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.1 }}
           className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4"
-          style={{ fontFamily: "'Moderniz', 'Barlow', sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           {title}
           {titleHighlight && (

@@ -1,4 +1,4 @@
-# AutoPilot Driving School — Unified Production Compose
+# Autopilot Driving School — Unified Production Compose
 #
 # Port map (offset +8 from defaults to avoid collisions with local dev):
 #   Frontend  (Next.js)  : 3008  (default 3000)

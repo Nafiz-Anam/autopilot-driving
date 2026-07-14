@@ -111,7 +111,7 @@ export function Step4DateTime() {
       <div className="mb-8">
         <h2
           className="text-2xl font-extrabold text-brand-black"
-          style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           Pick a date &amp; time
         </h2>

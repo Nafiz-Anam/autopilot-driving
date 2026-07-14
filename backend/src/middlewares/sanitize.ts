@@ -3,7 +3,12 @@ import xss from 'xss-filters';
 
 // Fields containing trusted rich-text HTML (admin-only, RBAC-protected).
 // Excluding these prevents double-encoding of TipTap editor output.
-const HTML_PASSTHROUGH_KEYS = new Set(['contentHtml', 'contentJson', 'content_html', 'content_json']);
+const HTML_PASSTHROUGH_KEYS = new Set([
+  'contentHtml',
+  'contentJson',
+  'content_html',
+  'content_json',
+]);
 
 // Sanitize string inputs to prevent XSS attacks
 const sanitizeString = (value: string): string => {

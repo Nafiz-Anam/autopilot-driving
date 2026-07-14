@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/shared/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Refund Policy | AutoPilot Driving School",
+  title: "Refund Policy | Autopilot Driving School",
   description:
-    "Understand AutoPilot Driving School's refund and cancellation policy for driving lessons, packages, and gift vouchers.",
+    "Understand Autopilot Driving School's refund and cancellation policy for driving lessons, packages, and gift vouchers.",
 };
 
 export default function RefundPolicyPage() {
@@ -13,7 +13,7 @@ export default function RefundPolicyPage() {
       badge="Legal"
       title="Refund Policy"
       lastUpdated="1 June 2026"
-      intro="We want every student to feel confident booking with AutoPilot Driving School. This Refund Policy sets out the circumstances in which refunds are granted, how to request one, and the timeframes involved. All refund requests are handled fairly and in accordance with the Consumer Rights Act 2015."
+      intro="We want every student to feel confident booking with Autopilot Driving School. This Refund Policy sets out the circumstances in which refunds are granted, how to request one, and the timeframes involved. All refund requests are handled fairly and in accordance with the Consumer Rights Act 2015."
       sections={[
         {
           heading: "Individual Lesson Cancellations",
@@ -37,10 +37,6 @@ export default function RefundPolicyPage() {
                       <td className="px-4 py-3 text-green-700 font-medium">100% refund</td>
                     </tr>
                     <tr className="bg-gray-50">
-                      <td className="px-4 py-3">24–48 hours</td>
-                      <td className="px-4 py-3 text-yellow-700 font-medium">50% refund</td>
-                    </tr>
-                    <tr className="bg-white">
                       <td className="px-4 py-3">Less than 24 hours / no-show</td>
                       <td className="px-4 py-3 text-red-700 font-medium">No refund</td>
                     </tr>
@@ -48,7 +44,7 @@ export default function RefundPolicyPage() {
                 </table>
               </div>
               <p className="mt-3">
-                Cancellations must be submitted through your AutoPilot account or by calling us on{" "}
+                Cancellations must be submitted through your Autopilot account or by calling us on{" "}
                 <a href="tel:07450556963" className="text-[#E8200A] hover:underline">
                   07450 556 963
                 </a>
@@ -95,7 +91,7 @@ export default function RefundPolicyPage() {
               Intensive driving courses are pre-planned and require instructor scheduling in advance.
               Cancellations made 7 or more days before the course start date are eligible for a full
               refund minus a £25 booking fee. Cancellations made within 7 days of the start date
-              are non-refundable. If AutoPilot cancels or significantly changes an intensive course,
+              are non-refundable. If Autopilot cancels or significantly changes an intensive course,
               a full refund will be issued.
             </p>
           ),
@@ -107,7 +103,7 @@ export default function RefundPolicyPage() {
               Gift vouchers are non-refundable once purchased. They are valid for 12 months from the
               date of purchase and cannot be exchanged for cash. If a lesson booked with a gift
               voucher is cancelled by the student with less than 24 hours' notice, the voucher
-              credit is forfeited for that session. Vouchers cancelled by AutoPilot will be fully
+              credit is forfeited for that session. Vouchers cancelled by Autopilot will be fully
               reinstated.
             </p>
           ),
@@ -144,10 +140,10 @@ export default function RefundPolicyPage() {
                 <li>
                   Email:{" "}
                   <a
-                    href="mailto:contact@autopilotdrivingschool.co.uk"
+                    href="mailto:info@autopilotdrivingschool.co.uk"
                     className="text-[#E8200A] hover:underline"
                   >
-                    contact@autopilotdrivingschool.co.uk
+                    info@autopilotdrivingschool.co.uk
                   </a>
                 </li>
                 <li>
@@ -174,7 +170,7 @@ export default function RefundPolicyPage() {
               This Refund Policy does not affect your statutory rights under the Consumer Rights Act
               2015 or any other applicable UK consumer protection legislation. If you are unhappy
               with the outcome of a refund request, you may escalate your complaint to Citizens
-              Advice or seek alternative dispute resolution. AutoPilot Driving School is committed
+              Advice or seek alternative dispute resolution. Autopilot Driving School is committed
               to resolving all disputes promptly and fairly.
             </p>
           ),

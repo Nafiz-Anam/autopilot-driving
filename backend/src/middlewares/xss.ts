@@ -3,7 +3,12 @@ import { inHTMLData } from 'xss-filters';
 
 // Fields that intentionally contain trusted HTML (admin-only, RBAC-protected routes).
 // These are excluded from XSS encoding so rich-text content is stored and served correctly.
-const HTML_PASSTHROUGH_KEYS = new Set(['contentHtml', 'contentJson', 'content_html', 'content_json']);
+const HTML_PASSTHROUGH_KEYS = new Set([
+  'contentHtml',
+  'contentJson',
+  'content_html',
+  'content_json',
+]);
 
 function cleanValue(value: unknown, key?: string): unknown {
   if (key && HTML_PASSTHROUGH_KEYS.has(key)) return value;
@@ -36,7 +41,7 @@ const middleware = () => {
     if (req.body) req.body = cleanValue(req.body);
     if (req.query) {
       Object.keys(req.query).forEach(key => {
-        req.query[key] = cleanValue(req.query[key], key) as typeof req.query[string];
+        req.query[key] = cleanValue(req.query[key], key) as (typeof req.query)[string];
       });
     }
     if (req.params) {

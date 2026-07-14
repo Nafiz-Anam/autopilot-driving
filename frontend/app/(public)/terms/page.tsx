@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/shared/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions | AutoPilot Driving School",
+  title: "Terms & Conditions | Autopilot Driving School",
   description:
-    "Read the terms and conditions governing lessons, bookings, payments, and cancellations at AutoPilot Driving School.",
+    "Read the terms and conditions governing lessons, bookings, payments, and cancellations at Autopilot Driving School.",
 };
 
 export default function TermsPage() {
@@ -13,15 +13,15 @@ export default function TermsPage() {
       badge="Legal"
       title="Terms & Conditions"
       lastUpdated="1 June 2026"
-      intro="These Terms and Conditions govern your use of AutoPilot Driving School's services, including lesson bookings, instructor arrangements, and use of our website. By booking a lesson or creating an account you agree to be bound by these terms. Please read them carefully."
+      intro="These Terms and Conditions govern your use of Autopilot Driving School's services, including lesson bookings, instructor arrangements, and use of our website. By booking a lesson or creating an account you agree to be bound by these terms. Please read them carefully."
       sections={[
         {
           heading: "Definitions",
           content: (
             <p>
-              'AutoPilot', 'we', 'us', and 'our' refer to AutoPilot Driving School. 'Student' or
+              'Autopilot', 'we', 'us', and 'our' refer to Autopilot Driving School. 'Student' or
               'you' refers to the person booking or receiving driving tuition. 'Instructor' refers to
-              any DVSA-approved driving instructor operating under the AutoPilot brand. 'Lesson'
+              any DVSA-approved driving instructor operating under the Autopilot brand. 'Lesson'
               refers to any scheduled driving tuition session booked through our platform.
             </p>
           ),
@@ -30,7 +30,7 @@ export default function TermsPage() {
           heading: "Eligibility",
           content: (
             <>
-              <p>To book lessons with AutoPilot Driving School, you must:</p>
+              <p>To book lessons with Autopilot Driving School, you must:</p>
               <ul className="list-disc pl-5 space-y-1 mt-2">
                 <li>Be at least 17 years of age at the time of the lesson</li>
                 <li>
@@ -58,7 +58,7 @@ export default function TermsPage() {
             <>
               <p>
                 All lesson bookings are subject to instructor availability. A booking is confirmed
-                once you receive a confirmation email or notification from AutoPilot. We reserve the
+                once you receive a confirmation email or notification from Autopilot. We reserve the
                 right to reassign a student to a different instructor in exceptional circumstances
                 (e.g., instructor illness or vehicle breakdown), and will notify you as soon as
                 possible if this occurs.
@@ -101,10 +101,6 @@ export default function TermsPage() {
                   <strong>48+ hours notice:</strong> full refund or credit to your account
                 </li>
                 <li>
-                  <strong>24–48 hours notice:</strong> 50% refund; 50% retained as a late
-                  cancellation fee
-                </li>
-                <li>
                   <strong>Less than 24 hours notice or no-show:</strong> no refund; the full lesson
                   fee is forfeited
                 </li>
@@ -117,12 +113,12 @@ export default function TermsPage() {
           ),
         },
         {
-          heading: "Cancellations by AutoPilot",
+          heading: "Cancellations by Autopilot",
           content: (
             <p>
               In the rare event that we need to cancel a lesson (e.g., instructor illness, vehicle
               fault, severe weather), we will notify you as soon as possible and offer either a
-              full refund or a rescheduled lesson at no additional cost. AutoPilot accepts no
+              full refund or a rescheduled lesson at no additional cost. Autopilot accepts no
               liability for consequential losses arising from a lesson cancellation by the school
               or instructor.
             </p>
@@ -145,7 +141,7 @@ export default function TermsPage() {
                 <li>Bring their provisional driving licence to every lesson</li>
               </ul>
               <p>
-                AutoPilot reserves the right to terminate lessons and suspend or cancel accounts
+                Autopilot reserves the right to terminate lessons and suspend or cancel accounts
                 where a student's conduct is unsafe, abusive, or in breach of these terms, without
                 refund.
               </p>
@@ -156,9 +152,9 @@ export default function TermsPage() {
           heading: "Gift Vouchers",
           content: (
             <p>
-              Gift vouchers purchased through AutoPilot are valid for 12 months from the date of
+              Gift vouchers purchased through Autopilot are valid for 12 months from the date of
               purchase. Vouchers cannot be exchanged for cash, transferred, or used in conjunction
-              with other promotional offers unless explicitly stated. AutoPilot is not responsible
+              with other promotional offers unless explicitly stated. Autopilot is not responsible
               for lost or stolen voucher codes.
             </p>
           ),
@@ -167,8 +163,8 @@ export default function TermsPage() {
           heading: "Intellectual Property",
           content: (
             <p>
-              All content on the AutoPilot Driving School website — including text, images, logos,
-              graphics, and software — is owned by or licensed to AutoPilot Driving School and is
+              All content on the Autopilot Driving School website — including text, images, logos,
+              graphics, and software — is owned by or licensed to Autopilot Driving School and is
               protected by applicable intellectual property laws. You may not reproduce, distribute,
               or commercially exploit any part of this website without our prior written consent.
             </p>
@@ -178,7 +174,7 @@ export default function TermsPage() {
           heading: "Limitation of Liability",
           content: (
             <p>
-              AutoPilot Driving School's liability for any loss or damage arising from the use of
+              Autopilot Driving School's liability for any loss or damage arising from the use of
               our services is limited to the amount paid for the specific lesson or package in
               question. We are not liable for indirect, consequential, or incidental losses,
               including loss of earnings, test fees, or travel costs. Nothing in these terms

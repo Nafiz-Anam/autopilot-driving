@@ -1,6 +1,15 @@
 import prisma from '../client';
 
-const LESSON_TYPES = ['MANUAL', 'AUTOMATIC', 'INTENSIVE', 'REFRESHER', 'PASS_PLUS', 'THEORY', 'MOTORWAY', 'MOCK_TEST'] as const;
+const LESSON_TYPES = [
+  'MANUAL',
+  'AUTOMATIC',
+  'INTENSIVE',
+  'REFRESHER',
+  'PASS_PLUS',
+  'THEORY',
+  'MOTORWAY',
+  'MOCK_TEST',
+] as const;
 type LessonType = (typeof LESSON_TYPES)[number];
 
 const isValidLessonType = (value: string): value is LessonType =>
@@ -122,7 +131,7 @@ const listPackagesForLessonType = async (lessonType: string) => {
     category.id
   );
 
-  return packages.map((row) => ({
+  return packages.map(row => ({
     ...row,
     price: Number(row.price),
     pricePerHour: row.pricePerHour == null ? null : Number(row.pricePerHour),

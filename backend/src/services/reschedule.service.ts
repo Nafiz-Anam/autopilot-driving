@@ -15,7 +15,13 @@ const createRequest = async (params: {
   notes?: string;
 }) => {
   const bookings = await prisma.$queryRawUnsafe<
-    Array<{ id: string; status: string; studentId: string; instructorId: string; durationMins: number }>
+    Array<{
+      id: string;
+      status: string;
+      studentId: string;
+      instructorId: string;
+      durationMins: number;
+    }>
   >(
     `SELECT id, status::text AS status, "studentId", "instructorId", "durationMins" FROM "Booking" WHERE id = $1 LIMIT 1`,
     params.bookingId
@@ -50,7 +56,9 @@ const createRequest = async (params: {
       `UPDATE "RescheduleRequest" SET status = 'CANCELLED'::"RescheduleStatus", "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'::"RescheduleStatus"`,
       params.bookingId
     );
-  } catch { /* table may not exist */ }
+  } catch {
+    /* table may not exist */
+  }
 
   // Admin always reschedules directly — no approval needed
   if (params.requestedByRole === 'ADMIN') {
@@ -70,11 +78,17 @@ const createRequest = async (params: {
 
     // Broadcast update to both parties
     try {
-      const rows = await prisma.$queryRawUnsafe<Array<{
-        studentId: string; studentName: string | null;
-        reference: string; lessonType: string; durationMins: number;
-        instructorUserId: string | null; instructorName: string | null;
-      }>>(
+      const rows = await prisma.$queryRawUnsafe<
+        Array<{
+          studentId: string;
+          studentName: string | null;
+          reference: string;
+          lessonType: string;
+          durationMins: number;
+          instructorUserId: string | null;
+          instructorName: string | null;
+        }>
+      >(
         `SELECT b."studentId", su.name AS "studentName",
                 b.reference, b."lessonType", b."durationMins",
                 iu.id AS "instructorUserId", iu.name AS "instructorName"
@@ -87,19 +101,23 @@ const createRequest = async (params: {
       );
       const r = rows[0];
       if (r) {
-        googleCalendarService.broadcastBookingUpdated({
-          studentId: r.studentId,
-          instructorUserId: r.instructorUserId,
-          bookingId: params.bookingId,
-          reference: r.reference,
-          lessonType: r.lessonType,
-          studentName: r.studentName ?? 'Student',
-          instructorName: r.instructorName ?? 'AutoPilot Instructor',
-          scheduledAt: new Date(params.proposedDateTime),
-          durationMins: r.durationMins,
-        }).catch(() => {});
+        googleCalendarService
+          .broadcastBookingUpdated({
+            studentId: r.studentId,
+            instructorUserId: r.instructorUserId,
+            bookingId: params.bookingId,
+            reference: r.reference,
+            lessonType: r.lessonType,
+            studentName: r.studentName ?? 'Student',
+            instructorName: r.instructorName ?? 'Autopilot Instructor',
+            scheduledAt: new Date(params.proposedDateTime),
+            durationMins: r.durationMins,
+          })
+          .catch(() => {});
       }
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
 
     return { data: { type: 'DIRECT' as const, bookingId: params.bookingId } };
   }
@@ -121,12 +139,16 @@ const createRequest = async (params: {
   // Notify the other party (fire-and-forget)
   void (async () => {
     try {
-      const details = await prisma.$queryRawUnsafe<Array<{
-        scheduledAt: Date;
-        studentName: string; studentEmail: string;
-        instructorName: string | null; instructorEmail: string | null;
-        reference: string;
-      }>>(
+      const details = await prisma.$queryRawUnsafe<
+        Array<{
+          scheduledAt: Date;
+          studentName: string;
+          studentEmail: string;
+          instructorName: string | null;
+          instructorEmail: string | null;
+          reference: string;
+        }>
+      >(
         `SELECT b."scheduledAt", b.reference,
                 su.name AS "studentName", su.email AS "studentEmail",
                 iu.name AS "instructorName", iu.email AS "instructorEmail"
@@ -141,7 +163,8 @@ const createRequest = async (params: {
       if (!d) return;
 
       const proposedDate = new Date(params.proposedDateTime);
-      const requesterName = params.requestedByRole === 'STUDENT' ? d.studentName : (d.instructorName ?? 'Instructor');
+      const requesterName =
+        params.requestedByRole === 'STUDENT' ? d.studentName : (d.instructorName ?? 'Instructor');
 
       if (params.requestedByRole === 'STUDENT' && d.instructorEmail) {
         await emailService.sendRescheduleRequestEmail({
@@ -166,7 +189,9 @@ const createRequest = async (params: {
           reason: params.reason,
         });
       }
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
   })();
 
   return { data: { type: 'REQUEST' as const, requestId: id } };
@@ -219,14 +244,17 @@ const respondToRequest = async (params: {
   }
 
   if (params.accept) {
-    const bookingRows = await prisma.$queryRawUnsafe<Array<{ instructorId: string; durationMins: number }>>(
-      `SELECT "instructorId", "durationMins" FROM "Booking" WHERE id = $1 LIMIT 1`,
-      req.bookingId
-    );
+    const bookingRows = await prisma.$queryRawUnsafe<
+      Array<{ instructorId: string; durationMins: number }>
+    >(`SELECT "instructorId", "durationMins" FROM "Booking" WHERE id = $1 LIMIT 1`, req.bookingId);
     const instructorId = bookingRows[0]?.instructorId;
     const durationMins = bookingRows[0]?.durationMins;
     if (instructorId && durationMins != null) {
-      const available = await isWithinAvailability(instructorId, req.proposedDateTime, durationMins);
+      const available = await isWithinAvailability(
+        instructorId,
+        req.proposedDateTime,
+        durationMins
+      );
       if (!available) return { error: 'OUTSIDE_AVAILABILITY' as const };
     }
   }
@@ -285,29 +313,36 @@ const respondToRequest = async (params: {
     );
     const bRow = bookingRows[0];
     if (bRow) {
-      googleCalendarService.broadcastBookingUpdated({
-        studentId: bRow.studentId,
-        instructorUserId: bRow.instructorUserId,
-        bookingId: req.bookingId,
-        reference: bRow.reference,
-        lessonType: bRow.lessonType,
-        studentName: bRow.studentName ?? 'Student',
-        instructorName: bRow.instructorName ?? 'AutoPilot Instructor',
-        scheduledAt: new Date(req.proposedDateTime),
-        durationMins: bRow.durationMins,
-      }).catch(() => {});
+      googleCalendarService
+        .broadcastBookingUpdated({
+          studentId: bRow.studentId,
+          instructorUserId: bRow.instructorUserId,
+          bookingId: req.bookingId,
+          reference: bRow.reference,
+          lessonType: bRow.lessonType,
+          studentName: bRow.studentName ?? 'Student',
+          instructorName: bRow.instructorName ?? 'Autopilot Instructor',
+          scheduledAt: new Date(req.proposedDateTime),
+          durationMins: bRow.durationMins,
+        })
+        .catch(() => {});
     }
   }
 
   // Send accepted/declined email to the requester (fire-and-forget)
   void (async () => {
     try {
-      const details = await prisma.$queryRawUnsafe<Array<{
-        scheduledAt: Date; reference: string;
-        studentName: string; studentEmail: string;
-        instructorName: string | null; instructorEmail: string | null;
-        durationMins: number;
-      }>>(
+      const details = await prisma.$queryRawUnsafe<
+        Array<{
+          scheduledAt: Date;
+          reference: string;
+          studentName: string;
+          studentEmail: string;
+          instructorName: string | null;
+          instructorEmail: string | null;
+          durationMins: number;
+        }>
+      >(
         `SELECT b."scheduledAt", b.reference, b."durationMins",
                 su.name AS "studentName", su.email AS "studentEmail",
                 iu.name AS "instructorName", iu.email AS "instructorEmail"
@@ -321,8 +356,10 @@ const respondToRequest = async (params: {
       const d = details[0];
       if (!d) return;
 
-      const requesterEmail = req.requestedByRole === 'STUDENT' ? d.studentEmail : (d.instructorEmail ?? null);
-      const requesterName = req.requestedByRole === 'STUDENT' ? d.studentName : (d.instructorName ?? 'Instructor');
+      const requesterEmail =
+        req.requestedByRole === 'STUDENT' ? d.studentEmail : (d.instructorEmail ?? null);
+      const requesterName =
+        req.requestedByRole === 'STUDENT' ? d.studentName : (d.instructorName ?? 'Instructor');
       if (!requesterEmail) return;
 
       if (params.accept) {
@@ -331,7 +368,7 @@ const respondToRequest = async (params: {
           recipientName: requesterName,
           reference: d.reference,
           newDate: new Date(req.proposedDateTime),
-          instructorName: d.instructorName ?? 'AutoPilot Instructor',
+          instructorName: d.instructorName ?? 'Autopilot Instructor',
           durationMins: d.durationMins,
         });
       } else {
@@ -342,7 +379,9 @@ const respondToRequest = async (params: {
           originalDate: new Date(d.scheduledAt),
         });
       }
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
   })();
 
   return {

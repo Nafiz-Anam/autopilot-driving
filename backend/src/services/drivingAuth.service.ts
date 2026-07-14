@@ -46,7 +46,11 @@ const loginWithEmailPassword = async (email: string, password: string) => {
     expiresIn: (process.env.APP_LOGIN_JWT_REFRESH_EXPIRES ?? '30d') as SignOptions['expiresIn'],
     algorithm: 'HS256',
   };
-  const refreshToken = jwt.sign({ sub: user.id, typ: BRIDGE_REFRESH_TYP }, refreshSecret, refreshSignOptions);
+  const refreshToken = jwt.sign(
+    { sub: user.id, typ: BRIDGE_REFRESH_TYP },
+    refreshSecret,
+    refreshSignOptions
+  );
 
   return {
     token,

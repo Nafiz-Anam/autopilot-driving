@@ -12,14 +12,24 @@ const router = express.Router();
  * @desc Create user (Admin only)
  * @access Private (Admin only)
  */
-router.post('/', auth(BackendUserRole.ADMIN), validate(userValidation.createUser), userController.createUser);
+router.post(
+  '/',
+  auth(BackendUserRole.ADMIN),
+  validate(userValidation.createUser),
+  userController.createUser
+);
 
 /**
  * @route GET /v1/users
  * @desc Get users (Admin only)
  * @access Private (Admin only)
  */
-router.get('/', auth(BackendUserRole.ADMIN), validate(userValidation.getUsers), userController.getUsers);
+router.get(
+  '/',
+  auth(BackendUserRole.ADMIN),
+  validate(userValidation.getUsers),
+  userController.getUsers
+);
 
 /**
  * @route GET /v1/users/:userId

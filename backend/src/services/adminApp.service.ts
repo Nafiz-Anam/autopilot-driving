@@ -11,7 +11,13 @@ import instructorAvailabilityModeService from './instructorAvailabilityMode.serv
 import config from '../config/config';
 
 const PAGE_SIZE = 20;
-const VALID_BOOKING_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'] as const;
+const VALID_BOOKING_STATUSES = [
+  'PENDING',
+  'CONFIRMED',
+  'CANCELLED',
+  'COMPLETED',
+  'NO_SHOW',
+] as const;
 const VALID_PAYMENT_STATUSES = ['UNPAID', 'PAID', 'REFUNDED', 'PARTIAL_REFUND'] as const;
 const VALID_USER_ROLES = ['STUDENT', 'INSTRUCTOR', 'ADMIN'] as const;
 const VALID_APPLICATION_STATUSES = ['pending', 'approved', 'rejected'] as const;
@@ -34,11 +40,14 @@ type SettingsPayload = {
  * This prevents placeholder strings (e.g. sk_test_********_key) from
  * showing a false "configured" state in admin UI.
  */
-const isStripePublishableKey = (value: string): boolean => /^pk_(test|live)_[A-Za-z0-9]{16,}$/.test(value);
-const isStripeSecretKey = (value: string): boolean => /^sk_(test|live)_[A-Za-z0-9]{16,}$/.test(value);
+const isStripePublishableKey = (value: string): boolean =>
+  /^pk_(test|live)_[A-Za-z0-9]{16,}$/.test(value);
+const isStripeSecretKey = (value: string): boolean =>
+  /^sk_(test|live)_[A-Za-z0-9]{16,}$/.test(value);
 const isStripeWebhookSecret = (value: string): boolean => /^whsec_[A-Za-z0-9]{16,}$/.test(value);
 const isEmailLike = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-const isSmtpHostLike = (value: string): boolean => /^(localhost|[A-Za-z0-9.-]+\.[A-Za-z]{2,}|(\d{1,3}\.){3}\d{1,3})$/.test(value);
+const isSmtpHostLike = (value: string): boolean =>
+  /^(localhost|[A-Za-z0-9.-]+\.[A-Za-z]{2,}|(\d{1,3}\.){3}\d{1,3})$/.test(value);
 const isLikelyPlaceholder = (value: string): boolean => {
   const v = value.trim().toLowerCase();
   if (!v) return true;
@@ -71,11 +80,11 @@ const normalizePage = (raw: unknown): number => {
 };
 
 const parseTheoryOptions = (raw: unknown): string[] => {
-  if (Array.isArray(raw)) return raw.map((v) => String(v));
+  if (Array.isArray(raw)) return raw.map(v => String(v));
   if (typeof raw === 'string') {
     try {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.map((v) => String(v));
+      if (Array.isArray(parsed)) return parsed.map(v => String(v));
     } catch {
       return [];
     }
@@ -110,18 +119,27 @@ const updateSetting = async (key: string, value: string): Promise<void> => {
 };
 
 const getAllSettings = async (): Promise<SettingsPayload> => {
-  const [stripeSecret, stripePublishable, stripeWebhook, smtpHost, smtpPortRaw, smtpUser, smtpPass, emailFrom, emailAdmin] =
-    await Promise.all([
-      getSetting(SETTING_KEYS.STRIPE_SECRET_KEY),
-      getSetting(SETTING_KEYS.STRIPE_PUBLISHABLE_KEY),
-      getSetting(SETTING_KEYS.STRIPE_WEBHOOK_SECRET),
-      getSetting(SETTING_KEYS.SMTP_HOST),
-      getSetting(SETTING_KEYS.SMTP_PORT),
-      getSetting(SETTING_KEYS.SMTP_USER),
-      getSetting(SETTING_KEYS.SMTP_PASS),
-      getSetting(SETTING_KEYS.EMAIL_FROM),
-      getSetting(SETTING_KEYS.EMAIL_ADMIN),
-    ]);
+  const [
+    stripeSecret,
+    stripePublishable,
+    stripeWebhook,
+    smtpHost,
+    smtpPortRaw,
+    smtpUser,
+    smtpPass,
+    emailFrom,
+    emailAdmin,
+  ] = await Promise.all([
+    getSetting(SETTING_KEYS.STRIPE_SECRET_KEY),
+    getSetting(SETTING_KEYS.STRIPE_PUBLISHABLE_KEY),
+    getSetting(SETTING_KEYS.STRIPE_WEBHOOK_SECRET),
+    getSetting(SETTING_KEYS.SMTP_HOST),
+    getSetting(SETTING_KEYS.SMTP_PORT),
+    getSetting(SETTING_KEYS.SMTP_USER),
+    getSetting(SETTING_KEYS.SMTP_PASS),
+    getSetting(SETTING_KEYS.EMAIL_FROM),
+    getSetting(SETTING_KEYS.EMAIL_ADMIN),
+  ]);
 
   const parsedPort = Number(smtpPortRaw);
   return {
@@ -245,7 +263,7 @@ const listBookings = async (params: { status?: string; page?: number }) => {
   );
 
   return {
-    data: rows.map((r) => ({
+    data: rows.map(r => ({
       id: r.id,
       reference: r.reference,
       lessonType: r.lessonType,
@@ -356,7 +374,12 @@ const getBookingById = async (id: string) => {
 
 const patchBookingById = async (
   id: string,
-  payload: { status?: string; paymentStatus?: string; notes?: string | null; scheduledAt?: string | null }
+  payload: {
+    status?: string;
+    paymentStatus?: string;
+    notes?: string | null;
+    scheduledAt?: string | null;
+  }
 ) => {
   // When admin sets paymentStatus=REFUNDED, issue the actual Stripe refund rather than
   // just flipping a DB flag (which would mark it refunded without returning the money).
@@ -394,7 +417,9 @@ const patchBookingById = async (
         `UPDATE "RescheduleRequest" SET status = 'CANCELLED', "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'`,
         id
       );
-    } catch { /* RescheduleRequest table may not exist yet */ }
+    } catch {
+      /* RescheduleRequest table may not exist yet */
+    }
   }
 
   const row = await getBookingById(id);
@@ -446,7 +471,7 @@ const listUsers = async (params: { search?: string; role?: string; page?: number
   );
 
   return {
-    data: rows.map((u) => ({
+    data: rows.map(u => ({
       id: u.id,
       name: u.name,
       email: u.email,
@@ -534,7 +559,7 @@ const getUserById = async (id: string) => {
 
   return {
     ...user,
-    bookings: bookings.map((b) => ({
+    bookings: bookings.map(b => ({
       id: b.id,
       reference: b.reference,
       lessonType: b.lessonType,
@@ -558,7 +583,9 @@ const deleteUserById = async (id: string) => {
     await prisma.$executeRawUnsafe(`DELETE FROM users WHERE id = $1`, id);
     return true;
   } catch (err) {
-    throw new Error(`Failed to delete user: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`Failed to delete user: ${err instanceof Error ? err.message : String(err)}`, {
+      cause: err,
+    });
   }
 };
 
@@ -637,10 +664,12 @@ const updateApplicationStatus = async (id: string, status: string) => {
   if (status === 'approved') {
     await handleApproved(id, app);
   } else if (status === 'rejected') {
-    emailService.sendInstructorApplicationRejectedEmail({
-      to: app.email,
-      applicantName: app.fullName,
-    }).catch(() => {});
+    emailService
+      .sendInstructorApplicationRejectedEmail({
+        to: app.email,
+        applicantName: app.fullName,
+      })
+      .catch(() => {});
   }
 
   return app;
@@ -679,7 +708,11 @@ async function handleApproved(applicationId: string, app: any): Promise<void> {
     await prisma.$executeRawUnsafe(
       `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, 'USER'::"BackendUserRole", true, NOW(), NOW())`,
-      userId, app.fullName.trim(), email, app.phone ?? null, passwordHash
+      userId,
+      app.fullName.trim(),
+      email,
+      app.phone ?? null,
+      passwordHash
     );
   }
 
@@ -693,7 +726,9 @@ async function handleApproved(applicationId: string, app: any): Promise<void> {
     await prisma.$executeRawUnsafe(
       `INSERT INTO "Instructor" (id, "userId", "yearsExp", "pricePerHour", transmission, areas, "isActive", rating, "reviewCount", "createdAt")
        VALUES ($1, $2, $3, 0, '{}'::text[], '{}'::text[], true, 0, 0, NOW())`,
-      instructorId, userId, yearsExp
+      instructorId,
+      userId,
+      yearsExp
     );
   }
 
@@ -708,12 +743,14 @@ async function handleApproved(applicationId: string, app: any): Promise<void> {
     console.error('[approve] failed to issue reset token', err);
   }
 
-  emailService.sendInstructorApplicationApprovedEmail({
-    to: app.email,
-    applicantName: app.fullName,
-    passwordResetUrl: resetUrl,
-    isExistingUser: !!existingUsers[0],
-  }).catch(() => {});
+  emailService
+    .sendInstructorApplicationApprovedEmail({
+      to: app.email,
+      applicantName: app.fullName,
+      passwordResetUrl: resetUrl,
+      isExistingUser: !!existingUsers[0],
+    })
+    .catch(() => {});
 }
 
 const getApplicationById = async (id: string) => {
@@ -793,7 +830,9 @@ const deleteAreaById = async (id: string) => {
     await prisma.$executeRawUnsafe(`DELETE FROM "Area" WHERE id = $1`, id);
     return true;
   } catch (err) {
-    throw new Error(`Failed to delete area: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(`Failed to delete area: ${err instanceof Error ? err.message : String(err)}`, {
+      cause: err,
+    });
   }
 };
 
@@ -834,7 +873,10 @@ const deleteContactById = async (id: string) => {
     await prisma.$executeRawUnsafe(`DELETE FROM "ContactSubmission" WHERE id = $1`, id);
     return true;
   } catch (err) {
-    throw new Error(`Failed to delete contact: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(
+      `Failed to delete contact: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err }
+    );
   }
 };
 
@@ -871,7 +913,7 @@ const listCoupons = async () => {
      ORDER BY "createdAt" DESC`
   );
 
-  return rows.map((c) => ({
+  return rows.map(c => ({
     ...c,
     value: Number(c.value),
     maxDiscountAmount: c.maxDiscountAmount != null ? Number(c.maxDiscountAmount) : null,
@@ -946,8 +988,7 @@ const listInstructors = async (params: { search?: string; isActive?: string | nu
   }
 
   const search = params.search?.trim() || null;
-  const isActive =
-    params.isActive === 'true' ? true : params.isActive === 'false' ? false : null;
+  const isActive = params.isActive === 'true' ? true : params.isActive === 'false' ? false : null;
 
   const rows = await prisma.$queryRawUnsafe<
     Array<{
@@ -984,13 +1025,12 @@ const listInstructors = async (params: { search?: string; isActive?: string | nu
      WHERE ($1::boolean IS NULL OR i."isActive" = $1)
        AND ($2::text IS NULL OR u.name ILIKE ('%' || $2 || '%'))
      GROUP BY i.id, u.id
-     ORDER BY u.name ASC`
-    ,
+     ORDER BY u.name ASC`,
     isActive,
     search
   );
 
-  return rows.map((inst) => ({
+  return rows.map(inst => ({
     id: inst.id,
     userId: inst.userId,
     bio: inst.bio,
@@ -1187,7 +1227,7 @@ const getInstructorById = async (id: string) => {
       image: instructor.userImage,
       createdAt: instructor.userCreatedAt,
     },
-    bookings: bookings.map((b) => ({
+    bookings: bookings.map(b => ({
       id: b.id,
       reference: b.reference,
       lessonType: b.lessonType,
@@ -1246,7 +1286,7 @@ const listPricingCategories = async () => {
     pkgByCategory.set(p.categoryId, list);
   }
 
-  return categories.map((c) => ({
+  return categories.map(c => ({
     id: c.id,
     lessonType: c.lessonType,
     slug: c.slug,
@@ -1399,7 +1439,9 @@ const getStripeSettings = async () => {
   return {
     stripe_publishable_key: hasValidPublishableKey ? settings.stripe_publishable_key : '',
     stripe_secret_key_masked: hasValidSecretKey ? maskKey(settings.stripe_secret_key) : '',
-    stripe_webhook_secret_masked: hasValidWebhookSecret ? maskKey(settings.stripe_webhook_secret) : '',
+    stripe_webhook_secret_masked: hasValidWebhookSecret
+      ? maskKey(settings.stripe_webhook_secret)
+      : '',
     has_secret_key: hasValidSecretKey,
     has_webhook_secret: hasValidWebhookSecret,
     has_publishable_key: hasValidPublishableKey,
@@ -1413,13 +1455,21 @@ const getStripeSettings = async () => {
 const getSmtpSettings = async () => {
   const settings = await getAllSettings();
   const hasValidSmtpHost =
-    !!settings.smtp_host && isSmtpHostLike(settings.smtp_host) && !isLikelyPlaceholder(settings.smtp_host);
+    !!settings.smtp_host &&
+    isSmtpHostLike(settings.smtp_host) &&
+    !isLikelyPlaceholder(settings.smtp_host);
   const hasValidSmtpUser =
-    !!settings.smtp_user && isEmailLike(settings.smtp_user) && !isLikelyPlaceholder(settings.smtp_user);
+    !!settings.smtp_user &&
+    isEmailLike(settings.smtp_user) &&
+    !isLikelyPlaceholder(settings.smtp_user);
   const hasValidEmailFrom =
-    !!settings.email_from && isEmailLike(settings.email_from) && !isLikelyPlaceholder(settings.email_from);
+    !!settings.email_from &&
+    isEmailLike(settings.email_from) &&
+    !isLikelyPlaceholder(settings.email_from);
   const hasValidEmailAdmin =
-    !!settings.email_admin && isEmailLike(settings.email_admin) && !isLikelyPlaceholder(settings.email_admin);
+    !!settings.email_admin &&
+    isEmailLike(settings.email_admin) &&
+    !isLikelyPlaceholder(settings.email_admin);
   const hasValidSmtpPass = !!settings.smtp_pass && !isLikelyPlaceholder(settings.smtp_pass);
 
   return {
@@ -1639,7 +1689,7 @@ const listTheory = async (params: { category?: string; page?: number }) => {
     PAGE_SIZE
   );
   return {
-    data: rows.map((r) => ({ ...r, options: parseTheoryOptions(r.options) })),
+    data: rows.map(r => ({ ...r, options: parseTheoryOptions(r.options) })),
     total,
     page,
     totalPages: Math.ceil(total / PAGE_SIZE),
@@ -1727,24 +1777,33 @@ const createUser = async (payload: {
     `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
      VALUES ($1, $2, $3, $4, $5, $6::"BackendUserRole", true, NOW(), NOW())
      RETURNING id, name, email, role::text AS role, phone, "createdAt"`,
-    id, payload.name.trim(), payload.email.trim().toLowerCase(),
-    payload.phone ?? null, passwordHash, role
+    id,
+    payload.name.trim(),
+    payload.email.trim().toLowerCase(),
+    payload.phone ?? null,
+    passwordHash,
+    role
   );
-  emailService.sendAccountCreatedEmail({
-    to: payload.email.trim().toLowerCase(),
-    name: payload.name.trim(),
-    password: payload.password,
-    role: 'student',
-  }).catch(() => {});
+  emailService
+    .sendAccountCreatedEmail({
+      to: payload.email.trim().toLowerCase(),
+      name: payload.name.trim(),
+      password: payload.password,
+      role: 'student',
+    })
+    .catch(() => {});
   return rows[0];
 };
 
-const updateUserById = async (id: string, payload: {
-  name?: string;
-  email?: string;
-  phone?: string | null;
-  role?: string;
-}) => {
+const updateUserById = async (
+  id: string,
+  payload: {
+    name?: string;
+    email?: string;
+    phone?: string | null;
+    role?: string;
+  }
+) => {
   const role = payload.role && VALID_USER_ROLES.includes(payload.role as any) ? payload.role : null;
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `UPDATE users
@@ -1784,21 +1843,35 @@ const createInstructor = async (payload: {
   await prisma.$executeRawUnsafe(
     `INSERT INTO users (id, name, email, phone, password, role, "isEmailVerified", "createdAt", "updatedAt")
      VALUES ($1, $2, $3, $4, $5, 'USER'::"BackendUserRole", true, NOW(), NOW())`,
-    userId, payload.name.trim(), payload.email.trim().toLowerCase(), payload.phone ?? null, passwordHash
+    userId,
+    payload.name.trim(),
+    payload.email.trim().toLowerCase(),
+    payload.phone ?? null,
+    passwordHash
   );
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `INSERT INTO "Instructor" (id, "userId", bio, "pricePerHour", transmission, "yearsExp", "licenceNumber", "isFemale", areas, "isActive", rating, "reviewCount", "createdAt")
      VALUES ($1, $2, $3, $4::decimal, $5::text[], $6, $7, $8, $9::text[], $10, 0, 0, NOW())
      RETURNING id`,
-    instructorId, userId, payload.bio ?? null, payload.pricePerHour, payload.transmission,
-    payload.yearsExp, payload.licenceNumber ?? null, payload.isFemale, payload.areas, payload.isActive
+    instructorId,
+    userId,
+    payload.bio ?? null,
+    payload.pricePerHour,
+    payload.transmission,
+    payload.yearsExp,
+    payload.licenceNumber ?? null,
+    payload.isFemale,
+    payload.areas,
+    payload.isActive
   );
-  emailService.sendAccountCreatedEmail({
-    to: payload.email.trim().toLowerCase(),
-    name: payload.name.trim(),
-    password: payload.password,
-    role: 'instructor',
-  }).catch(() => {});
+  emailService
+    .sendAccountCreatedEmail({
+      to: payload.email.trim().toLowerCase(),
+      name: payload.name.trim(),
+      password: payload.password,
+      role: 'instructor',
+    })
+    .catch(() => {});
   return rows[0];
 };
 
@@ -1807,7 +1880,10 @@ const deleteInstructorById = async (id: string) => {
     await prisma.$executeRawUnsafe(`DELETE FROM "Instructor" WHERE id = $1`, id);
     return true;
   } catch (err) {
-    throw new Error(`Failed to delete instructor: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(
+      `Failed to delete instructor: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err }
+    );
   }
 };
 
@@ -1843,7 +1919,11 @@ const updateInstructorScheduleById = async (
       prisma.$executeRawUnsafe(
         `INSERT INTO "Availability" (id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable")
          VALUES (gen_random_uuid(), $1, $2, $3::time, $4::time, $5)`,
-        instructorId, slot.dayOfWeek, slot.startTime, slot.endTime, slot.isAvailable
+        instructorId,
+        slot.dayOfWeek,
+        slot.startTime,
+        slot.endTime,
+        slot.isAvailable
       )
     ),
   ]);

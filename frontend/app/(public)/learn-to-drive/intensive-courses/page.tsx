@@ -16,7 +16,7 @@ const articleSections = [
     id: "pace",
     title: "Learn to drive at a pace that works for you",
     body: [
-      "At AutoPilot, we believe learning to drive should focus on building the skills, confidence and awareness needed to become a safe driver — not just passing a test.",
+      "At Autopilot, we believe learning to drive should focus on building the skills, confidence and awareness needed to become a safe driver — not just passing a test.",
       "Some learners prefer to take lessons more frequently so they can practise regularly and build their skills sooner. Others prefer a more gradual approach. Our DVSA-approved instructors tailor lessons to suit each learner's pace and experience.",
       "Your instructor will only recommend booking your driving test once they're confident you're ready.",
     ],
@@ -44,7 +44,7 @@ const articleSections = [
     body: ["There is no minimum number of lessons required before booking your practical driving test."],
     list: ["A valid provisional driving licence", "Proof that you've passed your theory test"],
     listLeadIn: "To book your test, you'll need:",
-    closing: "Your AutoPilot instructor will help you decide when you're ready to take your test.",
+    closing: "Your Autopilot instructor will help you decide when you're ready to take your test.",
   },
   {
     id: "how-quickly",
@@ -148,7 +148,7 @@ export default function IntensiveCoursesPage() {
   return (
     <>
       <PageHero
-        title="Learn with AutoPilot"
+        title="Learn with Autopilot"
         subtitle="Structured daily lessons with a dedicated instructor — the fastest route to your UK driving licence."
         dark={false}
         eyebrow="Intensive Driving Courses"
@@ -160,7 +160,7 @@ export default function IntensiveCoursesPage() {
           <aside className="lg:sticky lg:top-24 self-start">
             <h2
               className="text-3xl lg:text-4xl font-extrabold text-brand-black leading-tight"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Intensive driving lessons
             </h2>
@@ -179,7 +179,7 @@ export default function IntensiveCoursesPage() {
                 <h3
                   id={section.id}
                   className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
-                  style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {section.title}
                 </h3>
@@ -216,7 +216,7 @@ export default function IntensiveCoursesPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               How It Works
             </h2>
@@ -249,7 +249,7 @@ export default function IntensiveCoursesPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Course Packages
             </h2>
@@ -279,7 +279,7 @@ export default function IntensiveCoursesPage() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Before You Book
             </h2>
@@ -306,7 +306,7 @@ export default function IntensiveCoursesPage() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl font-bold text-brand-black"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               What Our Students Say
             </h2>
@@ -333,7 +333,7 @@ export default function IntensiveCoursesPage() {
         >
           <h2
             className="text-2xl sm:text-3xl font-bold mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Ready to start learning?
           </h2>

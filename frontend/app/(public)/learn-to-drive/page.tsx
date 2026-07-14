@@ -71,7 +71,7 @@ function ServiceCard({
       </div>
       <h3
         className="text-xl font-bold text-brand-black mb-2"
-        style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+        style={{ fontFamily: "var(--font-display)" }}
       >
         {service.name}
       </h3>
@@ -96,7 +96,7 @@ export default function LearnToDrivePage() {
         title="Learn to Drive"
         subtitle="Operating across East London, Tower Hamlets, Newham, Barking & Dagenham and surrounding"
         dark={true}
-        eyebrow="AutoPilot Driving School"
+        eyebrow="Autopilot Driving School"
       />
 
       <section className="py-16 lg:py-24 bg-brand-surface px-4">
@@ -104,7 +104,7 @@ export default function LearnToDrivePage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl lg:text-4xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Everything You Need to Pass
             </h2>
@@ -124,7 +124,7 @@ export default function LearnToDrivePage() {
       <section className="bg-brand-black py-16 px-4 text-center text-white">
         <h2
           className="text-3xl font-bold mb-3"
-          style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           Ready to Get Started?
         </h2>

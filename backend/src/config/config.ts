@@ -79,10 +79,13 @@ const config = {
   },
   clientUrl: envVars.CLIENT_URL,
   nextAuthBridge: {
-    secret: (envVars.NEXTAUTH_BRIDGE_SECRET && envVars.NEXTAUTH_BRIDGE_SECRET.trim()) || envVars.JWT_SECRET,
+    secret:
+      (envVars.NEXTAUTH_BRIDGE_SECRET && envVars.NEXTAUTH_BRIDGE_SECRET.trim()) ||
+      envVars.JWT_SECRET,
     refreshSecret:
       (envVars.NEXTAUTH_BRIDGE_REFRESH_SECRET && envVars.NEXTAUTH_BRIDGE_REFRESH_SECRET.trim()) ||
-      ((envVars.NEXTAUTH_BRIDGE_SECRET && envVars.NEXTAUTH_BRIDGE_SECRET.trim()) || envVars.JWT_SECRET) + '_refresh',
+      ((envVars.NEXTAUTH_BRIDGE_SECRET && envVars.NEXTAUTH_BRIDGE_SECRET.trim()) ||
+        envVars.JWT_SECRET) + '_refresh',
   },
   google: {
     placesApiKey: envVars.GOOGLE_PLACES_API_KEY,

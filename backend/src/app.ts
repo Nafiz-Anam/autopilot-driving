@@ -39,45 +39,43 @@ if (config.env !== 'test') {
 }
 
 // ── Security headers ─────────────────────────────────────────────────────────
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      frameSrc: ["'none'"],
-      upgradeInsecureRequests: [],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
     },
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true,
-  },
-  noSniff: true,
-  xssFilter: true,
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-}));
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+    noSniff: true,
+    xssFilter: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  })
+);
 app.use(securityHeaders);
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 // Build whitelist from ALLOWED_ORIGINS, falling back to NEXT_PUBLIC_APP_URL
 // then CLIENT_URL so it works in production without manual env var setup.
-const _rawOrigins = [
-  process.env.ALLOWED_ORIGINS,
-  process.env.NEXT_PUBLIC_APP_URL,
-  config.clientUrl,
-]
+const _rawOrigins = [process.env.ALLOWED_ORIGINS, process.env.NEXT_PUBLIC_APP_URL, config.clientUrl]
   .filter(Boolean)
   .join(',');
 
 const allowedOrigins = _rawOrigins
   .split(',')
-  .map((o) => o.trim().replace(/\/$/, ''))
+  .map(o => o.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
 const corsOptions: cors.CorsOptions = {
@@ -158,10 +156,14 @@ app.use('/v1/instructor/profile', sensitiveOperationLimiter);
 
 // ── Static uploads ────────────────────────────────────────────────────────────
 // Override CORP header so images load cross-origin (admin on main domain, files on api subdomain)
-app.use('/uploads', (_req, res, next) => {
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  next();
-}, express.static(path.join(process.cwd(), 'uploads')));
+app.use(
+  '/uploads',
+  (_req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  },
+  express.static(path.join(process.cwd(), 'uploads'))
+);
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/v1/instructor', instructorAppRoute);
@@ -171,7 +173,7 @@ app.use('/v1', routes);
 app.get('/', (_req, res) => {
   res.json({
     success: true,
-    message: 'AutoPilot Driving School API',
+    message: 'Autopilot Driving School API',
     version: '1.0.0',
     environment: config.env,
   });

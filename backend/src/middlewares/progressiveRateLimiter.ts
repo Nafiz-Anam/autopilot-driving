@@ -19,10 +19,7 @@ interface ProgressiveRateLimitOptions {
 }
 
 function buildRateLimitBody(message: string, info: RateLimitInfo) {
-  const retryAfterSeconds = Math.max(
-    0,
-    Math.ceil((info.resetTime.getTime() - Date.now()) / 1000)
-  );
+  const retryAfterSeconds = Math.max(0, Math.ceil((info.resetTime.getTime() - Date.now()) / 1000));
   return {
     code: httpStatus.TOO_MANY_REQUESTS,
     message,

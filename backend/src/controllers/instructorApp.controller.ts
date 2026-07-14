@@ -24,7 +24,10 @@ const putProfile = async (req: Request, res: Response) => {
     const userId = req.drivingUser?.id;
     if (!userId) return res.status(401).json({ error: 'Unauthorised' });
 
-    const updated = await instructorAppService.updateInstructorProfileByUserId(userId, req.body ?? {});
+    const updated = await instructorAppService.updateInstructorProfileByUserId(
+      userId,
+      req.body ?? {}
+    );
     if (!updated) return res.status(404).json({ error: 'Instructor profile not found' });
 
     return res.json({ data: updated });
@@ -237,7 +240,8 @@ const changePassword = async (req: Request, res: Response) => {
     const userId = req.drivingUser?.id;
     if (!userId) return res.status(401).json({ error: 'Unauthorised' });
     const { current, newPassword } = req.body ?? {};
-    if (!current || !newPassword) return res.status(400).json({ error: 'current and newPassword required' });
+    if (!current || !newPassword)
+      return res.status(400).json({ error: 'current and newPassword required' });
     const result = await studentAppService.changePassword(userId, current, newPassword);
     if ('error' in result) return res.status(400).json({ error: result.error });
     return res.json({ success: true });

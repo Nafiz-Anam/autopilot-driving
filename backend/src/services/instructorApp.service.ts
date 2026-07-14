@@ -61,10 +61,7 @@ const getInstructorProfileByUserId = async (userId: string) => {
   };
 };
 
-const updateInstructorProfileByUserId = async (
-  userId: string,
-  body: Record<string, unknown>
-) => {
+const updateInstructorProfileByUserId = async (userId: string, body: Record<string, unknown>) => {
   const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
     `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
     userId
@@ -84,14 +81,46 @@ const updateInstructorProfileByUserId = async (
   const values: unknown[] = [];
   let idx = 1;
 
-  if (body.bio !== undefined) { setClauses.push(`bio = $${idx}`); values.push(body.bio); idx++; }
-  if (body.pricePerHour !== undefined) { setClauses.push(`"pricePerHour" = $${idx}`); values.push(body.pricePerHour); idx++; }
-  if (body.areas !== undefined) { setClauses.push(`areas = $${idx}`); values.push(body.areas); idx++; }
-  if (body.transmission !== undefined) { setClauses.push(`transmission = $${idx}`); values.push(body.transmission); idx++; }
-  if (body.yearsExp !== undefined) { setClauses.push(`"yearsExp" = $${idx}`); values.push(body.yearsExp); idx++; }
-  if (body.licenceNumber !== undefined) { setClauses.push(`"licenceNumber" = $${idx}`); values.push(body.licenceNumber); idx++; }
-  if (body.isFemale !== undefined) { setClauses.push(`"isFemale" = $${idx}`); values.push(body.isFemale); idx++; }
-  if (body.availabilityMode !== undefined) { setClauses.push(`"availabilityMode" = $${idx}::"AvailabilityMode"`); values.push(body.availabilityMode); idx++; }
+  if (body.bio !== undefined) {
+    setClauses.push(`bio = $${idx}`);
+    values.push(body.bio);
+    idx++;
+  }
+  if (body.pricePerHour !== undefined) {
+    setClauses.push(`"pricePerHour" = $${idx}`);
+    values.push(body.pricePerHour);
+    idx++;
+  }
+  if (body.areas !== undefined) {
+    setClauses.push(`areas = $${idx}`);
+    values.push(body.areas);
+    idx++;
+  }
+  if (body.transmission !== undefined) {
+    setClauses.push(`transmission = $${idx}`);
+    values.push(body.transmission);
+    idx++;
+  }
+  if (body.yearsExp !== undefined) {
+    setClauses.push(`"yearsExp" = $${idx}`);
+    values.push(body.yearsExp);
+    idx++;
+  }
+  if (body.licenceNumber !== undefined) {
+    setClauses.push(`"licenceNumber" = $${idx}`);
+    values.push(body.licenceNumber);
+    idx++;
+  }
+  if (body.isFemale !== undefined) {
+    setClauses.push(`"isFemale" = $${idx}`);
+    values.push(body.isFemale);
+    idx++;
+  }
+  if (body.availabilityMode !== undefined) {
+    setClauses.push(`"availabilityMode" = $${idx}::"AvailabilityMode"`);
+    values.push(body.availabilityMode);
+    idx++;
+  }
 
   if (setClauses.length > 0) {
     await prisma.$executeRawUnsafe(
@@ -105,11 +134,20 @@ const updateInstructorProfileByUserId = async (
     const userSet: string[] = [];
     const userVals: unknown[] = [];
     let ui = 1;
-    if (body.name !== undefined) { userSet.push(`name = $${ui}`); userVals.push(body.name); ui++; }
-    if (body.phone !== undefined) { userSet.push(`phone = $${ui}`); userVals.push(body.phone); ui++; }
+    if (body.name !== undefined) {
+      userSet.push(`name = $${ui}`);
+      userVals.push(body.name);
+      ui++;
+    }
+    if (body.phone !== undefined) {
+      userSet.push(`phone = $${ui}`);
+      userVals.push(body.phone);
+      ui++;
+    }
     await prisma.$executeRawUnsafe(
       `UPDATE users SET ${userSet.join(', ')}, "updatedAt" = NOW() WHERE id = $${ui}`,
-      ...userVals, userId
+      ...userVals,
+      userId
     );
   }
 
@@ -136,7 +174,9 @@ const getInstructorScheduleByUserId = async (userId: string) => {
 };
 
 const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toStr: string) => {
-  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string; availabilityMode: string }>>(
+  const instructorRows = await prisma.$queryRawUnsafe<
+    Array<{ id: string; availabilityMode: string }>
+  >(
     `SELECT id, "availabilityMode"::text AS "availabilityMode" FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
     userId
   );
@@ -147,14 +187,16 @@ const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toSt
   const to = new Date(toStr + 'T23:59:59Z');
 
   const [bookings, busy, integration] = await Promise.all([
-    prisma.$queryRawUnsafe<Array<{
-      id: string;
-      reference: string;
-      scheduledAt: Date;
-      durationMins: number;
-      status: string;
-      studentName: string | null;
-    }>>(
+    prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        reference: string;
+        scheduledAt: Date;
+        durationMins: number;
+        status: string;
+        studentName: string | null;
+      }>
+    >(
       `SELECT b.id, b.reference, b."scheduledAt", b."durationMins", b.status::text AS status,
               su.name AS "studentName"
        FROM "Booking" b
@@ -362,43 +404,48 @@ const getInstructorStatsByUserId = async (userId: string) => {
   const next7Days = new Date(now);
   next7Days.setDate(now.getDate() + 7);
 
-  const [lessonsThisWeekRows, monthBookings, allBookingsForStudents, todayBookings, upcomingBookings] =
-    await Promise.all([
-      prisma.$queryRawUnsafe<Array<{ count: number }>>(
-        `SELECT COUNT(*)::int AS count
+  const [
+    lessonsThisWeekRows,
+    monthBookings,
+    allBookingsForStudents,
+    todayBookings,
+    upcomingBookings,
+  ] = await Promise.all([
+    prisma.$queryRawUnsafe<Array<{ count: number }>>(
+      `SELECT COUNT(*)::int AS count
          FROM "Booking"
          WHERE "instructorId" = $1
            AND "scheduledAt" >= $2::timestamp
            AND "scheduledAt" < $3::timestamp
            AND status::text IN ('CONFIRMED', 'COMPLETED')`,
-        instructor.id,
-        weekStart.toISOString(),
-        weekEnd.toISOString()
-      ),
-      prisma.$queryRawUnsafe<Array<{ totalAmount: string }>>(
-        `SELECT "totalAmount"::text AS "totalAmount"
+      instructor.id,
+      weekStart.toISOString(),
+      weekEnd.toISOString()
+    ),
+    prisma.$queryRawUnsafe<Array<{ totalAmount: string }>>(
+      `SELECT "totalAmount"::text AS "totalAmount"
          FROM "Booking"
          WHERE "instructorId" = $1
            AND "scheduledAt" >= $2::timestamp
            AND "paymentStatus"::text = 'PAID'`,
-        instructor.id,
-        monthStart.toISOString()
-      ),
-      prisma.$queryRawUnsafe<Array<{ studentId: string }>>(
-        `SELECT "studentId" FROM "Booking" WHERE "instructorId" = $1`,
-        instructor.id
-      ),
-      prisma.$queryRawUnsafe<
-        Array<{
-          id: string;
-          scheduledAt: Date;
-          durationMins: number;
-          lessonType: string;
-          transmission: string;
-          studentName: string | null;
-        }>
-      >(
-        `SELECT
+      instructor.id,
+      monthStart.toISOString()
+    ),
+    prisma.$queryRawUnsafe<Array<{ studentId: string }>>(
+      `SELECT "studentId" FROM "Booking" WHERE "instructorId" = $1`,
+      instructor.id
+    ),
+    prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        scheduledAt: Date;
+        durationMins: number;
+        lessonType: string;
+        transmission: string;
+        studentName: string | null;
+      }>
+    >(
+      `SELECT
            b.id,
            b."scheduledAt",
            b."durationMins",
@@ -412,21 +459,21 @@ const getInstructorStatsByUserId = async (userId: string) => {
            AND b."scheduledAt" <= $3::timestamp
            AND b.status::text IN ('CONFIRMED', 'PENDING')
          ORDER BY b."scheduledAt" ASC`,
-        instructor.id,
-        todayStart.toISOString(),
-        todayEnd.toISOString()
-      ),
-      prisma.$queryRawUnsafe<
-        Array<{
-          id: string;
-          scheduledAt: Date;
-          durationMins: number;
-          lessonType: string;
-          transmission: string;
-          studentName: string | null;
-        }>
-      >(
-        `SELECT
+      instructor.id,
+      todayStart.toISOString(),
+      todayEnd.toISOString()
+    ),
+    prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        scheduledAt: Date;
+        durationMins: number;
+        lessonType: string;
+        transmission: string;
+        studentName: string | null;
+      }>
+    >(
+      `SELECT
            b.id,
            b."scheduledAt",
            b."durationMins",
@@ -441,17 +488,14 @@ const getInstructorStatsByUserId = async (userId: string) => {
            AND b.status::text IN ('CONFIRMED', 'PENDING')
          ORDER BY b."scheduledAt" ASC
          LIMIT 10`,
-        instructor.id,
-        now.toISOString(),
-        next7Days.toISOString()
-      ),
-    ]);
+      instructor.id,
+      now.toISOString(),
+      next7Days.toISOString()
+    ),
+  ]);
 
   const lessonsThisWeek = lessonsThisWeekRows[0]?.count ?? 0;
-  const earningsThisMonth = monthBookings.reduce(
-    (sum, b) => sum + Number(b.totalAmount),
-    0
-  );
+  const earningsThisMonth = monthBookings.reduce((sum, b) => sum + Number(b.totalAmount), 0);
 
   const uniqueStudentIds = new Set(allBookingsForStudents.map(b => b.studentId));
   const totalStudents = uniqueStudentIds.size;
@@ -488,16 +532,27 @@ const PAGE_SIZE = 20;
 
 // Fetch pending reschedule requests for a set of booking IDs
 async function fetchPendingReschedules(bookingIds: string[]) {
-  if (!bookingIds.length) return {} as Record<string, {
-    id: string; requestedByRole: string; requesterName: string | null;
-    proposedDateTime: Date; reason: string | null;
-  }>;
+  if (!bookingIds.length)
+    return {} as Record<
+      string,
+      {
+        id: string;
+        requestedByRole: string;
+        requesterName: string | null;
+        proposedDateTime: Date;
+        reason: string | null;
+      }
+    >;
   try {
     const placeholders = bookingIds.map((_, i) => `$${i + 1}`).join(', ');
     const rows = await prisma.$queryRawUnsafe<
       Array<{
-        id: string; bookingId: string; requestedByRole: string;
-        requesterName: string | null; proposedDateTime: Date; reason: string | null;
+        id: string;
+        bookingId: string;
+        requestedByRole: string;
+        requesterName: string | null;
+        proposedDateTime: Date;
+        reason: string | null;
       }>
     >(
       `SELECT r.id, r."bookingId", r."requestedByRole",
@@ -509,15 +564,16 @@ async function fetchPendingReschedules(bookingIds: string[]) {
       ...bookingIds
     );
     const map: Record<string, (typeof rows)[0]> = {};
-    for (const r of rows) { if (!map[r.bookingId]) map[r.bookingId] = r; }
+    for (const r of rows) {
+      if (!map[r.bookingId]) map[r.bookingId] = r;
+    }
     return map;
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
 
-const listMyBookings = async (
-  userId: string,
-  params: { status?: string; page?: number }
-) => {
+const listMyBookings = async (userId: string, params: { status?: string; page?: number }) => {
   const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
     `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
     userId
@@ -533,16 +589,26 @@ const listMyBookings = async (
   const totalRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
     `SELECT COUNT(*)::int AS total FROM "Booking" b
      WHERE b."instructorId" = $1 AND ($2::text IS NULL OR b.status::text = $2)`,
-    instructor.id, statusFilter
+    instructor.id,
+    statusFilter
   );
   const total = totalRows[0]?.total ?? 0;
 
   const rows = await prisma.$queryRawUnsafe<
     Array<{
-      id: string; reference: string; lessonType: string; transmission: string;
-      scheduledAt: Date; durationMins: number; status: string; paymentStatus: string;
-      totalAmount: string; notes: string | null;
-      studentId: string; studentName: string | null; studentEmail: string;
+      id: string;
+      reference: string;
+      lessonType: string;
+      transmission: string;
+      scheduledAt: Date;
+      durationMins: number;
+      status: string;
+      paymentStatus: string;
+      totalAmount: string;
+      notes: string | null;
+      studentId: string;
+      studentName: string | null;
+      studentEmail: string;
     }>
   >(
     `SELECT b.id, b.reference, b."lessonType"::text AS "lessonType", b.transmission,
@@ -554,28 +620,43 @@ const listMyBookings = async (
      WHERE b."instructorId" = $1 AND ($2::text IS NULL OR b.status::text = $2)
      ORDER BY b."scheduledAt" DESC
      OFFSET $3 LIMIT $4`,
-    instructor.id, statusFilter, offset, PAGE_SIZE
+    instructor.id,
+    statusFilter,
+    offset,
+    PAGE_SIZE
   );
 
-  const bookings = rows.map((b) => ({
-    id: b.id, reference: b.reference, lessonType: b.lessonType,
-    transmission: b.transmission, scheduledAt: b.scheduledAt.toISOString(),
-    durationMins: b.durationMins, status: b.status, paymentStatus: b.paymentStatus,
-    totalAmount: Number(b.totalAmount), notes: b.notes,
+  const bookings = rows.map(b => ({
+    id: b.id,
+    reference: b.reference,
+    lessonType: b.lessonType,
+    transmission: b.transmission,
+    scheduledAt: b.scheduledAt.toISOString(),
+    durationMins: b.durationMins,
+    status: b.status,
+    paymentStatus: b.paymentStatus,
+    totalAmount: Number(b.totalAmount),
+    notes: b.notes,
     student: { id: b.studentId, name: b.studentName, email: b.studentEmail },
     pendingReschedule: null as null | {
-      id: string; requestedByRole: string; requesterName: string | null;
-      proposedDateTime: string; reason: string | null;
+      id: string;
+      requestedByRole: string;
+      requesterName: string | null;
+      proposedDateTime: string;
+      reason: string | null;
     },
   }));
 
-  const pending = await fetchPendingReschedules(bookings.map((b) => b.id));
+  const pending = await fetchPendingReschedules(bookings.map(b => b.id));
   for (const b of bookings) {
     const r = pending[b.id];
     if (r) {
       b.pendingReschedule = {
-        id: r.id, requestedByRole: r.requestedByRole, requesterName: r.requesterName,
-        proposedDateTime: r.proposedDateTime.toISOString(), reason: r.reason,
+        id: r.id,
+        requestedByRole: r.requestedByRole,
+        requesterName: r.requesterName,
+        proposedDateTime: r.proposedDateTime.toISOString(),
+        reason: r.reason,
       };
     }
   }
@@ -597,7 +678,13 @@ const cancelMyBooking = async (
   if (!instructor) return { error: 'NOT_FOUND' as const };
 
   const bookingRows = await prisma.$queryRawUnsafe<
-    Array<{ id: string; instructorId: string; status: string; paymentStatus: string; studentId: string }>
+    Array<{
+      id: string;
+      instructorId: string;
+      status: string;
+      paymentStatus: string;
+      studentId: string;
+    }>
   >(
     `SELECT id, "instructorId", status::text AS status, "paymentStatus"::text AS "paymentStatus", "studentId"
      FROM "Booking" WHERE id = $1 LIMIT 1`,
@@ -612,7 +699,8 @@ const cancelMyBooking = async (
 
   await prisma.$executeRawUnsafe(
     `UPDATE "Booking" SET status = 'CANCELLED', notes = COALESCE($2::text, notes), "updatedAt" = NOW() WHERE id = $1`,
-    bookingId, cancelNotes
+    bookingId,
+    cancelNotes
   );
 
   try {
@@ -620,7 +708,9 @@ const cancelMyBooking = async (
       `UPDATE "RescheduleRequest" SET status = 'CANCELLED', "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'`,
       bookingId
     );
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   // Always refund the student when the instructor cancels — not the student's fault
   let refundResult: { refunded: boolean; stripeRefundId?: string } = { refunded: false };
@@ -634,12 +724,18 @@ const cancelMyBooking = async (
   // Notify student (fire-and-forget)
   void (async () => {
     try {
-      const details = await prisma.$queryRawUnsafe<Array<{
-        reference: string;
-        studentName: string; studentEmail: string;
-        instructorName: string | null;
-        lessonType: string; scheduledAt: Date; totalAmount: string; discountAmount: string | null;
-      }>>(
+      const details = await prisma.$queryRawUnsafe<
+        Array<{
+          reference: string;
+          studentName: string;
+          studentEmail: string;
+          instructorName: string | null;
+          lessonType: string;
+          scheduledAt: Date;
+          totalAmount: string;
+          discountAmount: string | null;
+        }>
+      >(
         `SELECT b.reference,
                 su.name AS "studentName", su.email AS "studentEmail",
                 iu.name AS "instructorName",
@@ -674,7 +770,9 @@ const cancelMyBooking = async (
           });
         }
       }
-    } catch { /* email failure must not break cancellation */ }
+    } catch {
+      /* email failure must not break cancellation */
+    }
   })();
 
   return { data: { id: bookingId, status: 'CANCELLED' as const, refund: refundResult } };

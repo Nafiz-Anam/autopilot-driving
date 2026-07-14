@@ -27,7 +27,9 @@ const createIntent = catchAsync(async (req: Request, res: Response) => {
 
   if ('error' in result) {
     const status =
-      result.error === 'SERVICE_UNAVAILABLE' ? httpStatus.SERVICE_UNAVAILABLE : httpStatus.INTERNAL_SERVER_ERROR;
+      result.error === 'SERVICE_UNAVAILABLE'
+        ? httpStatus.SERVICE_UNAVAILABLE
+        : httpStatus.INTERNAL_SERVER_ERROR;
     return res.status(status).send({ success: false, error: result.message });
   }
 
@@ -37,14 +39,18 @@ const createIntent = catchAsync(async (req: Request, res: Response) => {
 const confirm = catchAsync(async (req: Request, res: Response) => {
   const paymentIntentId = (req.body as { paymentIntentId?: string }).paymentIntentId?.trim();
   if (!paymentIntentId) {
-    return res.status(httpStatus.BAD_REQUEST).send({ success: false, error: 'paymentIntentId required' });
+    return res
+      .status(httpStatus.BAD_REQUEST)
+      .send({ success: false, error: 'paymentIntentId required' });
   }
 
   const result = await giftVoucherPurchaseService.confirmFromPaymentIntent(paymentIntentId);
 
   if (result && 'error' in result) {
     const st =
-      result.error === 'SERVICE_UNAVAILABLE' ? httpStatus.SERVICE_UNAVAILABLE : httpStatus.BAD_REQUEST;
+      result.error === 'SERVICE_UNAVAILABLE'
+        ? httpStatus.SERVICE_UNAVAILABLE
+        : httpStatus.BAD_REQUEST;
     return res.status(st).send({ success: false, error: result.message });
   }
 

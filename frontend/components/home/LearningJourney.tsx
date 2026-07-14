@@ -57,9 +57,9 @@ export function LearningJourney() {
         >
           <h2
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0D0D0D] mb-5"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif", letterSpacing: "-0.02em" }}
+            style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}
           >
-            Learn to Drive with AutoPilot
+            Learn to Drive with Autopilot
           </h2>
           <p className="text-[#5B5B5B] text-sm sm:text-base leading-relaxed">
             With DVSA-approved instructors, modern vehicles, and clear step-by-step
@@ -110,7 +110,7 @@ export function LearningJourney() {
             <div className="relative w-full aspect-square rounded-[2rem] overflow-hidden">
               <Image
                 src="/homepage-section.png"
-                alt="Learn to drive with AutoPilot"
+                alt="Learn to drive with Autopilot"
                 fill
                 sizes="(min-width: 1024px) 50vw, 100vw"
                 className="object-contain"

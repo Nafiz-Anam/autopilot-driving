@@ -79,13 +79,15 @@ async function handleStripe(req: Request, res: Response): Promise<void> {
         if (!piId) break;
 
         // Booking refund path
-        const bookingRows = await prisma.$queryRawUnsafe<Array<{
-          id: string;
-          voucherCode: string | null;
-          couponCode: string | null;
-          discountAmount: string | null;
-          paymentStatus: string;
-        }>>(
+        const bookingRows = await prisma.$queryRawUnsafe<
+          Array<{
+            id: string;
+            voucherCode: string | null;
+            couponCode: string | null;
+            discountAmount: string | null;
+            paymentStatus: string;
+          }>
+        >(
           `SELECT id, "voucherCode", "couponCode", "discountAmount"::text, "paymentStatus"::text
            FROM "Booking" WHERE "stripePaymentId" = $1 LIMIT 1`,
           piId

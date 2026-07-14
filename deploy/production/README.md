@@ -1,6 +1,6 @@
 # Production Deployment Guide
 
-This directory contains the configuration and deployment scripts for the production AutoPilot Driving environment running on a standalone VPS at `2.24.128.160` with the `driving` user.
+This directory contains the configuration and deployment scripts for the production Autopilot Driving environment running on a standalone VPS at `2.24.128.160` with the `driving` user.
 
 ## Architecture
 

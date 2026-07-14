@@ -36,7 +36,7 @@ export default function TheoryTrainingPage() {
           <Lock className="w-12 h-12 text-brand-red mb-4 mx-auto" />
           <h2 className="text-2xl font-bold text-brand-black mb-2">Theory Training</h2>
           <p className="text-brand-muted text-sm mb-6 max-w-sm mx-auto">
-            Full interactive theory practice is included with your AutoPilot account. Sign in to track progress across all DVSA categories.
+            Full interactive theory practice is included with your Autopilot account. Sign in to track progress across all DVSA categories.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link

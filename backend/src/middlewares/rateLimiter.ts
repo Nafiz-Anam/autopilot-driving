@@ -22,7 +22,7 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: ipUa,
   handler: handler('Too many login attempts — please try again in 15 minutes', 15 * 60),
-  skip: (req) => req.path === '/health',
+  skip: req => req.path === '/health',
 });
 
 // ── Password reset ────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: ip,
   handler: handler('Too many requests — please slow down', 15 * 60),
-  skip: (req) => req.path === '/health' || req.path.startsWith('/docs'),
+  skip: req => req.path === '/health' || req.path.startsWith('/docs'),
 });
 
 // ── Payment endpoints ─────────────────────────────────────────────────────────

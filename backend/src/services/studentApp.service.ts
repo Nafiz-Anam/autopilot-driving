@@ -213,7 +213,7 @@ const getTheoryQuestions = async (limit = 10) => {
      LIMIT $1`,
     limit
   );
-  return rows.map((r) => ({
+  return rows.map(r => ({
     id: r.id as string,
     category: r.category as string,
     question: r.question as string,

@@ -89,7 +89,7 @@ const listForStudent = async (studentId: string) => {
     studentId
   );
 
-  const bookings = rows.map((b) => ({
+  const bookings = rows.map(b => ({
     id: b.id,
     reference: b.reference,
     lessonType: b.lessonType,
@@ -117,7 +117,7 @@ const listForStudent = async (studentId: string) => {
     },
   }));
 
-  const pending = await fetchPendingReschedules(bookings.map((b) => b.id));
+  const pending = await fetchPendingReschedules(bookings.map(b => b.id));
   for (const b of bookings) {
     const r = pending[b.id];
     if (r) {
@@ -174,7 +174,11 @@ const createForStudent = async (input: CreateBookingInput) => {
       return { pastDate: true as const };
     }
     if (input.instructorId) {
-      const available = await isWithinAvailability(input.instructorId, scheduled, input.durationMins);
+      const available = await isWithinAvailability(
+        input.instructorId,
+        scheduled,
+        input.durationMins
+      );
       if (!available) {
         return { outsideAvailability: true as const };
       }
@@ -265,7 +269,9 @@ const cancelForStudent = async (bookingId: string, studentId: string, reason: st
       `UPDATE "RescheduleRequest" SET status = 'CANCELLED', "updatedAt" = NOW() WHERE "bookingId" = $1 AND status = 'PENDING'`,
       bookingId
     );
-  } catch { /* RescheduleRequest table may not exist */ }
+  } catch {
+    /* RescheduleRequest table may not exist */
+  }
 
   // Issue full Stripe refund if cancelled more than 24h before lesson
   let refundResult: { refunded: boolean; stripeRefundId?: string } = { refunded: false };
@@ -297,18 +303,27 @@ const cancelForStudent = async (bookingId: string, studentId: string, reason: st
           bookingId,
         });
       }
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
   })();
 
   // Send cancellation emails (fire-and-forget)
   void (async () => {
     try {
-      const details = await prisma.$queryRawUnsafe<Array<{
-        reference: string;
-        studentName: string; studentEmail: string;
-        instructorName: string | null; instructorEmail: string | null;
-        lessonType: string; scheduledAt: Date; totalAmount: string; discountAmount: string | null;
-      }>>(
+      const details = await prisma.$queryRawUnsafe<
+        Array<{
+          reference: string;
+          studentName: string;
+          studentEmail: string;
+          instructorName: string | null;
+          instructorEmail: string | null;
+          lessonType: string;
+          scheduledAt: Date;
+          totalAmount: string;
+          discountAmount: string | null;
+        }>
+      >(
         `SELECT b.reference,
                 su.name AS "studentName", su.email AS "studentEmail",
                 iu.name AS "instructorName", iu.email AS "instructorEmail",
@@ -353,7 +368,9 @@ const cancelForStudent = async (bookingId: string, studentId: string, reason: st
           });
         }
       }
-    } catch { /* email failure must not break cancellation */ }
+    } catch {
+      /* email failure must not break cancellation */
+    }
   })();
 
   return {
@@ -361,7 +378,9 @@ const cancelForStudent = async (bookingId: string, studentId: string, reason: st
       id: bookingId,
       status: 'CANCELLED' as const,
       refund: refundResult,
-      noRefundReason: !eligibleForRefund ? 'Cancelled within 24 hours of lesson — no refund issued' : undefined,
+      noRefundReason: !eligibleForRefund
+        ? 'Cancelled within 24 hours of lesson — no refund issued'
+        : undefined,
     },
   };
 };
@@ -388,13 +407,8 @@ const createRescheduleRequest = async (
   });
 };
 
-const respondToRescheduleRequest = async (
-  requestId: string,
-  studentId: string
-) => {
-  const rows = await prisma.$queryRawUnsafe<
-    Array<{ bookingId: string; requestedByRole: string }>
-  >(
+const respondToRescheduleRequest = async (requestId: string, studentId: string) => {
+  const rows = await prisma.$queryRawUnsafe<Array<{ bookingId: string; requestedByRole: string }>>(
     `SELECT rr."bookingId", rr."requestedByRole"
      FROM "RescheduleRequest" rr
      INNER JOIN "Booking" b ON b.id = rr."bookingId"
@@ -511,7 +525,12 @@ const getAvailability = async (
         const slotEnd = t + durationMins;
         const conflict = blockers.some(b => overlaps(t, slotEnd, b.start, b.end));
         if (!conflict) {
-          const slotAt = cursor.clone().hour(Math.floor(t / 60)).minute(t % 60).second(0).valueOf();
+          const slotAt = cursor
+            .clone()
+            .hour(Math.floor(t / 60))
+            .minute(t % 60)
+            .second(0)
+            .valueOf();
           if (slotAt > nowMs) {
             slots.push(formatHHMM(t));
           }

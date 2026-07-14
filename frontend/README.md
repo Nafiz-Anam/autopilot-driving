@@ -1,4 +1,4 @@
-# AutoPilot Driving School — Web Application
+# Autopilot Driving School — Web Application
 
 > **"Learn to Drive with Autopilot"** — UK's premier driving school platform
 
@@ -42,16 +42,7 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
-### 4. Add fonts
-Place font files in `public/fonts/`:
-- `Moderniz.woff2`
-- `Metropolis-Regular.woff2`
-- `Metropolis-Medium.woff2`
-- `Metropolis-Bold.woff2`
-
-Fallback fonts (DM Sans, Barlow) load from Google Fonts automatically.
-
-### 5. Run development server
+### 4. Run development server
 ```bash
 pnpm dev
 ```

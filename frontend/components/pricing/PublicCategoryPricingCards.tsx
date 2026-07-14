@@ -8,7 +8,7 @@ import type { PublicPricingPackage } from "@/lib/lesson-pricing-public";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 
-const HEADING = { fontFamily: "'Moderniz','Barlow',sans-serif" } as const;
+const HEADING = { fontFamily: "var(--font-display)" } as const;
 
 /**
  * Renders admin-managed packages for one lesson category (used on learn-to-drive pages).
@@ -30,7 +30,9 @@ export function PublicCategoryPricingCards({
     fetch(backendApiUrl(`/pricing/packages?lessonType=${lessonType}`), { cache: "no-store" })
       .then((r) => r.json())
       .then((d: { success?: boolean; data?: PublicPricingPackage[] }) => {
-        if (!cancelled && d.success && d.data) setPkgs(d.data);
+        if (!cancelled && d.success && d.data) {
+          setPkgs([...d.data].sort((a, b) => a.price - b.price));
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

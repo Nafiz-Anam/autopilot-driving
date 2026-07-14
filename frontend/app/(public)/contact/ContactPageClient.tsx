@@ -55,7 +55,7 @@ export default function ContactPageClient() {
           <div className="space-y-6">
             <h2
               className="text-2xl font-bold text-brand-black mb-6"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Contact Details
             </h2>
@@ -127,7 +127,7 @@ export default function ContactPageClient() {
           <div>
             <h2
               className="text-2xl font-bold text-brand-black mb-6"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               We Can Call You
             </h2>

@@ -17,7 +17,7 @@ function generateBookingIcs(params: {
   totalAmount: number;
 }): string {
   const cal = ical({
-    name: 'AutoPilot Driving School',
+    name: 'Autopilot Driving School',
     method: ICalCalendarMethod.REQUEST,
   });
 
@@ -29,7 +29,7 @@ function generateBookingIcs(params: {
     end,
     summary: `Driving Lesson — ${formatLessonType(params.lessonType)}`,
     description: `Booking reference: ${params.reference}\nInstructor: ${params.instructorName}\nDuration: ${params.durationMins / 60}hr\nAmount: £${params.totalAmount.toFixed(2)}`,
-    organizer: { name: 'AutoPilot Driving School', email: 'noreply@autopilotdrivingschool.co.uk' },
+    organizer: { name: 'Autopilot Driving School', email: 'noreply@autopilotdrivingschool.co.uk' },
     attendees: [{ name: params.studentName, email: params.studentEmail, rsvp: false }],
   });
 
@@ -74,7 +74,7 @@ async function generateInstructorFeedIcs(instructorId: string): Promise<string |
     instructorId
   );
 
-  const cal = ical({ name: 'AutoPilot — My Lessons' });
+  const cal = ical({ name: 'Autopilot — My Lessons' });
 
   for (const b of bookings) {
     const start = new Date(b.scheduledAt);
@@ -138,7 +138,7 @@ async function generateStudentFeedIcs(studentId: string): Promise<string | null>
     studentId
   );
 
-  const cal = ical({ name: 'AutoPilot — My Driving Lessons' });
+  const cal = ical({ name: 'Autopilot — My Driving Lessons' });
 
   for (const b of bookings) {
     const start = new Date(b.scheduledAt);
@@ -148,7 +148,7 @@ async function generateStudentFeedIcs(studentId: string): Promise<string | null>
       start,
       end,
       summary: `Driving Lesson — ${formatLessonType(b.lessonType)}`,
-      description: `Booking ref: ${b.reference}\nInstructor: ${b.instructorName ?? 'AutoPilot Instructor'}\nDuration: ${b.durationMins / 60}hr`,
+      description: `Booking ref: ${b.reference}\nInstructor: ${b.instructorName ?? 'Autopilot Instructor'}\nDuration: ${b.durationMins / 60}hr`,
     });
   }
 

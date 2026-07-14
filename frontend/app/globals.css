@@ -6,8 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Fonts loaded via next/font/google in app/layout.tsx:
-   --font-barlow  → Barlow 700/800 (headings, replaces Moderniz)
-   --font-dm-sans → DM Sans 400/500/700 (body, replaces Metropolis) */
+   --font-barlow  → Barlow 700/800 (headings)
+   --font-dm-sans → DM Sans 400/500/700 (body) */
 
 /* Brand CSS Variables */
 :root {

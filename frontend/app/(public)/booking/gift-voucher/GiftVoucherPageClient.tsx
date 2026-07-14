@@ -78,7 +78,7 @@ function VoucherPreview({
             </div>
             <span
               className="text-white font-extrabold text-sm tracking-wider"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               AUTOPILOT
             </span>
@@ -93,7 +93,7 @@ function VoucherPreview({
           <p className="text-white/50 text-xs uppercase tracking-widest mb-1">Gift Value</p>
           <p
             className="text-5xl font-extrabold text-white leading-none"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             £{amount || 0}
           </p>
@@ -149,7 +149,7 @@ function SuccessState({ code }: { code: string }) {
         </motion.div>
         <h2
           className="text-3xl font-extrabold text-brand-black mb-2"
-          style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           Payment complete
         </h2>
@@ -163,7 +163,7 @@ function SuccessState({ code }: { code: string }) {
           <div className="flex items-center justify-center gap-3">
             <p
               className="text-3xl font-extrabold text-brand-red tracking-[0.2em]"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               {code}
             </p>
@@ -489,7 +489,7 @@ export default function GiftVoucherPageClient() {
           </div>
           <h1
             className="text-4xl font-extrabold text-brand-black mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Give the Gift of Driving
           </h1>

@@ -92,7 +92,10 @@ export async function isWithinAvailability(
   );
   const windows = mergeWindows(
     templateRows
-      .map(r => ({ start: parseHHMM(r.startTime.slice(0, 5)), end: parseHHMM(r.endTime.slice(0, 5)) }))
+      .map(r => ({
+        start: parseHHMM(r.startTime.slice(0, 5)),
+        end: parseHHMM(r.endTime.slice(0, 5)),
+      }))
       .filter((w): w is DayWindow => w.start !== null && w.end !== null && w.end > w.start)
   );
   return windows.some(w => startMins >= w.start && endMins <= w.end);

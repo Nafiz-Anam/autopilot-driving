@@ -14,13 +14,13 @@ Work through these before going live.
 2. Go to the mailbox settings for `noreply@autopilotdrivingschool.co.uk`
 3. Enable SMTP AUTH for that mailbox:
    - Admin centre → Users → Active users → select the mailbox → Mail → Manage email apps → tick **Authenticated SMTP**
-4. In the AutoPilot admin panel → Settings → Email, enter:
+4. In the Autopilot admin panel → Settings → Email, enter:
    - SMTP Host: `smtp.office365.com`
    - SMTP Port: `587`
    - SMTP Username: `noreply@autopilotdrivingschool.co.uk`
    - SMTP Password: the mailbox password
    - From Address: `noreply@autopilotdrivingschool.co.uk`
-   - Admin Email: `contact@autopilotdrivingschool.co.uk` (receives admin alerts)
+   - Admin Email: `info@autopilotdrivingschool.co.uk` (receives admin alerts)
 
 ---
 
@@ -39,7 +39,7 @@ Work through these before going live.
      - `payment_intent.payment_failed`
      - `charge.refunded`
 5. Copy the **Webhook Signing Secret** (`whsec_…`)
-6. In AutoPilot admin panel → Settings → Payments, enter all three keys
+6. In Autopilot admin panel → Settings → Payments, enter all three keys
 
 ---
 
@@ -56,8 +56,8 @@ Work through these before going live.
    - Authorised redirect URI: `https://api.autopilotdrivingschool.co.uk/v1/integrations/google-calendar/callback`
 5. Copy the **Client ID** and **Client Secret**
 6. Configure the OAuth consent screen:
-   - App name: AutoPilot Driving School
-   - Support email: contact@autopilotdrivingschool.co.uk
+   - App name: Autopilot Driving School
+   - Support email: info@autopilotdrivingschool.co.uk
    - Scopes: `https://www.googleapis.com/auth/calendar.events`
    - Add your domain to authorised domains
 7. Add these to your production server environment variables:
@@ -104,7 +104,7 @@ Also add these to **GitHub → Settings → Secrets and Variables → Actions** 
 2. Create an API key and restrict it to Places API only
 3. Find your Google Place ID:
    - Go to [developers.google.com/maps/documentation/places/web-service/place-id](https://developers.google.com/maps/documentation/places/web-service/place-id)
-   - Search for "AutoPilot Driving School"
+   - Search for "Autopilot Driving School"
    - Copy the Place ID
 4. Add to production env:
    ```

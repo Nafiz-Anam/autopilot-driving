@@ -90,7 +90,7 @@ const guideSections = [
     id: "downside",
     title: "Sounds like a no-brainer. What's the downside?",
     body: [
-      "Automatics tend to be more expensive to buy and maintain — and as a result, automatic lessons are often a touch pricier than manual lessons elsewhere (at AutoPilot they're the same price).",
+      "Automatics tend to be more expensive to buy and maintain — and as a result, automatic lessons are often a touch pricier than manual lessons elsewhere (at Autopilot they're the same price).",
       "There's another, bigger downside. If you pass your test in an automatic, that's all you'll be qualified to drive. Your licence will not cover manual cars unless you take a separate test later.",
       "This can be limiting — especially if you ever need to borrow a car, hire one abroad, or take a job that includes driving. Manuals are still the more common rental and company car, so think carefully before committing.",
     ],
@@ -102,7 +102,7 @@ const courseCards = [
     icon: Zap,
     title: "Intensive Courses",
     description:
-      "AutoPilot has been teaching learners across the UK for over a decade. Our instructors create a personalised lesson plan designed to give you the skills you need to pass your practical test, while becoming a safe, confident motorist.",
+      "Autopilot has been teaching learners across the UK for over a decade. Our instructors create a personalised lesson plan designed to give you the skills you need to pass your practical test, while becoming a safe, confident motorist.",
     href: "/learn-to-drive/intensive",
   },
   {
@@ -192,7 +192,7 @@ function Quiz() {
                 </span>
                 <span className="text-xs text-brand-muted">of {quizQuestions.length}</span>
               </div>
-              <h3 className="text-xl font-bold text-brand-black mb-6" style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}>
+              <h3 className="text-xl font-bold text-brand-black mb-6" style={{ fontFamily: "var(--font-display)" }}>
                 {quizQuestions[current].text}
               </h3>
               <div className="flex gap-4">
@@ -235,7 +235,7 @@ function Quiz() {
               <p className="text-sm text-brand-muted uppercase tracking-wider mb-1">Our Recommendation</p>
               <h3
                 className="text-3xl font-bold text-brand-black"
-                style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+                style={{ fontFamily: "var(--font-display)" }}
               >
                 {recommendation!.type} Lessons
               </h3>
@@ -303,7 +303,7 @@ export default function AutomaticManualPage() {
           <aside className="lg:sticky lg:top-24 self-start">
             <h2
               className="text-3xl lg:text-4xl font-extrabold text-brand-black leading-tight"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Automatic lessons
             </h2>
@@ -330,11 +330,11 @@ export default function AutomaticManualPage() {
               fundamentals.
             </p>
             <p>
-              With AutoPilot automatic driving lessons, there&apos;s no clutch or gear changes to manage. Many learners
+              With Autopilot automatic driving lessons, there&apos;s no clutch or gear changes to manage. Many learners
               find this helps them focus on the road, building safe driving skills faster and with less stress.
             </p>
             <p>
-              Our DVSA-approved AutoPilot driving instructors offer automatic lessons tailored to your experience —
+              Our DVSA-approved Autopilot driving instructors offer automatic lessons tailored to your experience —
               helping you learn at a pace that suits you, whether you&apos;re starting from scratch or rebuilding
               confidence.
             </p>
@@ -342,7 +342,7 @@ export default function AutomaticManualPage() {
             <h3
               id="guide"
               className="pt-6 text-2xl font-bold text-brand-black"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Guide to learning in an automatic
             </h3>
@@ -361,7 +361,7 @@ export default function AutomaticManualPage() {
                 <h3
                   id={section.id}
                   className="pt-6 text-2xl font-bold text-brand-black"
-                  style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {section.title}
                 </h3>
@@ -393,12 +393,12 @@ export default function AutomaticManualPage() {
             <h3
               id="instructors"
               className="pt-6 text-2xl font-bold text-brand-black"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Automatic driving instructors near you
             </h3>
             <p>
-              Our expert AutoPilot instructors deliver automatic driving lessons across the country and create a
+              Our expert Autopilot instructors deliver automatic driving lessons across the country and create a
               personalised learning plan tailored to your needs. Many learners find that two hours of tuition a week
               helps them build confidence and make steady progress — but it&apos;s entirely your choice, and your
               instructor will adapt lessons to suit you.
@@ -419,7 +419,7 @@ export default function AutomaticManualPage() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Manual vs Automatic — Side by Side
             </h2>
@@ -462,11 +462,11 @@ export default function AutomaticManualPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Other Driving Courses
             </h2>
-            <p className="text-brand-muted">Explore the full range of AutoPilot courses for every stage of your journey.</p>
+            <p className="text-brand-muted">Explore the full range of Autopilot courses for every stage of your journey.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {courseCards.map((c, i) => {
@@ -505,7 +505,7 @@ export default function AutomaticManualPage() {
         <div className="max-w-4xl mx-auto">
           <h2
             className="text-3xl font-bold text-brand-black mb-2 text-center"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Current lesson prices
           </h2>
@@ -526,7 +526,7 @@ export default function AutomaticManualPage() {
           <div className="text-center mb-10">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Not Sure? Take Our Quick Quiz
             </h2>
@@ -567,12 +567,12 @@ export default function AutomaticManualPage() {
         >
           <h2
             className="text-2xl sm:text-3xl font-bold mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Book your automatic driving lesson online
           </h2>
           <p className="opacity-90 mb-6 max-w-xl mx-auto text-sm sm:text-base">
-            Check availability and book your first automatic lesson with AutoPilot — no commitment needed.
+            Check availability and book your first automatic lesson with Autopilot — no commitment needed.
           </p>
           <Link
             href="/booking?lessonType=AUTOMATIC"

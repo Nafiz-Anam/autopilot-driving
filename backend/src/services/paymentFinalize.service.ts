@@ -93,29 +93,35 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
       });
 
       // Auto-add to Google Calendar for BOTH student + instructor (silent no-op if disconnected)
-      googleCalendarService.broadcastBookingCreated({
-        studentId: row.studentId,
-        instructorUserId: row.instructorUserId,
-        bookingId,
-        reference: row.reference,
-        lessonType: row.lessonType,
-        studentName: row.studentName ?? 'Student',
-        instructorName: row.instructorName ?? 'AutoPilot Instructor',
-        scheduledAt: new Date(row.scheduledAt),
-        durationMins: row.durationMins,
-      }).catch(() => { /* non-critical */ });
+      googleCalendarService
+        .broadcastBookingCreated({
+          studentId: row.studentId,
+          instructorUserId: row.instructorUserId,
+          bookingId,
+          reference: row.reference,
+          lessonType: row.lessonType,
+          studentName: row.studentName ?? 'Student',
+          instructorName: row.instructorName ?? 'Autopilot Instructor',
+          scheduledAt: new Date(row.scheduledAt),
+          durationMins: row.durationMins,
+        })
+        .catch(() => {
+          /* non-critical */
+        });
 
       // Notify instructor of new booking (fire-and-forget)
       if (row.instructorEmail) {
-        emailService.sendInstructorNewBookingEmail({
-          to: row.instructorEmail,
-          instructorName: row.instructorName ?? 'Instructor',
-          studentName: row.studentName ?? 'Student',
-          reference: row.reference,
-          lessonType: row.lessonType,
-          scheduledAt: new Date(row.scheduledAt),
-          durationMins: row.durationMins,
-        }).catch(() => {});
+        emailService
+          .sendInstructorNewBookingEmail({
+            to: row.instructorEmail,
+            instructorName: row.instructorName ?? 'Instructor',
+            studentName: row.studentName ?? 'Student',
+            reference: row.reference,
+            lessonType: row.lessonType,
+            scheduledAt: new Date(row.scheduledAt),
+            durationMins: row.durationMins,
+          })
+          .catch(() => {});
       }
     }
   } catch {
@@ -192,7 +198,9 @@ async function finalizeGiftVoucherPurchaseFromPayment(
         amount: amountGbp,
         message: msg,
       });
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
   })();
 
   return { code: md.voucherCode };
@@ -212,10 +220,16 @@ async function markBookingUnpaidFromFailed(pi: Stripe.PaymentIntent): Promise<vo
   // Notify student of payment failure (fire-and-forget)
   void (async () => {
     try {
-      const rows = await prisma.$queryRawUnsafe<Array<{
-        reference: string; lessonType: string; scheduledAt: Date;
-        totalAmount: string; studentName: string | null; studentEmail: string;
-      }>>(
+      const rows = await prisma.$queryRawUnsafe<
+        Array<{
+          reference: string;
+          lessonType: string;
+          scheduledAt: Date;
+          totalAmount: string;
+          studentName: string | null;
+          studentEmail: string;
+        }>
+      >(
         `SELECT b.reference, b."lessonType", b."scheduledAt", b."totalAmount"::text,
                 su.name AS "studentName", su.email AS "studentEmail"
          FROM "Booking" b INNER JOIN users su ON su.id = b."studentId"
@@ -233,12 +247,15 @@ async function markBookingUnpaidFromFailed(pi: Stripe.PaymentIntent): Promise<vo
           amount: Number(row.totalAmount),
         });
       }
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
   })();
 }
 
 async function restorePromoFromMetadata(metadata: Stripe.Metadata): Promise<void> {
-  const vCode = metadata.voucherCode && metadata.voucherCode.length > 0 ? metadata.voucherCode : null;
+  const vCode =
+    metadata.voucherCode && metadata.voucherCode.length > 0 ? metadata.voucherCode : null;
   const cCode = metadata.couponCode && metadata.couponCode.length > 0 ? metadata.couponCode : null;
   const discount = metadata.discountAmount ? parseFloat(metadata.discountAmount) : 0;
 

@@ -62,7 +62,7 @@ export function CTABanner() {
           <h2
             className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-5 leading-tight"
             style={{
-              fontFamily: "'Moderniz', 'Barlow', sans-serif",
+              fontFamily: "var(--font-display)",
               letterSpacing: "-0.02em",
               textShadow: "0 2px 20px rgba(0,0,0,0.2)",
             }}

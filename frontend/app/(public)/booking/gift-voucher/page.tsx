@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import GiftVoucherPageClient from "./GiftVoucherPageClient";
 
 export const metadata: Metadata = {
-  title: "Gift Vouchers | AutoPilot",
+  title: "Gift Vouchers | Autopilot",
   description: "Purchase a driving lesson gift voucher — secure payment with Stripe.",
 };
 

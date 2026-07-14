@@ -97,7 +97,7 @@ export default function BookingPageClient() {
         <div className="max-w-4xl mx-auto">
           <h1
             className="text-2xl font-extrabold text-brand-black mb-4"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Book a Lesson
           </h1>

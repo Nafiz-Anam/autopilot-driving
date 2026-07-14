@@ -41,7 +41,7 @@ export function LegalPage({ badge, title, lastUpdated, intro, sections }: LegalP
           </p>
           <h1
             className="text-4xl sm:text-5xl font-bold text-white mb-4 leading-tight"
-            style={{ fontFamily: "'Moderniz', 'Barlow', sans-serif", letterSpacing: "-0.02em" }}
+            style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em" }}
           >
             {title}
           </h1>
@@ -71,10 +71,10 @@ export function LegalPage({ badge, title, lastUpdated, intro, sections }: LegalP
             <p>
               If you have any questions about this page, please contact us at{" "}
               <a
-                href="mailto:contact@autopilotdrivingschool.co.uk"
+                href="mailto:info@autopilotdrivingschool.co.uk"
                 className="text-[#E8200A] hover:underline"
               >
-                contact@autopilotdrivingschool.co.uk
+                info@autopilotdrivingschool.co.uk
               </a>{" "}
               or call{" "}
               <a href="tel:07450556963" className="text-[#E8200A] hover:underline">

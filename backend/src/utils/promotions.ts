@@ -51,10 +51,7 @@ export function validateCouponForOrder(
     return { ok: false, reason: 'This coupon has expired' };
   }
 
-  if (
-    coupon.maxRedemptions != null &&
-    coupon.redemptionCount >= coupon.maxRedemptions
-  ) {
+  if (coupon.maxRedemptions != null && coupon.redemptionCount >= coupon.maxRedemptions) {
     return { ok: false, reason: 'This coupon has reached its usage limit' };
   }
 

@@ -37,7 +37,7 @@ const FALLBACK_TESTIMONIALS: CardProps[] = [
   },
   {
     quote:
-      "I was nervous about driving but my instructor from AutoPilot completely put me at ease. Couldn't recommend more highly.",
+      "I was nervous about driving but my instructor from Autopilot completely put me at ease. Couldn't recommend more highly.",
     name: "James O'Connor",
     passed: "January 2025",
     initials: "JO",
@@ -53,7 +53,7 @@ const FALLBACK_TESTIMONIALS: CardProps[] = [
   },
   {
     quote:
-      "As someone who had failed twice before, AutoPilot gave me the confidence I needed. Passed with only 2 minors!",
+      "As someone who had failed twice before, Autopilot gave me the confidence I needed. Passed with only 2 minors!",
     name: "Daniel Thompson",
     passed: "April 2025",
     initials: "DT",
@@ -77,7 +77,7 @@ const FALLBACK_TESTIMONIALS: CardProps[] = [
   },
   {
     quote:
-      "Booked online in 2 minutes, got a brilliant instructor, passed first time. AutoPilot makes the whole process effortless.",
+      "Booked online in 2 minutes, got a brilliant instructor, passed first time. Autopilot makes the whole process effortless.",
     name: "Leila Hassan",
     passed: "April 2025",
     initials: "LH",
@@ -234,7 +234,7 @@ export function Testimonials() {
           <h2
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-black"
             style={{
-              fontFamily: "'Moderniz', 'Barlow', sans-serif",
+              fontFamily: "var(--font-display)",
               letterSpacing: "-0.02em",
             }}
           >

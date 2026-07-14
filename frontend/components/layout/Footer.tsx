@@ -135,7 +135,7 @@ export function Footer() {
       <div className="border-t border-[#1A1A1A]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[#6B6B6B] text-xs">
-            © {currentYear} AutoPilot Driving School. All rights reserved. Developed by{" "}
+            © {currentYear} Autopilot Driving School. All rights reserved. Developed by{" "}
             <a
               href="https://agiloit.com"
               target="_blank"

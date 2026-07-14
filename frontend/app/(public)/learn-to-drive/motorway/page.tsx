@@ -27,7 +27,7 @@ const audiences = [
     icon: ShieldCheck,
     title: "Newly Qualified",
     description:
-      "Just passed your test but never driven on a motorway? Build confidence at speed with structured guidance from an AutoPilot instructor.",
+      "Just passed your test but never driven on a motorway? Build confidence at speed with structured guidance from an Autopilot instructor.",
   },
   {
     icon: Gauge,
@@ -52,15 +52,15 @@ const articleSections = [
     title: "Build confidence driving on the motorway",
     body: [
       "Driving on the motorway is an important skill for many UK drivers. It can feel daunting at first, particularly if you're new to driving or haven't used motorways before.",
-      "Motorway lessons with an AutoPilot instructor can help you become familiar with motorway driving in a calm, structured way while building confidence on faster roads.",
+      "Motorway lessons with an Autopilot instructor can help you become familiar with motorway driving in a calm, structured way while building confidence on faster roads.",
     ],
   },
   {
     id: "instructors",
     title: "Instructors to help you gain motorway experience",
     body: [
-      "AutoPilot instructors can support you as you develop your motorway driving skills. With guidance and practice, you can learn how to handle motorway traffic safely and confidently.",
-      "Whether you're preparing for your first motorway journey or would simply like more experience, you can search for an AutoPilot instructor near you.",
+      "Autopilot instructors can support you as you develop your motorway driving skills. With guidance and practice, you can learn how to handle motorway traffic safely and confidently.",
+      "Whether you're preparing for your first motorway journey or would simply like more experience, you can search for an Autopilot instructor near you.",
     ],
   },
   {
@@ -135,7 +135,7 @@ const otherCourses = [
     icon: Zap,
     title: "Intensive Courses",
     description:
-      "AutoPilot has been teaching learners across the UK for years. Our instructors create a personalised lesson plan designed to give you the skills you need to pass your practical driving test.",
+      "Autopilot has been teaching learners across the UK for years. Our instructors create a personalised lesson plan designed to give you the skills you need to pass your practical driving test.",
     href: "/learn-to-drive/intensive-courses",
   },
   {
@@ -161,7 +161,7 @@ export default function MotorwayLessonsPage() {
   return (
     <>
       <PageHero
-        title="Learn with AutoPilot"
+        title="Learn with Autopilot"
         subtitle="Motorway driving lessons to build confidence and skill on faster roads."
         dark={false}
         eyebrow="Motorway Driving Lessons"
@@ -173,7 +173,7 @@ export default function MotorwayLessonsPage() {
           <aside className="lg:sticky lg:top-24 self-start">
             <h2
               className="text-3xl lg:text-4xl font-extrabold text-brand-black leading-tight"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Motorway Driving Lessons
             </h2>
@@ -196,7 +196,7 @@ export default function MotorwayLessonsPage() {
                 <h3
                   id={section.id}
                   className="text-2xl font-bold text-brand-black mb-3 scroll-mt-24"
-                  style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {section.title}
                 </h3>
@@ -241,7 +241,7 @@ export default function MotorwayLessonsPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Who Are Motorway Lessons For?
             </h2>
@@ -281,7 +281,7 @@ export default function MotorwayLessonsPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               What a Motorway Lesson Covers
             </h2>
@@ -310,7 +310,7 @@ export default function MotorwayLessonsPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2
             className="text-3xl font-bold text-brand-black mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Simple Pricing
           </h2>
@@ -327,11 +327,11 @@ export default function MotorwayLessonsPage() {
           <div className="text-center mb-12">
             <h2
               className="text-3xl font-bold text-brand-black mb-3"
-              style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Explore Other Courses
             </h2>
-            <p className="text-brand-muted">More ways to build your driving skills with AutoPilot.</p>
+            <p className="text-brand-muted">More ways to build your driving skills with Autopilot.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {otherCourses.map((c, i) => {
@@ -374,12 +374,12 @@ export default function MotorwayLessonsPage() {
         >
           <h2
             className="text-2xl sm:text-3xl font-bold mb-3"
-            style={{ fontFamily: "'Moderniz','Barlow',sans-serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Book motorway lessons today
           </h2>
           <p className="opacity-90 mb-6 max-w-xl mx-auto text-sm sm:text-base">
-            Check availability and book your first motorway lesson with AutoPilot today.
+            Check availability and book your first motorway lesson with Autopilot today.
           </p>
           <Link
             href="/booking?lessonType=MOTORWAY"

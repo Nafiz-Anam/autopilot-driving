@@ -23,7 +23,10 @@ async function ensureUniqueSlug(slug: string, excludeId?: string): Promise<strin
 }
 
 function estimateReadTime(html: string): number {
-  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const text = html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   const words = text.split(' ').filter(Boolean).length;
   return Math.max(1, Math.round(words / 220));
 }

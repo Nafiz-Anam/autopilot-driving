@@ -120,7 +120,11 @@ router.delete('/theory/:id', adminAppController.deleteTheoryById);
 router.get('/blogs', blogController.adminListBlogs);
 router.post('/blogs', blogController.adminCreateBlog);
 router.post('/blogs/upload-image', blogImageUpload.single('file'), blogController.adminUploadImage);
-router.post('/blogs/upload-cover', blogCoverUpload.single('file'), blogController.adminUploadCoverImage);
+router.post(
+  '/blogs/upload-cover',
+  blogCoverUpload.single('file'),
+  blogController.adminUploadCoverImage
+);
 router.get('/blogs/:id', blogController.adminGetBlog);
 router.put('/blogs/:id', blogController.adminUpdateBlog);
 router.delete('/blogs/:id', blogController.adminDeleteBlog);

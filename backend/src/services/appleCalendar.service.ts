@@ -33,7 +33,9 @@ function isValidUrl(url: string): boolean {
 async function fetchIcs(url: string): Promise<string> {
   const res = await fetch(url, {
     redirect: 'follow',
-    headers: { 'User-Agent': 'AutoPilot-DrivingSchool/1.0 (+https://autopilotdrivingschool.co.uk)' },
+    headers: {
+      'User-Agent': 'Autopilot-DrivingSchool/1.0 (+https://autopilotdrivingschool.co.uk)',
+    },
     signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) throw new Error(`ICS fetch failed: HTTP ${res.status}`);
@@ -138,9 +140,11 @@ export async function getIntegrationStatus(userId: string) {
  * Save an ICS URL for the user and kick an initial sync.
  * Returns { ok: false, reason } on validation / fetch failure.
  */
-export async function connect(userId: string, rawUrl: string, label?: string): Promise<
-  { ok: true } | { ok: false; reason: string }
-> {
+export async function connect(
+  userId: string,
+  rawUrl: string,
+  label?: string
+): Promise<{ ok: true } | { ok: false; reason: string }> {
   const url = normalizeUrl(rawUrl);
   if (!isValidUrl(url)) return { ok: false, reason: 'Invalid URL' };
 
@@ -191,7 +195,9 @@ export async function disconnect(userId: string): Promise<void> {
  * Only instructors get busy blocks written; students get their URL stored but
  * blocks aren't ingested (no use case yet).
  */
-export async function syncOne(userId: string): Promise<{ inserted: number; removed: number } | null> {
+export async function syncOne(
+  userId: string
+): Promise<{ inserted: number; removed: number } | null> {
   const url = await getStoredUrl(userId);
   if (!url) return null;
 

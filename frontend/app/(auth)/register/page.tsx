@@ -60,7 +60,7 @@ export default function RegisterPage() {
             <AutopilotLogo />
           </div>
           <h1 className="text-2xl font-bold text-brand-black">Create your account</h1>
-          <p className="text-brand-muted text-sm mt-1">Join thousands of AutoPilot students</p>
+          <p className="text-brand-muted text-sm mt-1">Join thousands of Autopilot students</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-8">

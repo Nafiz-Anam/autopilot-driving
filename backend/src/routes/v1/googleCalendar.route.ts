@@ -23,7 +23,13 @@ function bridgeFromQuery(req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
-router.get('/connect', bridgeFromQuery, nextAuthBridge(), loadDrivingSchoolUser(), googleCalendarController.connect);
+router.get(
+  '/connect',
+  bridgeFromQuery,
+  nextAuthBridge(),
+  loadDrivingSchoolUser(),
+  googleCalendarController.connect
+);
 
 router.use(nextAuthBridge(), loadDrivingSchoolUser());
 router.get('/status', googleCalendarController.status);

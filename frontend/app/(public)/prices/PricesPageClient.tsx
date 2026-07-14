@@ -41,7 +41,7 @@ const usps = [
 
 /* ─── Helpers ───────────────────────────────────────────── */
 
-const HEADING = { fontFamily: "'Moderniz','Barlow',sans-serif" };
+const HEADING = { fontFamily: "var(--font-display)" };
 
 function SectionTitle({
   children,
@@ -716,11 +716,12 @@ export default function PricesPageClient() {
     ]).finally(() => setLoading(false));
   }, []);
 
-  const byLt = (lt: LessonType) => cats.find((c) => c.lessonType === lt)?.packages ?? [];
+  const byLt = (lt: LessonType) =>
+    [...(cats.find((c) => c.lessonType === lt)?.packages ?? [])].sort((a, b) => a.price - b.price);
 
   const manual = byLt("MANUAL");
   const automatic = byLt("AUTOMATIC");
-  const intensive = [...byLt("INTENSIVE")].sort((a, b) => a.price - b.price);
+  const intensive = byLt("INTENSIVE");
   const refresher = byLt("REFRESHER");
   const passPlus = byLt("PASS_PLUS");
   const theory = byLt("THEORY");
