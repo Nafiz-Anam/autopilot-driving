@@ -31,7 +31,17 @@ export function PublicCategoryPricingCards({
       .then((r) => r.json())
       .then((d: { success?: boolean; data?: PublicPricingPackage[] }) => {
         if (!cancelled && d.success && d.data) {
-          setPkgs([...d.data].sort((a, b) => a.price - b.price));
+          // "total" variant headlines total price; "per-hour" headlines pricePerHour —
+          // sort by whichever number is actually shown big on the card.
+          const sorted =
+            variant === "total"
+              ? [...d.data].sort((a, b) => a.price - b.price)
+              : [...d.data].sort((a, b) => {
+                  const pphA = a.pricePerHour ?? (a.hours > 0 ? a.price / a.hours : a.price);
+                  const pphB = b.pricePerHour ?? (b.hours > 0 ? b.price / b.hours : b.price);
+                  return pphA - pphB;
+                });
+          setPkgs(sorted);
         }
       })
       .finally(() => {
@@ -40,7 +50,7 @@ export function PublicCategoryPricingCards({
     return () => {
       cancelled = true;
     };
-  }, [lessonType]);
+  }, [lessonType, variant]);
 
   if (loading) {
     return (

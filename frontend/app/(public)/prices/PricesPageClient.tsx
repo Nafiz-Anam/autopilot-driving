@@ -716,17 +716,24 @@ export default function PricesPageClient() {
     ]).finally(() => setLoading(false));
   }, []);
 
-  const byLt = (lt: LessonType) =>
-    [...(cats.find((c) => c.lessonType === lt)?.packages ?? [])].sort((a, b) => a.price - b.price);
+  const byLt = (lt: LessonType) => cats.find((c) => c.lessonType === lt)?.packages ?? [];
 
-  const manual = byLt("MANUAL");
-  const automatic = byLt("AUTOMATIC");
-  const intensive = byLt("INTENSIVE");
-  const refresher = byLt("REFRESHER");
-  const passPlus = byLt("PASS_PLUS");
-  const theory = byLt("THEORY");
-  const motorway = byLt("MOTORWAY");
-  const mockTest = byLt("MOCK_TEST");
+  // LessonCard headlines pricePerHour, so per-hour categories must sort by that
+  // (not total price) to actually read low-to-high on screen.
+  const pricePerHourOf = (p: PublicPricingPackage) =>
+    p.pricePerHour ?? (p.hours > 0 ? Math.round((p.price / p.hours) * 100) / 100 : p.price);
+  const byPricePerHour = (lt: LessonType) => [...byLt(lt)].sort((a, b) => pricePerHourOf(a) - pricePerHourOf(b));
+  // IntensiveSection headlines total price, so it sorts by price instead.
+  const byPrice = (lt: LessonType) => [...byLt(lt)].sort((a, b) => a.price - b.price);
+
+  const manual = byPricePerHour("MANUAL");
+  const automatic = byPricePerHour("AUTOMATIC");
+  const intensive = byPrice("INTENSIVE");
+  const refresher = byPricePerHour("REFRESHER");
+  const passPlus = byPricePerHour("PASS_PLUS");
+  const theory = byPricePerHour("THEORY");
+  const motorway = byPricePerHour("MOTORWAY");
+  const mockTest = byPricePerHour("MOCK_TEST");
 
   const singleManual = pkgBySlug(cats, "MANUAL", "single");
 
