@@ -5,7 +5,7 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "lib": ["ES2022"],
-    "types": ["node", "jest"],
+    "types": ["node"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -22,6 +22,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src", "scripts/*.ts", "tests"],
+  "include": ["src", "scripts/*.ts"],
   "exclude": ["node_modules", "build", "dist"]
 }

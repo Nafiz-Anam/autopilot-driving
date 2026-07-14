@@ -24,8 +24,4 @@ pnpm type-check
 echo "📚 Validating API documentation..."
 pnpm docs:validate
 
-# Run tests (uncomment if you want to run tests on pre-commit)
-# echo "🧪 Running tests..."
-# pnpm test
-
 echo "✅ All pre-commit checks passed!"
