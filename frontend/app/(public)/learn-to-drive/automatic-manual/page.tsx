@@ -103,7 +103,7 @@ const courseCards = [
     title: "Intensive Courses",
     description:
       "Autopilot has been teaching learners across the UK for over a decade. Our instructors create a personalised lesson plan designed to give you the skills you need to pass your practical test, while becoming a safe, confident motorist.",
-    href: "/learn-to-drive/intensive",
+    href: "/learn-to-drive/intensive-courses",
   },
   {
     icon: Award,
@@ -117,7 +117,7 @@ const courseCards = [
     title: "Refresher Driving Lessons",
     description:
       "We understand that motorists sometimes need refresher lessons — whether that's after an accident, before a motorway trip, or simply to rebuild confidence. Our instructors tailor every refresher session to your needs.",
-    href: "/learn-to-drive/refresher",
+    href: "/learn-to-drive/refresher-lessons",
   },
 ];
 

@@ -38,6 +38,46 @@ type AdminCat = {
   packages: AdminPkg[];
 };
 
+type BlockBookingBannerForm = {
+  heading: string;
+  subtitle: string;
+  manualPrice: string;
+  manualDescription: string;
+  automaticPrice: string;
+  automaticDescription: string;
+  savingsPrice: string;
+  savingsDescription: string;
+};
+
+const DEFAULT_BANNER_FORM: BlockBookingBannerForm = {
+  heading: "Reduce with Block Bookings",
+  subtitle: "Book in bulk — save per lesson.",
+  manualPrice: "38",
+  manualDescription: "Full driving hour, all top-up lessons and learning materials included.",
+  automaticPrice: "40",
+  automaticDescription: "Full driving hour, all top-up lessons and learning materials included.",
+  savingsPrice: "2",
+  savingsDescription: "off per hour (typical block)",
+};
+
+function bannerToForm(data: Record<string, unknown>): BlockBookingBannerForm {
+  return {
+    heading: typeof data.heading === "string" ? data.heading : DEFAULT_BANNER_FORM.heading,
+    subtitle: typeof data.subtitle === "string" ? data.subtitle : DEFAULT_BANNER_FORM.subtitle,
+    manualPrice: data.manualPrice != null ? String(data.manualPrice) : DEFAULT_BANNER_FORM.manualPrice,
+    manualDescription:
+      typeof data.manualDescription === "string" ? data.manualDescription : DEFAULT_BANNER_FORM.manualDescription,
+    automaticPrice: data.automaticPrice != null ? String(data.automaticPrice) : DEFAULT_BANNER_FORM.automaticPrice,
+    automaticDescription:
+      typeof data.automaticDescription === "string"
+        ? data.automaticDescription
+        : DEFAULT_BANNER_FORM.automaticDescription,
+    savingsPrice: data.savingsPrice != null ? String(data.savingsPrice) : DEFAULT_BANNER_FORM.savingsPrice,
+    savingsDescription:
+      typeof data.savingsDescription === "string" ? data.savingsDescription : DEFAULT_BANNER_FORM.savingsDescription,
+  };
+}
+
 async function fetchAdminCategories(): Promise<AdminCat[]> {
   const payload = (await adminApiFetch("/pricing/categories").then((r) => r.json())) as {
     data?: AdminCat[];
@@ -56,20 +96,24 @@ export default function AdminPricingPage() {
   const [tcSaving, setTcSaving] = useState(false);
   const [theoryPrice, setTheoryPrice] = useState<string>("9.99");
   const [theoryPriceSaving, setTheoryPriceSaving] = useState(false);
+  const [banner, setBanner] = useState<BlockBookingBannerForm>(DEFAULT_BANNER_FORM);
+  const [bannerSaving, setBannerSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [cats, tcRes, tpRes] = await Promise.all([
+        const [cats, tcRes, tpRes, bbRes] = await Promise.all([
           fetchAdminCategories(),
           adminApiFetch("/pricing/test-centres").then((r) => r.json()),
           adminApiFetch("/pricing/theory-price").then((r) => r.json()),
+          adminApiFetch("/pricing/block-booking-banner").then((r) => r.json()),
         ]);
         if (!cancelled) {
           setCategories(cats);
           setTestCentres(Array.isArray(tcRes?.data) ? tcRes.data : []);
           if (tpRes?.data?.price != null) setTheoryPrice(String(tpRes.data.price));
+          if (bbRes?.data) setBanner(bannerToForm(bbRes.data));
         }
       } catch {
         if (!cancelled) toast.error("Could not load pricing.");
@@ -83,14 +127,16 @@ export default function AdminPricingPage() {
   async function load() {
     setLoading(true);
     try {
-      const [cats, tcRes, tpRes] = await Promise.all([
+      const [cats, tcRes, tpRes, bbRes] = await Promise.all([
         fetchAdminCategories(),
         adminApiFetch("/pricing/test-centres").then((r) => r.json()),
         adminApiFetch("/pricing/theory-price").then((r) => r.json()),
+        adminApiFetch("/pricing/block-booking-banner").then((r) => r.json()),
       ]);
       setCategories(cats);
       setTestCentres(Array.isArray(tcRes?.data) ? tcRes.data : []);
       if (tpRes?.data?.price != null) setTheoryPrice(String(tpRes.data.price));
+      if (bbRes?.data) setBanner(bannerToForm(bbRes.data));
     } catch {
       toast.error("Could not load pricing.");
     } finally {
@@ -127,6 +173,31 @@ export default function AdminPricingPage() {
       toast.error("Could not save test centres.");
     } finally {
       setTcSaving(false);
+    }
+  }
+
+  async function saveBlockBookingBanner() {
+    setBannerSaving(true);
+    try {
+      await adminApiFetch("/pricing/block-booking-banner", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          heading: banner.heading,
+          subtitle: banner.subtitle,
+          manualPrice: parseFloat(banner.manualPrice) || 0,
+          manualDescription: banner.manualDescription,
+          automaticPrice: parseFloat(banner.automaticPrice) || 0,
+          automaticDescription: banner.automaticDescription,
+          savingsPrice: parseFloat(banner.savingsPrice) || 0,
+          savingsDescription: banner.savingsDescription,
+        }),
+      });
+      toast.success("Block Bookings banner saved.");
+    } catch {
+      toast.error("Could not save Block Bookings banner.");
+    } finally {
+      setBannerSaving(false);
     }
   }
 
@@ -417,6 +488,114 @@ export default function AdminPricingPage() {
               >
                 {tcSaving ? "Saving…" : "Save Test Day Fees"}
               </button>
+            </div>
+          </motion.section>
+
+          {/* ── Reduce with Block Bookings banner (public /prices page) ── */}
+          <motion.section
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-brand-border rounded-2xl overflow-hidden shadow-sm"
+          >
+            <div className="px-5 py-4 bg-brand-surface border-b border-brand-border">
+              <p className="text-xs font-semibold text-brand-muted uppercase tracking-wide">Prices Page</p>
+              <h2 className="text-lg font-bold text-brand-black">Reduce with Block Bookings</h2>
+              <p className="text-xs text-brand-muted mt-1">
+                Controls the dark banner near the bottom of <code className="bg-white px-1 rounded">/prices</code>.
+              </p>
+            </div>
+            <div className="p-5 space-y-5">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-brand-muted mb-1">Heading</label>
+                  <input
+                    value={banner.heading}
+                    onChange={(e) => setBanner((prev) => ({ ...prev, heading: e.target.value }))}
+                    className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-brand-muted mb-1">Subtitle</label>
+                  <input
+                    value={banner.subtitle}
+                    onChange={(e) => setBanner((prev) => ({ ...prev, subtitle: e.target.value }))}
+                    className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="border border-brand-border rounded-xl p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-brand-muted mb-3">Manual Lessons</p>
+                  <label className="block text-xs font-semibold text-brand-muted mb-1">Price / hour (£)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={banner.manualPrice}
+                    onChange={(e) => setBanner((prev) => ({ ...prev, manualPrice: e.target.value }))}
+                    className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm mb-3"
+                  />
+                  <label className="block text-xs font-semibold text-brand-muted mb-1">Description</label>
+                  <textarea
+                    value={banner.manualDescription}
+                    onChange={(e) => setBanner((prev) => ({ ...prev, manualDescription: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm resize-none"
+                  />
+                </div>
+
+                <div className="border border-brand-border rounded-xl p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-brand-muted mb-3">Automatic Lessons</p>
+                  <label className="block text-xs font-semibold text-brand-muted mb-1">Price / hour (£)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={banner.automaticPrice}
+                    onChange={(e) => setBanner((prev) => ({ ...prev, automaticPrice: e.target.value }))}
+                    className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm mb-3"
+                  />
+                  <label className="block text-xs font-semibold text-brand-muted mb-1">Description</label>
+                  <textarea
+                    value={banner.automaticDescription}
+                    onChange={(e) => setBanner((prev) => ({ ...prev, automaticDescription: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm resize-none"
+                  />
+                </div>
+
+                <div className="border border-brand-border rounded-xl p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-brand-muted mb-3">Savings</p>
+                  <label className="block text-xs font-semibold text-brand-muted mb-1">Amount off / hour (£)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={banner.savingsPrice}
+                    onChange={(e) => setBanner((prev) => ({ ...prev, savingsPrice: e.target.value }))}
+                    className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm mb-3"
+                  />
+                  <label className="block text-xs font-semibold text-brand-muted mb-1">Description</label>
+                  <textarea
+                    value={banner.savingsDescription}
+                    onChange={(e) => setBanner((prev) => ({ ...prev, savingsDescription: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-brand-border rounded-lg text-sm resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => void saveBlockBookingBanner()}
+                  disabled={bannerSaving}
+                  className="text-xs font-semibold px-4 py-2 bg-brand-red text-white rounded-lg hover:bg-brand-orange disabled:opacity-60"
+                >
+                  {bannerSaving ? "Saving…" : "Save Banner"}
+                </button>
+              </div>
             </div>
           </motion.section>
         </div>

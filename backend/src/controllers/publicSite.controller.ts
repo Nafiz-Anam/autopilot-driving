@@ -117,6 +117,15 @@ const getTestCentres = catchAsync(async (_req: Request, res: Response) => {
   }
 });
 
+const getBlockBookingBanner = catchAsync(async (_req: Request, res: Response) => {
+  try {
+    const data = await pricingService.getBlockBookingBanner();
+    return res.send({ success: true, data });
+  } catch (error) {
+    return handlePublicSiteError(res, error);
+  }
+});
+
 export default {
   getAreas,
   getInstructors,
@@ -127,4 +136,5 @@ export default {
   getGoogleReviews,
   getPricingCategories,
   getTestCentres,
+  getBlockBookingBanner,
 };

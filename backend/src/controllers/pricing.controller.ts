@@ -36,9 +36,15 @@ const getTheoryPrice = catchAsync(async (_req: Request, res: Response) => {
   res.status(httpStatus.OK).send({ success: true, data: { price } });
 });
 
+const getBlockBookingBanner = catchAsync(async (_req: Request, res: Response) => {
+  const data = await pricingService.getBlockBookingBanner();
+  res.status(httpStatus.OK).send({ success: true, data });
+});
+
 export default {
   getCategories,
   getPackages,
   getTestCentres,
   getTheoryPrice,
+  getBlockBookingBanner,
 };

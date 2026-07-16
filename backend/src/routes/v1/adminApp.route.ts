@@ -101,6 +101,9 @@ router.patch('/pricing/test-centres', adminAppController.patchTestCentres);
 router.get('/pricing/theory-price', adminAppController.getTheoryAccessPrice);
 router.patch('/pricing/theory-price', adminAppController.patchTheoryAccessPrice);
 
+router.get('/pricing/block-booking-banner', adminAppController.getBlockBookingBanner);
+router.patch('/pricing/block-booking-banner', adminAppController.patchBlockBookingBanner);
+
 router.get('/settings', adminAppController.getSettings);
 router.patch('/settings', adminAppController.patchSettings);
 router.post('/settings', adminAppController.postSettings);

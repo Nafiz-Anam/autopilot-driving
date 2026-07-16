@@ -700,6 +700,42 @@ const patchTheoryAccessPrice = catchAsync(async (req: Request, res: Response) =>
   return res.status(httpStatus.OK).send({ success: true });
 });
 
+const getBlockBookingBanner = catchAsync(async (_req: Request, res: Response) => {
+  const data = await adminAppService.getBlockBookingBanner();
+  return res.status(httpStatus.OK).send({ success: true, data });
+});
+
+const patchBlockBookingBanner = catchAsync(async (req: Request, res: Response) => {
+  const b = req.body ?? {};
+  const heading = typeof b.heading === 'string' ? b.heading.trim() : '';
+  const subtitle = typeof b.subtitle === 'string' ? b.subtitle.trim() : '';
+  const manualPrice = parseFloat(b.manualPrice);
+  const manualDescription = typeof b.manualDescription === 'string' ? b.manualDescription.trim() : '';
+  const automaticPrice = parseFloat(b.automaticPrice);
+  const automaticDescription = typeof b.automaticDescription === 'string' ? b.automaticDescription.trim() : '';
+  const savingsPrice = parseFloat(b.savingsPrice);
+  const savingsDescription = typeof b.savingsDescription === 'string' ? b.savingsDescription.trim() : '';
+
+  if (!heading || !subtitle) {
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'heading and subtitle required' });
+  }
+  if ([manualPrice, automaticPrice, savingsPrice].some((n) => isNaN(n) || n < 0)) {
+    return res.status(httpStatus.BAD_REQUEST).send({ error: 'valid prices required' });
+  }
+
+  await adminAppService.patchBlockBookingBanner({
+    heading,
+    subtitle,
+    manualPrice,
+    manualDescription,
+    automaticPrice,
+    automaticDescription,
+    savingsPrice,
+    savingsDescription,
+  });
+  return res.status(httpStatus.OK).send({ success: true });
+});
+
 export default {
   getStats,
   getBookings,
@@ -757,4 +793,6 @@ export default {
   patchTestCentres,
   getTheoryAccessPrice,
   patchTheoryAccessPrice,
+  getBlockBookingBanner,
+  patchBlockBookingBanner,
 };

@@ -33,7 +33,7 @@ export function CookieConsent() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-md z-[9999]"
+          className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:bottom-6 sm:-translate-x-1/2 sm:w-full sm:max-w-md z-[9999]"
         >
           <div className="bg-[#111] border border-white/10 rounded-2xl shadow-2xl p-5 relative">
             {/* Close */}

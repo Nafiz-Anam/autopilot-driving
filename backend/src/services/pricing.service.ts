@@ -201,6 +201,43 @@ const getTheoryPrice = async (): Promise<number> => {
   return isNaN(n) ? DEFAULT_THEORY_PRICE : n;
 };
 
+export interface BlockBookingBanner {
+  heading: string;
+  subtitle: string;
+  manualPrice: number;
+  manualDescription: string;
+  automaticPrice: number;
+  automaticDescription: string;
+  savingsPrice: number;
+  savingsDescription: string;
+}
+
+const BLOCK_BOOKING_BANNER_KEY = 'block_booking_banner';
+
+const DEFAULT_BLOCK_BOOKING_BANNER: BlockBookingBanner = {
+  heading: 'Reduce with Block Bookings',
+  subtitle: 'Book in bulk — save per lesson.',
+  manualPrice: 38,
+  manualDescription: 'Full driving hour, all top-up lessons and learning materials included.',
+  automaticPrice: 40,
+  automaticDescription: 'Full driving hour, all top-up lessons and learning materials included.',
+  savingsPrice: 2,
+  savingsDescription: 'off per hour (typical block)',
+};
+
+const getBlockBookingBanner = async (): Promise<BlockBookingBanner> => {
+  const rows = await prisma.$queryRawUnsafe<Array<{ value: string }>>(
+    `SELECT value FROM "Setting" WHERE key = $1 LIMIT 1`,
+    BLOCK_BOOKING_BANNER_KEY
+  );
+  if (!rows[0]?.value) return DEFAULT_BLOCK_BOOKING_BANNER;
+  try {
+    return { ...DEFAULT_BLOCK_BOOKING_BANNER, ...JSON.parse(rows[0].value) };
+  } catch {
+    return DEFAULT_BLOCK_BOOKING_BANNER;
+  }
+};
+
 export default {
   LESSON_TYPES,
   listActivePricingCategories,
@@ -208,4 +245,5 @@ export default {
   resolvePackageForBooking,
   getTestCentres,
   getTheoryPrice,
+  getBlockBookingBanner,
 };

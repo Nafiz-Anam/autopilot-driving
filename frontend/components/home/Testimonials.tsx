@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { motion, useInView } from "framer-motion";
 import { Star } from "lucide-react";
 // TODO: re-enable dynamic import once a valid Google Place ID is configured
@@ -26,64 +26,133 @@ interface CardProps {
 
 const ACCENT_COLORS = ["#E8200A", "#FF3A1A", "#FF5500"];
 
+// Real Google reviews for Autopilot Driving School — https://share.google/9f1lVMtQtUGcm9ea7
 const FALLBACK_TESTIMONIALS: CardProps[] = [
   {
     quote:
-      "Passed first time! My instructor was incredibly patient and professional. The booking system made everything so easy.",
-    name: "Sarah Mitchell",
-    passed: "March 2025",
-    initials: "SM",
+      "Shuhel conducted my mock test, so professional felt like the real thing. I actually failed my mock test the day before my test, with 4 majors but the feedback I was given helped me pass the real test the very next day!!! 100% recommend using if you have your test coming up!",
+    name: "Aanayah",
+    passed: "a month ago",
+    initials: "A",
     accent: "#E8200A",
   },
   {
     quote:
-      "I was nervous about driving but my instructor from Autopilot completely put me at ease. Couldn't recommend more highly.",
-    name: "James O'Connor",
-    passed: "January 2025",
-    initials: "JO",
+      "I had a great experience learning to drive with my instructor Shuhel. They were patient, calm, and explained everything clearly, which really helped build my confidence on the road. Lessons were well-structured and tailored to my pace, and he was always friendly and supportive! I passed with confidence and would highly recommend them to anyone looking for a reliable and encouraging driving instructor.",
+    name: "Sumaiya",
+    passed: "6 months ago",
+    initials: "S",
     accent: "#FF3A1A",
   },
   {
     quote:
-      "The intensive course was brilliant — passed my test in just 2 weeks. Great value for money too.",
-    name: "Priya Patel",
-    passed: "February 2025",
-    initials: "PP",
+      "I couldn't have asked for a better driving instructor. From my very first lesson, Suhel was patient and supportive. He always explained things clearly, helped build my confidence behind the wheel, and made every lesson enjoyable and productive. I would highly recommend Suhel. Thank you for all your help, guidance, and encouragement throughout my driving journey.",
+    name: "Shahbaz Hussain",
+    passed: "a month ago",
+    initials: "SH",
     accent: "#FF5500",
   },
   {
     quote:
-      "As someone who had failed twice before, Autopilot gave me the confidence I needed. Passed with only 2 minors!",
-    name: "Daniel Thompson",
-    passed: "April 2025",
-    initials: "DT",
+      "I took two mock driving tests before attending my final driving test. These mock tests helped me build confidence and identify areas where I needed improvement. Suhail carefully guided me through the test routes and provided one-to-one driving instruction, which greatly improved my confidence behind the wheel. Thank you, Suhail, for your outstanding service, guidance, and support.",
+    name: "Kishore Reddy Malireddy",
+    passed: "a month ago",
+    initials: "KR",
     accent: "#E8200A",
   },
   {
     quote:
-      "Excellent female instructor who made me feel completely comfortable. Passed first time after just 25 hours.",
-    name: "Aisha Rahman",
-    passed: "March 2025",
-    initials: "AR",
-    accent: "#FF5500",
-  },
-  {
-    quote:
-      "From zero driving experience to passing in 6 weeks. The structured lessons and progress tracking made all the difference.",
-    name: "Thomas Brennan",
-    passed: "May 2025",
-    initials: "TB",
+      "My driving instructor was honestly exceptional. Patient, calm, and always clear with explanations. Every lesson felt structured and focused, and he never made me feel stupid for getting things wrong. He built my confidence massively even when I had an instructor who messed up my sense of driving and taught me how to drive safely, not just pass a test. I couldn't have asked for better support. Highly recommend. Will be recommending!",
+    name: "Rahiba S",
+    passed: "a month ago",
+    initials: "RS",
     accent: "#FF3A1A",
   },
   {
     quote:
-      "Booked online in 2 minutes, got a brilliant instructor, passed first time. Autopilot makes the whole process effortless.",
-    name: "Leila Hassan",
-    passed: "April 2025",
-    initials: "LH",
-    accent: "#E8200A",
+      "I'm so grateful to have Shuhel bhai as my driving instructor. He is one of the most patient, hard working and motivating instructor. He lets you drive without worrying about his car and learn from your mistakes. Because of his constant support and guidance I was able to pass my driving test. I'll always be grateful for his hard work and support. I would highly recommend him to anyone looking for a reliable driving instructor.",
+    name: "Naima Choudhury",
+    passed: "6 months ago",
+    initials: "NC",
+    accent: "#FF5500",
+  },
+  {
+    quote:
+      "10/10 experience with Shuhel Bhai, honestly couldn't recommend him enough. He is so patient and teaches everything to such a high standard, definitely wouldn't have passed without him! He has made me into such a confident driver and has taught me everything that I need to know. Extremely happy that I had all my lessons with him and passed!",
+    name: "Tanjilla Khan",
+    passed: "7 months ago",
+    initials: "TK",
+    accent: "#FF3A1A",
   },
 ];
+
+const REVIEW_LINKS = [
+  {
+    provider: "Google Reviews",
+    href: "https://share.google/9f1lVMtQtUGcm9ea7",
+    logo: (
+      <svg width="22" height="22" viewBox="0 0 48 48" className="shrink-0">
+        <path
+          fill="#FFC107"
+          d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.3-.1-2.7-.4-3.5z"
+        />
+        <path
+          fill="#FF3D00"
+          d="M6.3 14.7l6.6 4.8C14.5 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.5 3 24 3c-7.5 0-14 4.1-17.7 10.2z"
+        />
+        <path
+          fill="#4CAF50"
+          d="M24 45c5.3 0 10.1-1.8 13.9-5l-6.4-5.4C29.3 36.7 26.8 37.5 24 37.5c-5.2 0-9.6-3.5-11.2-8.3l-6.5 5C9.9 40.9 16.4 45 24 45z"
+        />
+        <path
+          fill="#1976D2"
+          d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.4 5.4C39.9 37.1 43 31.4 43 24c0-1.3-.1-2.7-.4-3.5z"
+        />
+      </svg>
+    ),
+  },
+  {
+    provider: "Yell Reviews",
+    href: "https://www.yell.com/biz/autopilot-driving-school-ilford-10654688/",
+    logo: (
+      <div className="w-[22px] h-[22px] rounded-md bg-black flex items-center justify-center shrink-0">
+        <span className="text-[#FFE600] font-black text-[11px] leading-none">Y</span>
+      </div>
+    ),
+  },
+];
+
+function ReviewBadge({
+  provider,
+  href,
+  logo,
+}: {
+  provider: string;
+  href: string;
+  logo: ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 bg-white border border-brand-border rounded-2xl px-4 py-3 shadow-sm hover:shadow-md hover:border-brand-red/30 transition-all duration-200"
+    >
+      {logo}
+      <div>
+        <p className="text-xs font-bold text-brand-black leading-tight">{provider}</p>
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="text-xs font-semibold text-brand-black">5.0/5.0</span>
+          <div className="flex gap-0.5">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} size={10} className="fill-amber-400 text-amber-400" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </a>
+  );
+}
 
 function getInitials(name: string): string {
   return name
@@ -229,7 +298,7 @@ export function Testimonials() {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="flex flex-wrap items-end gap-4"
+          className="flex flex-wrap items-end justify-between gap-6"
         >
           <h2
             className="text-3xl sm:text-4xl lg:text-5xl font-bold text-brand-black"
@@ -240,6 +309,11 @@ export function Testimonials() {
           >
             What Our Students Say
           </h2>
+          <div className="flex flex-wrap gap-3">
+            {REVIEW_LINKS.map((r) => (
+              <ReviewBadge key={r.provider} provider={r.provider} href={r.href} logo={r.logo} />
+            ))}
+          </div>
         </motion.div>
       </div>
 

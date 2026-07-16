@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import Link from "next/link";
-import { Car, Zap, RefreshCw, User, Award, BookOpen } from "lucide-react";
+import { Car, Zap, RefreshCw, User, Award, BookOpen, Navigation, ClipboardCheck } from "lucide-react";
 import { PageHero } from "@/components/shared/PageHero";
 
 const services = [
@@ -42,6 +42,18 @@ const services = [
     name: "Theory Training",
     description: "Interactive theory practice with mock tests and hazard perception.",
     href: "/learn-to-drive/theory-training",
+  },
+  {
+    icon: Navigation,
+    name: "Motorway Lessons",
+    description: "Build confidence driving on high-speed roads.",
+    href: "/learn-to-drive/motorway",
+  },
+  {
+    icon: ClipboardCheck,
+    name: "Mock Test",
+    description: "Full test simulation with feedback to make sure you're ready.",
+    href: "/learn-to-drive/mock-test",
   },
 ];
 

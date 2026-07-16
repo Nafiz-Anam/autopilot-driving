@@ -438,7 +438,7 @@ export default function FemaleInstructorsPage() {
       </section>
 
       {/* Instructor Cards */}
-      <section className="py-16 bg-brand-surface px-4">
+      {/* <section className="py-16 bg-brand-surface px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <h2
@@ -450,10 +450,10 @@ export default function FemaleInstructorsPage() {
           </div>
           <InstructorCards />
         </div>
-      </section>
+      </section> */}
 
       {/* Trust Badges */}
-      <section className="py-10 bg-brand-black px-4">
+      {/* <section className="py-10 bg-brand-black px-4">
         <div className="max-w-3xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
             {trustBadges.map(({ icon: Icon, label }) => (
@@ -464,7 +464,7 @@ export default function FemaleInstructorsPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Request Form */}
       <section id="request" className="py-16 bg-white px-4 scroll-mt-24">

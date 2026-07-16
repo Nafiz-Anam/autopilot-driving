@@ -22,6 +22,28 @@ import {
 } from "@/components/ui/select";
 import { backendApiUrl } from "@/lib/backend-api";
 
+type BlockBookingBannerData = {
+  heading: string;
+  subtitle: string;
+  manualPrice: number;
+  manualDescription: string;
+  automaticPrice: number;
+  automaticDescription: string;
+  savingsPrice: number;
+  savingsDescription: string;
+};
+
+const DEFAULT_BLOCK_BOOKING_BANNER: BlockBookingBannerData = {
+  heading: "Reduce with Block Bookings",
+  subtitle: "Book in bulk — save per lesson.",
+  manualPrice: 38,
+  manualDescription: "Full driving hour, all top-up lessons and learning materials included.",
+  automaticPrice: 40,
+  automaticDescription: "Full driving hour, all top-up lessons and learning materials included.",
+  savingsPrice: 2,
+  savingsDescription: "off per hour (typical block)",
+};
+
 
 
 const usps = [
@@ -530,26 +552,15 @@ function AboutSection() {
   );
 }
 
-function BlockBookingBanner({
-  manualPph,
-  autoPph,
-  savingPerHour,
-}: {
-  manualPph: number | null;
-  autoPph: number | null;
-  savingPerHour: number | null;
-}) {
+function BlockBookingBanner({ banner }: { banner: BlockBookingBannerData }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
-  const m = manualPph ?? 38;
-  const a = autoPph ?? 40;
-  const s = savingPerHour ?? 2;
 
   return (
     <section className="py-16 lg:py-20 px-4 bg-brand-black">
       <div className="max-w-4xl mx-auto">
-        <SectionTitle light sub="Book in bulk — save per lesson.">
-          Reduce with Block Bookings
+        <SectionTitle light sub={banner.subtitle}>
+          {banner.heading}
         </SectionTitle>
         <div ref={ref} className="grid sm:grid-cols-3 gap-6">
           {/* Manual card */}
@@ -564,24 +575,11 @@ function BlockBookingBanner({
             </p>
             <div className="flex items-end gap-1 mb-3">
               <span className="text-4xl font-extrabold text-white" style={HEADING}>
-                £{m}
+                £{banner.manualPrice}
               </span>
               <span className="text-sm text-white/40 mb-1">/ hour</span>
             </div>
-            <ul className="space-y-1.5 text-sm text-white/60">
-              <li className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5 text-brand-red shrink-0" />
-                Full driving hour
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5 text-brand-red shrink-0" />
-                All top-up lessons
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5 text-brand-red shrink-0" />
-                Learning materials
-              </li>
-            </ul>
+            <p className="text-sm text-white/60 leading-relaxed">{banner.manualDescription}</p>
           </motion.div>
 
           {/* Automatic card */}
@@ -596,24 +594,11 @@ function BlockBookingBanner({
             </p>
             <div className="flex items-end gap-1 mb-3">
               <span className="text-4xl font-extrabold text-white" style={HEADING}>
-                £{a}
+                £{banner.automaticPrice}
               </span>
               <span className="text-sm text-white/40 mb-1">/ hour</span>
             </div>
-            <ul className="space-y-1.5 text-sm text-white/60">
-              <li className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5 text-brand-red shrink-0" />
-                Full driving hour
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5 text-brand-red shrink-0" />
-                All top-up lessons
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="w-3.5 h-3.5 text-brand-red shrink-0" />
-                Learning materials
-              </li>
-            </ul>
+            <p className="text-sm text-white/60 leading-relaxed">{banner.automaticDescription}</p>
           </motion.div>
 
           {/* Savings highlight */}
@@ -625,12 +610,12 @@ function BlockBookingBanner({
             style={{ background: "var(--gradient-brand)" }}
           >
             <p className="text-white/80 text-sm font-semibold uppercase tracking-wider mb-2">
-              Reduce with Block Bookings
+              {banner.heading}
             </p>
             <div className="text-6xl font-extrabold text-white mb-1" style={HEADING}>
-              £{s}
+              £{banner.savingsPrice}
             </div>
-            <p className="text-white/80 text-sm">off per hour (typical block)</p>
+            <p className="text-white/80 text-sm">{banner.savingsDescription}</p>
             <Link
               href="/booking"
               className="mt-5 inline-block px-6 py-2.5 bg-white text-brand-red rounded-full font-bold text-sm hover:bg-gray-100 transition-colors duration-200"
@@ -692,14 +677,13 @@ function ContactCTA() {
 
 /* ─── Page ──────────────────────────────────────────────── */
 
-function pkgBySlug(cats: PublicPricingCategory[], lt: LessonType, slug: string) {
-  return cats.find((c) => c.lessonType === lt)?.packages.find((p) => p.slug === slug) ?? null;
-}
-
 export default function PricesPageClient() {
   const [cats, setCats] = useState<PublicPricingCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [testCentres, setTestCentres] = useState<Array<{ name: string; fee: number }>>([]);
+  const [blockBookingBanner, setBlockBookingBanner] = useState<BlockBookingBannerData>(
+    DEFAULT_BLOCK_BOOKING_BANNER
+  );
 
   useEffect(() => {
     Promise.all([
@@ -712,6 +696,11 @@ export default function PricesPageClient() {
         .then((r) => r.json())
         .then((d: { success?: boolean; data?: Array<{ name: string; fee: number }> }) => {
           if (d.success && Array.isArray(d.data)) setTestCentres(d.data);
+        }),
+      fetch(backendApiUrl("/public/pricing/block-booking-banner"), { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d: { success?: boolean; data?: BlockBookingBannerData }) => {
+          if (d.success && d.data) setBlockBookingBanner(d.data);
         }),
     ]).finally(() => setLoading(false));
   }, []);
@@ -734,20 +723,6 @@ export default function PricesPageClient() {
   const theory = byPricePerHour("THEORY");
   const motorway = byPricePerHour("MOTORWAY");
   const mockTest = byPricePerHour("MOCK_TEST");
-
-  const singleManual = pkgBySlug(cats, "MANUAL", "single");
-
-  const b10m = pkgBySlug(cats, "MANUAL", "block10");
-  const b10a = pkgBySlug(cats, "AUTOMATIC", "block10");
-  const manualPph = b10m?.pricePerHour ?? null;
-  const autoPph = b10a?.pricePerHour ?? null;
-  const savingPerHour =
-    singleManual &&
-    b10m &&
-    singleManual.pricePerHour != null &&
-    b10m.pricePerHour != null
-      ? Math.round((singleManual.pricePerHour - b10m.pricePerHour) * 100) / 100
-      : null;
 
   return (
     <>
@@ -806,11 +781,7 @@ export default function PricesPageClient() {
       )}
       <TestDayFeesSection centres={testCentres} />
       <AboutSection />
-      <BlockBookingBanner
-        manualPph={manualPph}
-        autoPph={autoPph}
-        savingPerHour={savingPerHour}
-      />
+      <BlockBookingBanner banner={blockBookingBanner} />
       <ContactCTA />
     </>
   );

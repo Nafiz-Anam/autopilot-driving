@@ -72,7 +72,8 @@ export function Navbar() {
                 onMouseEnter={() => setDropdownOpen(true)}
                 onMouseLeave={() => setDropdownOpen(false)}
               >
-                <button
+                <Link
+                  href="/learn-to-drive"
                   className={cn(
                     "flex items-center gap-1 text-sm font-medium transition-colors hover:text-[#E8200A]",
                     pathname.startsWith("/learn-to-drive")
@@ -87,7 +88,7 @@ export function Navbar() {
                   >
                     <ChevronDown size={16} />
                   </motion.span>
-                </button>
+                </Link>
 
                 <AnimatePresence>
                   {dropdownOpen && (

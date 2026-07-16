@@ -127,23 +127,6 @@ const prerequisites = [
   },
 ];
 
-const testimonials = [
-  {
-    name: "Jordan T.",
-    quote:
-      "I passed first time after a 2-week intensive. My instructor was patient, organised, and pushed me just the right amount. Couldn't believe how quickly I progressed.",
-    course: "2-Week Intensive",
-    location: "Ilford",
-  },
-  {
-    name: "Amelia K.",
-    quote:
-      "I needed to drive for a new job and had 3 weeks. Chose the 20-hour intensive and passed with just 2 minors. The structured daily lessons made a huge difference.",
-    course: "1-Week Intensive",
-    location: "Reading",
-  },
-];
-
 export default function IntensiveCoursesPage() {
   return (
     <>
@@ -297,31 +280,6 @@ export default function IntensiveCoursesPage() {
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-16 bg-brand-surface px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <h2
-              className="text-3xl font-bold text-brand-black"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              What Our Students Say
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {testimonials.map((t) => (
-              <div key={t.name} className="bg-white rounded-2xl p-6 border border-brand-border shadow-sm">
-                <p className="text-brand-muted text-sm italic leading-relaxed mb-4">&ldquo;{t.quote}&rdquo;</p>
-                <div>
-                  <p className="font-bold text-brand-black text-sm">{t.name}</p>
-                  <p className="text-xs text-brand-muted">{t.course} · {t.location}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 

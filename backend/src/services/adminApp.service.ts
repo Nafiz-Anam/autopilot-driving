@@ -1990,6 +1990,8 @@ export default {
   patchTestCentres,
   getTheoryAccessPrice,
   patchTheoryAccessPrice,
+  getBlockBookingBanner,
+  patchBlockBookingBanner,
 };
 
 const TEST_CENTRES_KEY = 'test_centres';
@@ -2032,4 +2034,42 @@ async function getTheoryAccessPrice(): Promise<number> {
 
 async function patchTheoryAccessPrice(price: number): Promise<void> {
   await updateSetting(THEORY_PRICE_KEY, price.toString());
+}
+
+export interface BlockBookingBanner {
+  heading: string;
+  subtitle: string;
+  manualPrice: number;
+  manualDescription: string;
+  automaticPrice: number;
+  automaticDescription: string;
+  savingsPrice: number;
+  savingsDescription: string;
+}
+
+const BLOCK_BOOKING_BANNER_KEY = 'block_booking_banner';
+
+const DEFAULT_BLOCK_BOOKING_BANNER: BlockBookingBanner = {
+  heading: 'Reduce with Block Bookings',
+  subtitle: 'Book in bulk — save per lesson.',
+  manualPrice: 38,
+  manualDescription: 'Full driving hour, all top-up lessons and learning materials included.',
+  automaticPrice: 40,
+  automaticDescription: 'Full driving hour, all top-up lessons and learning materials included.',
+  savingsPrice: 2,
+  savingsDescription: 'off per hour (typical block)',
+};
+
+async function getBlockBookingBanner(): Promise<BlockBookingBanner> {
+  const raw = await getSetting(BLOCK_BOOKING_BANNER_KEY);
+  if (!raw) return DEFAULT_BLOCK_BOOKING_BANNER;
+  try {
+    return { ...DEFAULT_BLOCK_BOOKING_BANNER, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_BLOCK_BOOKING_BANNER;
+  }
+}
+
+async function patchBlockBookingBanner(banner: BlockBookingBanner): Promise<void> {
+  await updateSetting(BLOCK_BOOKING_BANNER_KEY, JSON.stringify(banner));
 }
