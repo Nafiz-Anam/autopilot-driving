@@ -155,20 +155,15 @@ export function HeroSection() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
-            <Link href="/booking?lessonType=MOCK_TEST">
-              <div
-                className="relative w-full h-[300px] sm:h-[400px] lg:h-[520px] rounded-3xl overflow-hidden cursor-pointer"
-                style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.14)" }}
-              >
-                <Image
-                  src="/hero-image.jpg"
-                  alt="Book a mock driving test"
-                  fill
-                  priority
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 40vw"
-                />
-              </div>
+            <Link href="/booking?lessonType=MOCK_TEST" className="block cursor-pointer">
+              <Image
+                src="/hero-image.jpg"
+                alt="Book a mock driving test"
+                width={700}
+                height={700}
+                priority
+                className="w-full h-auto object-contain"
+              />
             </Link>
           </motion.div>
         </div>
