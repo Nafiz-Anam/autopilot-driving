@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, AlertTriangle, X, Loader2, User, Lock } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle, X, Loader2, User, Lock, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
-// TODO(calendar-sync): re-enable once calendar integration is prioritized again (custom slots is the default for now)
-// import { GoogleCalendarSyncCard } from "@/components/shared/GoogleCalendarSyncCard";
-// import { AppleCalendarSyncCard } from "@/components/shared/AppleCalendarSyncCard";
+import { GoogleCalendarSyncCard } from "@/components/shared/GoogleCalendarSyncCard";
+import { AppleCalendarSyncCard } from "@/components/shared/AppleCalendarSyncCard";
 
 interface ProfileForm {
   name: string;
@@ -29,14 +28,12 @@ interface PasswordForm {
   confirm: string;
 }
 
-// TODO(calendar-sync): "calendar" tab disabled for now -- custom slots is the default availability
-// mechanism; re-add "calendar" to this union and TABS below to bring the tab back.
-type Tab = "details" | "password";
+type Tab = "details" | "password" | "calendar";
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "details", label: "Personal Details", icon: User },
   { id: "password", label: "Change Password", icon: Lock },
-  // { id: "calendar", label: "Calendar", icon: Calendar },
+  { id: "calendar", label: "Calendar", icon: Calendar },
 ];
 
 function FormField({
@@ -550,7 +547,6 @@ export default function InstructorProfilePage() {
               </motion.div>
             )}
 
-            {/* TODO(calendar-sync): re-enable once calendar integration is prioritized again
             {activeTab === "calendar" && (
               <motion.div
                 key="calendar"
@@ -564,7 +560,6 @@ export default function InstructorProfilePage() {
                 <AppleCalendarSyncCard role="instructor" />
               </motion.div>
             )}
-            */}
           </AnimatePresence>
         </div>
       </div>
