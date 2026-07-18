@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import prisma from '../client';
 import ApiError from '../utils/ApiError';
+import emailService from './email.service';
 
 const DEFAULT_TEMPLATE_START_HOUR = 8;
 const DEFAULT_TEMPLATE_END_HOUR = 21;
@@ -46,4 +47,35 @@ const assertSafeModeSwitch = async (
   }
 };
 
-export default { assertSafeModeSwitch, seedDefaultTemplateIfEmpty, hasAvailableSlots };
+// Called whenever a calendar integration is disconnected or disabled.
+// If the instructor was in CALENDAR_SYNC mode they would become fully open
+// 24/7 with no busy blocks — flip them back to CUSTOM_SLOTS and notify.
+const autoFlipToCustomSlotsIfNeeded = async (userId: string): Promise<void> => {
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{ id: string; availabilityMode: string; userEmail: string; userName: string | null }>
+  >(
+    `SELECT i.id, i."availabilityMode"::text AS "availabilityMode", u.email AS "userEmail", u.name AS "userName"
+     FROM "Instructor" i
+     INNER JOIN users u ON u.id = i."userId"
+     WHERE i."userId" = $1
+     LIMIT 1`,
+    userId
+  );
+  const instructor = rows[0];
+  if (!instructor || instructor.availabilityMode !== 'CALENDAR_SYNC') return;
+
+  await prisma.instructor.update({
+    where: { id: instructor.id },
+    data: { availabilityMode: 'CUSTOM_SLOTS' },
+  });
+  await seedDefaultTemplateIfEmpty(instructor.id);
+
+  await emailService
+    .sendSecurityUpdateEmail(instructor.userEmail, {
+      title: 'Your calendar disconnected — availability switched to manual',
+      message: `Hi ${instructor.userName ?? ''}, your calendar connection was disconnected, so we've switched your booking availability to manual slot scheduling. Please review your weekly availability in your instructor dashboard so students can still book you.`,
+    })
+    .catch(() => {});
+};
+
+export default { assertSafeModeSwitch, seedDefaultTemplateIfEmpty, hasAvailableSlots, autoFlipToCustomSlotsIfNeeded };

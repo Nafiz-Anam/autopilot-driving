@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
 import config from '../config/config';
 import { encrypt, decrypt } from '../utils/tokenEncryption';
-import emailService from './email.service';
 import instructorAvailabilityModeService from './instructorAvailabilityMode.service';
 
 const PROVIDER = 'google_calendar';
@@ -105,45 +104,13 @@ export async function getIntegrationStatus(userId: string) {
   };
 }
 
-// A CALENDAR_SYNC instructor left with a dead/missing integration silently
-// degrades to "fully open, no real blockers" -- exactly the failure mode
-// this feature exists to prevent. Fall back to CUSTOM_SLOTS whenever the
-// calendar connection goes away, whether voluntary (disconnect) or not
-// (markDisabled), seeding a default template if they have none yet.
-async function autoFlipToCustomSlotsIfNeeded(userId: string): Promise<void> {
-  const rows = await prisma.$queryRawUnsafe<
-    Array<{ id: string; availabilityMode: string; userEmail: string; userName: string | null }>
-  >(
-    `SELECT i.id, i."availabilityMode"::text AS "availabilityMode", u.email AS "userEmail", u.name AS "userName"
-     FROM "Instructor" i
-     INNER JOIN users u ON u.id = i."userId"
-     WHERE i."userId" = $1
-     LIMIT 1`,
-    userId
-  );
-  const instructor = rows[0];
-  if (!instructor || instructor.availabilityMode !== 'CALENDAR_SYNC') return;
-
-  await prisma.instructor.update({
-    where: { id: instructor.id },
-    data: { availabilityMode: 'CUSTOM_SLOTS' },
-  });
-  await instructorAvailabilityModeService.seedDefaultTemplateIfEmpty(instructor.id);
-
-  await emailService
-    .sendSecurityUpdateEmail(instructor.userEmail, {
-      title: 'Your calendar disconnected — availability switched to manual',
-      message: `Hi ${instructor.userName ?? ''}, your Google Calendar connection was disconnected, so we've switched your booking availability to manual slot scheduling. Please review your weekly availability in your instructor dashboard so students can still book you.`,
-    })
-    .catch(() => {});
-}
 
 export async function disconnect(userId: string): Promise<void> {
   const { stopWatch } = await import('./googleCalendarSync.service');
   await stopWatch(userId).catch(() => {});
   await prisma.calendarWatch.deleteMany({ where: { userId, provider: PROVIDER } });
   await prisma.userIntegration.deleteMany({ where: { userId, provider: PROVIDER } });
-  await autoFlipToCustomSlotsIfNeeded(userId);
+  await instructorAvailabilityModeService.autoFlipToCustomSlotsIfNeeded(userId);
 }
 
 export async function markDisabled(userId: string, reason: string): Promise<void> {
@@ -153,7 +120,7 @@ export async function markDisabled(userId: string, reason: string): Promise<void
     data: { enabled: false },
   });
   await prisma.calendarWatch.deleteMany({ where: { userId, provider: PROVIDER } });
-  await autoFlipToCustomSlotsIfNeeded(userId);
+  await instructorAvailabilityModeService.autoFlipToCustomSlotsIfNeeded(userId);
 }
 
 export async function handleOAuthCallback(code: string, userId: string): Promise<void> {
