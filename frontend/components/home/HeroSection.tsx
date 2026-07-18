@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Users, Award } from "lucide-react";
+import Image from "next/image";
 import { LiveManualHourPrice } from "@/components/pricing/LiveManualHourPrice";
-import { DrivingScene } from "./DrivingScene";
 import { PostcodeSearch } from "@/components/shared/PostcodeSearch";
 
 const rotatingWords = ["Confidence.", "Freedom.", "Autopilot."];
@@ -162,9 +162,16 @@ export function HeroSection() {
                   "0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.14)",
               }}
             >
-              {/* Three.js canvas — fills the container */}
+              {/* Hero image — fills the container */}
               <div className="absolute inset-0">
-                <DrivingScene />
+                <Image
+                  src="/Hero IMage.jpg"
+                  alt="Driving lesson"
+                  fill
+                  priority
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 40vw"
+                />
               </div>
 
               {/* Bottom vignette */}
