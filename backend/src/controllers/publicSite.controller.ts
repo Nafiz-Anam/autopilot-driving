@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
 import publicSiteService from '../services/publicSite.service';
 import pricingService from '../services/pricing.service';
+import logger from '../config/logger';
 
 const handlePublicSiteError = (res: Response, error: unknown) => {
   if (error instanceof publicSiteService.PublicSiteError) {
@@ -15,6 +16,7 @@ const handlePublicSiteError = (res: Response, error: unknown) => {
     return res.status(error.statusCode).send(body);
   }
 
+  logger.error('Unexpected publicSite error', { error });
   return res.status(500).send({ success: false, error: 'Internal server error' });
 };
 

@@ -414,10 +414,12 @@ const registerUser = async (payload: unknown) => {
   const passwordHash = await bcrypt.hash(password, 12);
 
   try {
+    const id = randomUUID();
     const users = await prisma.$queryRawUnsafe<RegisterUserRow[]>(
-      `INSERT INTO users (name, email, phone, password, role, "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      `INSERT INTO users (id, name, email, phone, password, role, "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
        RETURNING id, email, name, role`,
+      id,
       name,
       email,
       phone,
