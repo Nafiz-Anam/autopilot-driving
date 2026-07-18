@@ -149,15 +149,16 @@ export function HeroSection() {
             </motion.div>
           </div>
 
-          {/* ── RIGHT — 40% — Three.js driving scene ── */}
+          {/* ── RIGHT — 40% — Hero image ── */}
           <motion.div
             className="md:col-span-2"
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
+            <Link href="/booking?lessonType=MOCK_TEST" className="block group">
             <div
-              className="relative w-full h-[300px] sm:h-[400px] lg:h-[520px] rounded-3xl overflow-hidden"
+              className="relative w-full h-[300px] sm:h-[400px] lg:h-[520px] rounded-3xl overflow-hidden cursor-pointer"
               style={{
                 boxShadow:
                   "0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.14)",
@@ -267,18 +268,17 @@ export function HeroSection() {
 
                   <div className="mt-4 pt-3 border-t border-[#F0F0F0] flex items-center justify-between">
                     <LiveManualHourPrice className="text-sm font-bold text-[#0D0D0D]" />
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
-                      <Link
-                        href="/booking?lessonType=MOCK_TEST"
-                        className="text-xs px-4 py-1.5 text-white rounded-full font-semibold inline-block"
-                        style={{
-                          background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)",
-                          boxShadow: "0 2px 10px rgba(232,32,10,0.35)",
-                        }}
-                      >
-                        Book Now
-                      </Link>
-                    </motion.div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.96 }}
+                      className="text-xs px-4 py-1.5 text-white rounded-full font-semibold"
+                      style={{
+                        background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)",
+                        boxShadow: "0 2px 10px rgba(232,32,10,0.35)",
+                      }}
+                    >
+                      Book Now
+                    </motion.button>
                   </div>
                 </motion.div>
               </motion.div>
@@ -340,6 +340,7 @@ export function HeroSection() {
                 </div>
               </motion.div>
             </div>
+            </Link>
           </motion.div>
         </div>
       </div>
