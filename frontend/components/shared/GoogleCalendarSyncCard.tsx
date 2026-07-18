@@ -32,12 +32,14 @@ interface Props {
 
 export function GoogleCalendarSyncCard({ role }: Props) {
   const [status, setStatus] = useState<Status | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [connectHref, setConnectHref] = useState<string | null>(null);
   const [busy, setBusy] = useState<false | "connecting" | "disconnecting" | "resyncing">(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "err"; msg: string } | null>(null);
 
   const load = useCallback(async () => {
+    setLoadError(false);
     try {
       const headers = await getNextAuthBridgeHeaders();
       const [statusRes, token] = await Promise.all([
@@ -47,13 +49,15 @@ export function GoogleCalendarSyncCard({ role }: Props) {
       if (statusRes.ok) {
         const json = await statusRes.json();
         setStatus(json.data);
+      } else {
+        setLoadError(true);
       }
       if (token) {
         setConnectHref(
           backendApiUrl(`/integrations/google-calendar/connect?appToken=${encodeURIComponent(token)}`)
         );
       }
-    } catch { /* non-critical */ }
+    } catch { setLoadError(true); }
     finally { setLoading(false); }
   }, []);
 
@@ -135,6 +139,11 @@ export function GoogleCalendarSyncCard({ role }: Props) {
 
       {loading ? (
         <div className="h-9 bg-brand-surface rounded-xl animate-pulse" />
+      ) : loadError ? (
+        <p className="text-xs text-red-600 py-2">
+          Failed to load status.{" "}
+          <button onClick={load} className="underline font-semibold">Retry</button>
+        </p>
       ) : !status?.configured ? (
         <p className="text-xs text-brand-muted py-2">Google Calendar integration is not configured on the server.</p>
       ) : status.connected ? (

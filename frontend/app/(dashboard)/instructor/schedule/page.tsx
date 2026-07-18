@@ -200,7 +200,12 @@ export default function InstructorSchedulePage() {
     }
   }, [range.from, range.to]);
 
-  useEffect(() => { load(); }, [load]);
+  // Mount: load once to get availabilityMode for the mode toggle.
+  // Range change: only reload when user is actively viewing the calendar section.
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (section === "calendar") load();
+  }, [section, range.from, range.to]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goPrev = () => setCursor(view === "week" ? addDays(cursor, -7) : addMonths(cursor, -1));
   const goNext = () => setCursor(view === "week" ? addDays(cursor, 7) : addMonths(cursor, 1));

@@ -16,6 +16,7 @@ interface Props {
 
 export function AppleCalendarSyncCard({ role }: Props) {
   const [status, setStatus] = useState<Status | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
@@ -24,13 +25,16 @@ export function AppleCalendarSyncCard({ role }: Props) {
   const [showHelp, setShowHelp] = useState(false);
 
   const load = useCallback(async () => {
+    setLoadError(false);
     try {
       const res = await backendApiFetch("/integrations/apple-calendar/status", { cache: "no-store" });
       if (res.ok) {
         const json = await res.json();
         setStatus(json.data);
+      } else {
+        setLoadError(true);
       }
-    } catch { /* non-critical */ }
+    } catch { setLoadError(true); }
     finally { setLoading(false); }
   }, []);
 
@@ -109,6 +113,11 @@ export function AppleCalendarSyncCard({ role }: Props) {
 
       {loading ? (
         <div className="h-9 bg-brand-surface rounded-xl animate-pulse" />
+      ) : loadError ? (
+        <p className="text-xs text-red-600 py-2">
+          Failed to load status.{" "}
+          <button onClick={load} className="underline font-semibold">Retry</button>
+        </p>
       ) : status?.connected ? (
         <div className="space-y-3">
           <div className="text-xs bg-brand-surface rounded-xl p-3 border border-brand-border">
