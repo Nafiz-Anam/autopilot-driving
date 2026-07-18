@@ -157,7 +157,7 @@ export function HeroSection() {
           >
             <Link href="/booking?lessonType=MOCK_TEST" className="block cursor-pointer">
               <Image
-                src="/hero-image.jpg"
+                src="/hero-image.png"
                 alt="Book a mock driving test"
                 width={700}
                 height={700}
