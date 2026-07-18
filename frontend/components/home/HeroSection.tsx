@@ -161,7 +161,7 @@ export function HeroSection() {
                 style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.14)" }}
               >
                 <Image
-                  src="/Hero IMage.jpg"
+                  src="/hero-image.jpg"
                   alt="Book a mock driving test"
                   fill
                   priority
