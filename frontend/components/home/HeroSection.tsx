@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Star, Users, Award } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { LiveManualHourPrice } from "@/components/pricing/LiveManualHourPrice";
 import { PostcodeSearch } from "@/components/shared/PostcodeSearch";
 
 const rotatingWords = ["Confidence.", "Freedom.", "Autopilot."];
@@ -156,190 +155,20 @@ export function HeroSection() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
-            <Link href="/booking?lessonType=MOCK_TEST" className="block group">
-            <div
-              className="relative w-full h-[300px] sm:h-[400px] lg:h-[520px] rounded-3xl overflow-hidden cursor-pointer"
-              style={{
-                boxShadow:
-                  "0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.14)",
-              }}
-            >
-              {/* Hero image — fills the container */}
-              <div className="absolute inset-0">
+            <Link href="/booking?lessonType=MOCK_TEST">
+              <div
+                className="relative w-full h-[300px] sm:h-[400px] lg:h-[520px] rounded-3xl overflow-hidden cursor-pointer"
+                style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.14)" }}
+              >
                 <Image
                   src="/Hero IMage.jpg"
-                  alt="Driving lesson"
+                  alt="Book a mock driving test"
                   fill
                   priority
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 40vw"
                 />
               </div>
-
-              {/* Bottom vignette */}
-              <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#060608]/70 to-transparent pointer-events-none z-10" />
-
-              {/* Top vignette */}
-              <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#060608]/40 to-transparent pointer-events-none z-10" />
-
-              {/* ── Instructor card floating centre ── */}
-              <motion.div
-                className="absolute inset-0 flex items-center justify-center z-20 p-5"
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {/* Gentle float bob */}
-                <motion.div
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="bg-white/92 backdrop-blur-md rounded-3xl p-5 w-[270px]"
-                  style={{
-                    boxShadow: "0 8px 40px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.16)",
-                  }}
-                >
-                  {/* Instructor header */}
-                  <div className="flex items-center gap-3 mb-4">
-                    {/* Avatar with rotating ring */}
-                    <div className="relative flex-shrink-0">
-                      <motion.div
-                        className="absolute -inset-0.5 rounded-full"
-                        style={{ background: "conic-gradient(from 0deg, #E8200A, #FF5500, #E8200A)" }}
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      />
-                      <div
-                        className="relative w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base"
-                        style={{
-                          background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)",
-                        }}
-                      >
-                        JW
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[#0D0D0D] text-sm truncate">
-                        James Williams
-                      </p>
-                      <div className="flex items-center gap-0.5 mt-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <motion.div
-                            key={i}
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.9 + i * 0.07, duration: 0.25, type: "spring", stiffness: 400 }}
-                          >
-                            <Star size={9} className="fill-amber-400 text-amber-400" />
-                          </motion.div>
-                        ))}
-                        <span className="text-[10px] text-[#6B6B6B] ml-1">5.0</span>
-                      </div>
-                    </div>
-                    <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded-full flex-shrink-0">
-                      <motion.span
-                        className="w-1.5 h-1.5 rounded-full bg-emerald-500"
-                        animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
-                        transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                      />
-                      Available
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-[#6B6B6B] mb-3">
-                    IG1 · IG2 · IG3 · Manual &amp; Automatic
-                  </p>
-
-                  <p className="text-[10px] font-bold text-[#0D0D0D] mb-2 uppercase tracking-wider">
-                    Available This Week
-                  </p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {["Mon 9am","Tue 2pm","Wed 10am","Thu 3pm","Fri 9am","Sat 11am"].map((s, i) => (
-                      <motion.span
-                        key={s}
-                        initial={{ opacity: 0, scale: 0.85 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 1.0 + i * 0.06, duration: 0.2, type: "spring", stiffness: 380 }}
-                        className="text-[10px] text-center py-1.5 bg-[#F5F5F5] rounded-lg text-[#0D0D0D] font-medium"
-                      >
-                        {s}
-                      </motion.span>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t border-[#F0F0F0] flex items-center justify-between">
-                    <LiveManualHourPrice className="text-sm font-bold text-[#0D0D0D]" />
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.96 }}
-                      className="text-xs px-4 py-1.5 text-white rounded-full font-semibold"
-                      style={{
-                        background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)",
-                        boxShadow: "0 2px 10px rgba(232,32,10,0.35)",
-                      }}
-                    >
-                      Book Now
-                    </motion.button>
-                  </div>
-                </motion.div>
-              </motion.div>
-
-              {/* Experience badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.6, rotate: -10 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                transition={{ duration: 0.5, delay: 1.0, type: "spring", stiffness: 300 }}
-                className="absolute top-5 right-5 z-30 bg-[#0D0D0D]/80 backdrop-blur-sm text-white px-3.5 py-2.5 rounded-2xl flex flex-col items-center"
-                style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }}
-              >
-                <motion.span
-                  className="text-lg font-black leading-none"
-                  animate={{ opacity: [1, 0.7, 1] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                  style={{
-                    background: "linear-gradient(135deg, #FF5500, #E8200A)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  16
-                </motion.span>
-                <span className="text-[9px] text-white/55 leading-tight tracking-wide mt-0.5">
-                  YRS EXP
-                </span>
-              </motion.div>
-
-              {/* "Just booked" notification */}
-              <motion.div
-                initial={{ opacity: 0, x: -20, scale: 0.9 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ duration: 0.45, delay: 1.3, type: "spring", stiffness: 260 }}
-                className="absolute bottom-5 left-5 z-30 bg-white/90 backdrop-blur-sm rounded-2xl px-3.5 py-2.5 flex items-center gap-2.5"
-                style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.22)" }}
-              >
-                {/* Ping ripple on checkmark */}
-                <div className="relative flex-shrink-0 w-6 h-6">
-                  <motion.div
-                    className="absolute inset-0 rounded-full bg-emerald-400"
-                    animate={{ scale: [1, 1.8], opacity: [0.5, 0] }}
-                    transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
-                  />
-                  <div className="relative w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#0D0D0D] leading-tight">
-                    Lesson booked!
-                  </p>
-                  <p className="text-[9px] text-[#6B6B6B] leading-tight">
-                    2 mins ago · Ilford
-                  </p>
-                </div>
-              </motion.div>
-            </div>
             </Link>
           </motion.div>
         </div>
