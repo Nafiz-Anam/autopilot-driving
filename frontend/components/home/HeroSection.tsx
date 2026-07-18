@@ -44,11 +44,11 @@ export function HeroSection() {
       />
 
       {/* ── Main grid ── */}
-      <div className="relative z-10 flex-1 flex items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20 w-full">
-        <div className="grid md:grid-cols-5 gap-8 md:gap-10 lg:gap-14 items-center w-full">
+      <div className="relative z-10 flex-1 flex items-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 w-full">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-10 lg:gap-14 items-center w-full">
 
-          {/* ── LEFT — 60% ── */}
-          <div className="md:col-span-3">
+          {/* ── LEFT ── */}
+          <div>
             {/* Pill label */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -148,9 +148,9 @@ export function HeroSection() {
             </motion.div>
           </div>
 
-          {/* ── RIGHT — 40% — Hero image ── */}
+          {/* ── RIGHT — Hero image ── */}
           <motion.div
-            className="md:col-span-2"
+            className=""
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
