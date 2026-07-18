@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Users, Award } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { LiveManualHourPrice } from "@/components/pricing/LiveManualHourPrice";
 import { PostcodeSearch } from "@/components/shared/PostcodeSearch";
 
@@ -266,17 +267,18 @@ export function HeroSection() {
 
                   <div className="mt-4 pt-3 border-t border-[#F0F0F0] flex items-center justify-between">
                     <LiveManualHourPrice className="text-sm font-bold text-[#0D0D0D]" />
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.96 }}
-                      className="text-xs px-4 py-1.5 text-white rounded-full font-semibold"
-                      style={{
-                        background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)",
-                        boxShadow: "0 2px 10px rgba(232,32,10,0.35)",
-                      }}
-                    >
-                      Book Now
-                    </motion.button>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
+                      <Link
+                        href="/booking?lessonType=MOCK_TEST"
+                        className="text-xs px-4 py-1.5 text-white rounded-full font-semibold inline-block"
+                        style={{
+                          background: "linear-gradient(135deg, #E8200A 0%, #FF5500 100%)",
+                          boxShadow: "0 2px 10px rgba(232,32,10,0.35)",
+                        }}
+                      >
+                        Book Now
+                      </Link>
+                    </motion.div>
                   </div>
                 </motion.div>
               </motion.div>
