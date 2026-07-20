@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [serverError, setServerError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const {
     register,
@@ -35,9 +36,13 @@ export default function RegisterPage() {
         role: data.role,
       });
       if (res.data.success) {
+        if (res.data.data?.role === "PENDING_INSTRUCTOR") {
+          setPendingApproval(true);
+          return;
+        }
         const signedIn = await login(data.email, data.password);
         if (signedIn.ok) {
-          window.location.href = data.role === "INSTRUCTOR" ? "/instructor/dashboard" : "/student/dashboard";
+          window.location.href = "/student/dashboard";
         } else {
           setServerError(signedIn.error ?? "Account created. Please sign in.");
         }
@@ -49,6 +54,35 @@ export default function RegisterPage() {
         setServerError("Something went wrong. Please try again.");
       }
     }
+  }
+
+  if (pendingApproval) {
+    return (
+      <div className="min-h-screen bg-brand-surface flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md text-center">
+          <div className="inline-flex mb-6">
+            <AutopilotLogo />
+          </div>
+          <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-8">
+            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-brand-black mb-2">Application submitted!</h2>
+            <p className="text-brand-muted text-sm mb-6">
+              Your instructor account is pending review. We&apos;ll email you once our team has approved your application.
+            </p>
+            <Link
+              href="/"
+              className="inline-block px-6 py-2.5 bg-brand-red text-white rounded-full font-semibold hover:bg-brand-orange transition-colors duration-200 text-sm"
+            >
+              Back to home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

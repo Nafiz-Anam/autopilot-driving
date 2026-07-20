@@ -430,16 +430,31 @@ const registerUser = async (payload: unknown) => {
     const user = users[0];
 
     if (role === 'INSTRUCTOR') {
-      await prisma.instructor.create({
-        data: { id, userId: id },
-      });
+      const appId = randomUUID();
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "InstructorApplication" (id, "fullName", email, phone, status, "createdAt")
+         VALUES ($1, $2, $3, $4, 'pending', NOW())`,
+        appId,
+        name,
+        email,
+        phone ?? null
+      );
+      emailService
+        .sendInstructorApplicationReceivedEmail({ to: email, applicantName: name, email })
+        .catch(() => {});
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: 'PENDING_INSTRUCTOR' as const,
+      };
     }
 
     return {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: role,
+      role: 'STUDENT' as const,
     };
   } catch (error: any) {
     if (error?.code === '23505') {
