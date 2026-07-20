@@ -424,7 +424,7 @@ const registerUser = async (payload: unknown) => {
       email,
       phone,
       passwordHash,
-      'USER'
+      role
     );
 
     const user = users[0];

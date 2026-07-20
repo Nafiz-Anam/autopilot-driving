@@ -37,7 +37,7 @@ export default function RegisterPage() {
       if (res.data.success) {
         const signedIn = await login(data.email, data.password);
         if (signedIn.ok) {
-          window.location.href = "/student/dashboard";
+          window.location.href = data.role === "INSTRUCTOR" ? "/instructor/dashboard" : "/student/dashboard";
         } else {
           setServerError(signedIn.error ?? "Account created. Please sign in.");
         }
