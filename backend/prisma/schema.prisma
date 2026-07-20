@@ -251,7 +251,6 @@ model Otp {
 }
 
 // Enums
-// Renamed from Role to avoid conflict with the frontend schema's Role enum (STUDENT/INSTRUCTOR/ADMIN)
 enum BackendUserRole {
   USER
   ADMIN

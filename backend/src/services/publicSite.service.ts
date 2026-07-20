@@ -424,15 +424,22 @@ const registerUser = async (payload: unknown) => {
       email,
       phone,
       passwordHash,
-      role
+      'USER'
     );
 
     const user = users[0];
+
+    if (role === 'INSTRUCTOR') {
+      await prisma.instructor.create({
+        data: { id, userId: id },
+      });
+    }
+
     return {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: role,
     };
   } catch (error: any) {
     if (error?.code === '23505') {
