@@ -4,14 +4,14 @@ import { useEffect, Component, type ReactNode } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
 
-class StepErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+class StepErrorBoundary extends Component<{ children: ReactNode; stepLabel: string }, { error: Error | null }> {
   state = { error: null };
   static getDerivedStateFromError(e: Error) { return { error: e }; }
   render() {
     if (this.state.error) {
       return (
         <div className="p-6 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
-          <strong>Payment step error (debug):</strong> {(this.state.error as Error).message}
+          <strong>{this.props.stepLabel} error (debug):</strong> {(this.state.error as Error).message}
           <pre className="mt-2 text-xs overflow-auto whitespace-pre-wrap">{(this.state.error as Error).stack}</pre>
         </div>
       );
@@ -44,6 +44,16 @@ function StepContent({ step }: { step: number }) {
     default: return null;
   }
 }
+
+const STEP_LABELS: Record<number, string> = {
+  1: "Lesson Type step",
+  2: "Instructor step",
+  3: "Package step",
+  4: "Date & Time step",
+  5: "Your Details step",
+  6: "Payment step",
+  7: "Confirmed step",
+};
 
 export default function BookingPageClient() {
   const searchParams = useSearchParams();
@@ -116,7 +126,7 @@ export default function BookingPageClient() {
               exit={{ opacity: 0, x: -60 }}
               transition={{ duration: 0.3 }}
             >
-              <StepErrorBoundary>
+              <StepErrorBoundary stepLabel={STEP_LABELS[currentStep] ?? "Step"}>
                 <StepContent step={currentStep} />
               </StepErrorBoundary>
             </motion.div>

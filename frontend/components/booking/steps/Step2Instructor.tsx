@@ -93,7 +93,7 @@ export function Step2Instructor() {
 
   const filteredInstructors = instructors.filter((inst) => {
     if (transmissionFilter) {
-      if (!inst.transmission.some((t) => t.toLowerCase() === transmissionFilter)) return false;
+      if (!(inst.transmission ?? []).some((t) => t.toLowerCase() === transmissionFilter)) return false;
     }
     if (femaleOnly && !inst.isFemale) return false;
     const q = postcode.trim().toLowerCase();
