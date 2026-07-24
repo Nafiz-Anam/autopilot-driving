@@ -1925,8 +1925,6 @@ export default {
   deleteTheoryById,
   getTestCentres,
   patchTestCentres,
-  getTheoryAccessPrice,
-  patchTheoryAccessPrice,
   getBlockBookingBanner,
   patchBlockBookingBanner,
 };
@@ -1957,20 +1955,6 @@ async function getTestCentres(): Promise<Array<{ name: string; fee: number }>> {
 
 async function patchTestCentres(centres: Array<{ name: string; fee: number }>): Promise<void> {
   await updateSetting(TEST_CENTRES_KEY, JSON.stringify(centres));
-}
-
-const THEORY_PRICE_KEY = 'theory_access_price';
-const DEFAULT_THEORY_PRICE = 9.99;
-
-async function getTheoryAccessPrice(): Promise<number> {
-  const raw = await getSetting(THEORY_PRICE_KEY);
-  if (!raw) return DEFAULT_THEORY_PRICE;
-  const n = parseFloat(raw);
-  return isNaN(n) ? DEFAULT_THEORY_PRICE : n;
-}
-
-async function patchTheoryAccessPrice(price: number): Promise<void> {
-  await updateSetting(THEORY_PRICE_KEY, price.toString());
 }
 
 export interface BlockBookingBanner {

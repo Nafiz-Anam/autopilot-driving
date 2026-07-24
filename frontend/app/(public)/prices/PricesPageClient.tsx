@@ -105,8 +105,9 @@ function LessonCard({
 }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
+  const isHourly = pkg.hours > 0;
   const pricePerHour =
-    pkg.pricePerHour ?? (pkg.hours > 0 ? Math.round((pkg.price / pkg.hours) * 100) / 100 : pkg.price);
+    pkg.pricePerHour ?? (isHourly ? Math.round((pkg.price / pkg.hours) * 100) / 100 : pkg.price);
   const note = pkg.footerNote || `£${pkg.price} total`;
   const popular = pkg.isPopular;
   const ribbon = pkg.badge ?? "Most Popular";
@@ -146,9 +147,11 @@ function LessonCard({
         >
           £{pricePerHour}
         </span>
-        <span className={cn("text-sm mb-2", dark ? "text-white/50" : "text-brand-muted")}>
-          / hour
-        </span>
+        {isHourly && (
+          <span className={cn("text-sm mb-2", dark ? "text-white/50" : "text-brand-muted")}>
+            / hour
+          </span>
+        )}
       </div>
       {pkg.savings != null && pkg.savings > 0 && (
         <span className="inline-block mb-2 text-xs font-bold text-brand-orange bg-orange-50 border border-orange-100 px-2.5 py-0.5 rounded-full w-fit">

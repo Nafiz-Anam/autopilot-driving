@@ -669,20 +669,6 @@ const patchTestCentres = catchAsync(async (req: Request, res: Response) => {
   return res.status(httpStatus.OK).send({ success: true });
 });
 
-const getTheoryAccessPrice = catchAsync(async (_req: Request, res: Response) => {
-  const price = await adminAppService.getTheoryAccessPrice();
-  return res.status(httpStatus.OK).send({ success: true, data: { price } });
-});
-
-const patchTheoryAccessPrice = catchAsync(async (req: Request, res: Response) => {
-  const price = parseFloat(req.body?.price);
-  if (isNaN(price) || price < 0) {
-    return res.status(httpStatus.BAD_REQUEST).send({ error: 'valid price required' });
-  }
-  await adminAppService.patchTheoryAccessPrice(price);
-  return res.status(httpStatus.OK).send({ success: true });
-});
-
 const getBlockBookingBanner = catchAsync(async (_req: Request, res: Response) => {
   const data = await adminAppService.getBlockBookingBanner();
   return res.status(httpStatus.OK).send({ success: true, data });
@@ -772,8 +758,6 @@ export default {
   deleteTheoryById,
   getTestCentres,
   patchTestCentres,
-  getTheoryAccessPrice,
-  patchTheoryAccessPrice,
   getBlockBookingBanner,
   patchBlockBookingBanner,
 };

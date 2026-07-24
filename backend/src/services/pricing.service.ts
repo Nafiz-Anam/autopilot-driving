@@ -188,17 +188,12 @@ const getTestCentres = async (): Promise<Array<{ name: string; fee: number }>> =
   }
 };
 
-const THEORY_PRICE_KEY = 'theory_access_price';
-const DEFAULT_THEORY_PRICE = 9.99;
-
-const getTheoryPrice = async (): Promise<number> => {
-  const rows = await prisma.$queryRawUnsafe<Array<{ value: string }>>(
-    `SELECT value FROM "Setting" WHERE key = $1 LIMIT 1`,
-    THEORY_PRICE_KEY
-  );
-  if (!rows[0]?.value) return DEFAULT_THEORY_PRICE;
-  const n = parseFloat(rows[0].value);
-  return isNaN(n) ? DEFAULT_THEORY_PRICE : n;
+// Same price a THEORY booking actually gets charged -- the cheapest active
+// package in the THEORY category, not a separately configured marketing figure.
+const getTheoryPrice = async (): Promise<number | null> => {
+  const packages = await listPackagesForLessonType('THEORY');
+  if (!packages || packages.length === 0) return null;
+  return Math.min(...packages.map(p => p.price));
 };
 
 export interface BlockBookingBanner {

@@ -94,8 +94,6 @@ export default function AdminPricingPage() {
   const [loading, setLoading] = useState(true);
   const [testCentres, setTestCentres] = useState<TestCentre[]>([]);
   const [tcSaving, setTcSaving] = useState(false);
-  const [theoryPrice, setTheoryPrice] = useState<string>("9.99");
-  const [theoryPriceSaving, setTheoryPriceSaving] = useState(false);
   const [banner, setBanner] = useState<BlockBookingBannerForm>(DEFAULT_BANNER_FORM);
   const [bannerSaving, setBannerSaving] = useState(false);
 
@@ -103,16 +101,14 @@ export default function AdminPricingPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [cats, tcRes, tpRes, bbRes] = await Promise.all([
+        const [cats, tcRes, bbRes] = await Promise.all([
           fetchAdminCategories(),
           adminApiFetch("/pricing/test-centres").then((r) => r.json()),
-          adminApiFetch("/pricing/theory-price").then((r) => r.json()),
           adminApiFetch("/pricing/block-booking-banner").then((r) => r.json()),
         ]);
         if (!cancelled) {
           setCategories(cats);
           setTestCentres(Array.isArray(tcRes?.data) ? tcRes.data : []);
-          if (tpRes?.data?.price != null) setTheoryPrice(String(tpRes.data.price));
           if (bbRes?.data) setBanner(bannerToForm(bbRes.data));
         }
       } catch {
@@ -127,36 +123,18 @@ export default function AdminPricingPage() {
   async function load() {
     setLoading(true);
     try {
-      const [cats, tcRes, tpRes, bbRes] = await Promise.all([
+      const [cats, tcRes, bbRes] = await Promise.all([
         fetchAdminCategories(),
         adminApiFetch("/pricing/test-centres").then((r) => r.json()),
-        adminApiFetch("/pricing/theory-price").then((r) => r.json()),
         adminApiFetch("/pricing/block-booking-banner").then((r) => r.json()),
       ]);
       setCategories(cats);
       setTestCentres(Array.isArray(tcRes?.data) ? tcRes.data : []);
-      if (tpRes?.data?.price != null) setTheoryPrice(String(tpRes.data.price));
       if (bbRes?.data) setBanner(bannerToForm(bbRes.data));
     } catch {
       toast.error("Could not load pricing.");
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function saveTheoryPrice() {
-    setTheoryPriceSaving(true);
-    try {
-      await adminApiFetch("/pricing/theory-price", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ price: parseFloat(theoryPrice) || 9.99 }),
-      });
-      toast.success("Theory access price saved.");
-    } catch {
-      toast.error("Could not save theory price.");
-    } finally {
-      setTheoryPriceSaving(false);
     }
   }
 
@@ -384,40 +362,6 @@ export default function AdminPricingPage() {
               </div>
             </motion.section>
           ))}
-
-          {/* ── Theory Access Price ── */}
-          <motion.section
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white border border-brand-border rounded-2xl overflow-hidden shadow-sm"
-          >
-            <div className="px-5 py-4 bg-brand-surface border-b border-brand-border">
-              <p className="text-xs font-semibold text-brand-muted uppercase tracking-wide">Theory Training</p>
-              <h2 className="text-lg font-bold text-brand-black">Theory-Only Access Price</h2>
-              <p className="text-xs text-brand-muted mt-0.5">Shown on the Theory Training page for non-logged-in users.</p>
-            </div>
-            <div className="px-5 py-4 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-brand-black">£</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={theoryPrice}
-                  onChange={(e) => setTheoryPrice(e.target.value)}
-                  className="w-28 px-3 py-2 border border-brand-border rounded-lg text-sm"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => void saveTheoryPrice()}
-                disabled={theoryPriceSaving}
-                className="text-xs font-semibold px-4 py-2 bg-brand-red text-white rounded-lg hover:bg-brand-orange disabled:opacity-60"
-              >
-                {theoryPriceSaving ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </motion.section>
 
           {/* ── Test Day Fees ── */}
           <motion.section

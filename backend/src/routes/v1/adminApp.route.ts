@@ -96,9 +96,6 @@ router.delete('/pricing/packages/:id', adminAppController.deletePricingPackageBy
 router.get('/pricing/test-centres', adminAppController.getTestCentres);
 router.patch('/pricing/test-centres', adminAppController.patchTestCentres);
 
-router.get('/pricing/theory-price', adminAppController.getTheoryAccessPrice);
-router.patch('/pricing/theory-price', adminAppController.patchTheoryAccessPrice);
-
 router.get('/pricing/block-booking-banner', adminAppController.getBlockBookingBanner);
 router.patch('/pricing/block-booking-banner', adminAppController.patchBlockBookingBanner);
 
