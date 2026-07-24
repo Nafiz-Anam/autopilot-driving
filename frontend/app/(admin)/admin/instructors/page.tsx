@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
@@ -10,9 +10,6 @@ import {
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
 import ConfirmModal from "@/components/admin/ConfirmModal";
-import AvailabilityGridEditor from "@/components/shared/AvailabilityGridEditor";
-
-type AvailabilityMode = "CUSTOM_SLOTS" | "CALENDAR_SYNC";
 
 interface InstructorRecord {
   id: string;
@@ -27,7 +24,6 @@ interface InstructorRecord {
   pricePerHour: number;
   isFemale: boolean;
   isActive: boolean;
-  availabilityMode: AvailabilityMode;
   user: { id: string; name: string | null; email: string; phone: string | null; image: string | null };
   _count: { bookings: number };
 }
@@ -72,15 +68,11 @@ function InstructorModal({
   const [form, setForm] = useState<InstructorFormData>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"profile" | "schedule">("profile");
   const [showPassword, setShowPassword] = useState(false);
-  const [mode, setMode] = useState<AvailabilityMode>("CUSTOM_SLOTS");
-  const [modeSaving, setModeSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
       setError("");
-      setActiveTab("profile");
       setForm(
         editInstructor
           ? {
@@ -99,50 +91,8 @@ function InstructorModal({
             }
           : emptyForm
       );
-      if (editInstructor) setMode(editInstructor.availabilityMode);
     }
   }, [open, editInstructor]);
-
-  const fetchSchedule = useCallback(
-    () => adminApiFetch(`/instructors/${editInstructor?.id}/schedule`),
-    [editInstructor?.id]
-  );
-  const saveSchedule = useCallback(
-    (slots: unknown) =>
-      adminApiFetch(`/instructors/${editInstructor?.id}/schedule`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots }),
-      }),
-    [editInstructor?.id]
-  );
-
-  async function handleSetMode(next: AvailabilityMode, force = false) {
-    if (!editInstructor) return;
-    setModeSaving(true);
-    try {
-      const res = await adminApiFetch(`/instructors/${editInstructor.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availabilityMode: next, force }),
-      });
-      if (res.status === 409) {
-        if (window.confirm("This instructor has no available slots configured, so students won't be able to book them. Switch anyway?")) {
-          return handleSetMode(next, true);
-        }
-        return;
-      }
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        toast.error(json.error ?? "Failed to update availability mode");
-        return;
-      }
-      setMode(next);
-      toast.success("Availability mode updated");
-    } finally {
-      setModeSaving(false);
-    }
-  }
 
   if (!open) return null;
 
@@ -219,7 +169,6 @@ function InstructorModal({
             pricePerHour: Number(form.pricePerHour) || 0,
             isFemale: form.isFemale,
             isActive: form.isActive,
-            availabilityMode: "CUSTOM_SLOTS" as AvailabilityMode,
             user: { id: "", name: form.name, email: form.email, phone: form.phone || null, image: null },
             _count: { bookings: 0 },
           };
@@ -242,18 +191,7 @@ function InstructorModal({
             <X className="w-4 h-4" />
           </button>
         </div>
-        {editInstructor && (
-          <div className="flex border-b border-brand-border shrink-0 px-6">
-            {(["profile", "schedule"] as const).map((tab) => (
-              <button key={tab} type="button" onClick={() => setActiveTab(tab)}
-                className={cn("px-4 py-2.5 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px",
-                  activeTab === tab ? "border-brand-red text-brand-red" : "border-transparent text-brand-muted hover:text-brand-black")}>
-                {tab}
-              </button>
-            ))}
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto" style={{ display: activeTab === "profile" ? undefined : "none" }}>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>}
 
           <p className="text-xs font-bold text-brand-muted uppercase tracking-wide">Account</p>
@@ -359,37 +297,6 @@ function InstructorModal({
             </button>
           </div>
         </form>
-
-        {/* ── Schedule tab panel ── */}
-        {editInstructor && activeTab === "schedule" && (
-          <div className="p-6 overflow-y-auto flex-1">
-            {/* TODO(calendar-sync): re-add the Custom Slots / Calendar Sync toggle once calendar
-                integration is prioritized again -- only Custom Slots is offered for now.
-            <div className="flex items-center gap-2 mb-4 p-1 bg-brand-surface rounded-xl w-fit">
-              {(["CUSTOM_SLOTS", "CALENDAR_SYNC"] as const).map((m) => (
-                <button key={m} type="button" disabled={modeSaving} onClick={() => handleSetMode(m)}
-                  className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-                    mode === m ? "bg-white text-brand-black shadow-sm" : "text-brand-muted hover:text-brand-black")}>
-                  {m === "CUSTOM_SLOTS" ? "Custom Slots" : "Calendar Sync"}
-                </button>
-              ))}
-            </div>
-            */}
-            {mode === "CALENDAR_SYNC" && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3 text-xs text-blue-800">
-                <span>This instructor is currently set to calendar-based availability.</span>
-                <button type="button" disabled={modeSaving} onClick={() => handleSetMode("CUSTOM_SLOTS")}
-                  className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-blue-200 hover:bg-blue-100 transition-colors">
-                  Switch to Custom Slots
-                </button>
-              </div>
-            )}
-            <p className="text-xs text-brand-muted mb-4">
-              Students book against the weekly template below.
-            </p>
-            <AvailabilityGridEditor fetchSchedule={fetchSchedule} saveSchedule={saveSchedule} />
-          </div>
-        )}
       </div>
     </div>
   );

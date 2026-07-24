@@ -489,23 +489,6 @@ const deleteInstructorById = catchAsync(async (req: Request, res: Response) => {
   return res.status(httpStatus.OK).send({ success: true });
 });
 
-const getInstructorSchedule = catchAsync(async (req: Request, res: Response) => {
-  const data = await adminAppService.getInstructorScheduleById(pid(req));
-  if (data === null)
-    return res.status(httpStatus.NOT_FOUND).send({ error: 'Instructor not found' });
-  return res.status(httpStatus.OK).send({ data });
-});
-
-const postInstructorSchedule = catchAsync(async (req: Request, res: Response) => {
-  const slots = req.body?.slots;
-  if (!Array.isArray(slots))
-    return res.status(httpStatus.BAD_REQUEST).send({ error: 'slots array required' });
-  const data = await adminAppService.updateInstructorScheduleById(pid(req), slots);
-  if (data === null)
-    return res.status(httpStatus.NOT_FOUND).send({ error: 'Instructor not found' });
-  return res.status(httpStatus.OK).send({ data });
-});
-
 const getPricingCategories = catchAsync(async (_req: Request, res: Response) => {
   const data = await adminAppService.listPricingCategories();
   return res.status(httpStatus.OK).send({ data });
@@ -768,8 +751,6 @@ export default {
   patchInstructorById,
   postInstructors,
   deleteInstructorById,
-  getInstructorSchedule,
-  postInstructorSchedule,
   getPricingCategories,
   patchPricingCategoryById,
   postPricingPackages,

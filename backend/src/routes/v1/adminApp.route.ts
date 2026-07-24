@@ -85,8 +85,6 @@ router.patch('/instructors', adminAppController.patchInstructors);
 router.get('/instructors/:id', adminAppController.getInstructorById);
 router.patch('/instructors/:id', adminAppController.patchInstructorById);
 router.delete('/instructors/:id', adminAppController.deleteInstructorById);
-router.get('/instructors/:id/schedule', adminAppController.getInstructorSchedule);
-router.post('/instructors/:id/schedule', adminAppController.postInstructorSchedule);
 
 router.get('/pricing/categories', adminAppController.getPricingCategories);
 router.patch('/pricing/categories/:id', adminAppController.patchPricingCategoryById);

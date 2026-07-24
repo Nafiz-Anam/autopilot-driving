@@ -1,4 +1,4 @@
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
 import pricingService from './pricing.service';
@@ -8,20 +8,17 @@ import refundService from './refund.service';
 import googleCalendarService from './googleCalendar.service';
 import emailService from './email.service';
 import {
-  DayWindow,
-  parseHHMM,
+  LONDON_TZ,
   formatHHMM,
   overlaps,
-  mergeWindows,
-  getDayWindows,
   isWithinAvailability,
+  hasActiveCalendarConnectionByUserId,
 } from '../utils/instructorAvailability';
 
-// Availability policy: per-instructor availabilityMode picks the baseline.
-//   - CALENDAR_SYNC: full 24h/day baseline, blocked only by (a) Google Calendar
-//     busy events synced via webhook, (b) existing PENDING/CONFIRMED Bookings.
-//   - CUSTOM_SLOTS: baseline is the instructor's weekly Availability template,
-//     blocked only by existing PENDING/CONFIRMED Bookings (calendar ignored).
+// Availability policy: full 24h/day baseline in Europe/London time, blocked
+// only by (a) real Google/Apple Calendar busy events synced via webhook/ICS,
+// (b) existing PENDING/CONFIRMED Bookings. An instructor with no connected
+// calendar has zero bookable slots rather than defaulting to fully open.
 const SLOT_STEP_MINS = 60;
 const MAX_BOOKING_HORIZON_DAYS = 60;
 
@@ -430,61 +427,44 @@ const getAvailability = async (
 ) => {
   const instructor = await prisma.instructor.findUnique({
     where: { id: instructorId },
-    select: { availabilityMode: true },
+    select: { userId: true },
   });
   if (!instructor) return null;
-  const mode = instructor.availabilityMode;
 
-  const horizon = moment().add(MAX_BOOKING_HORIZON_DAYS, 'day').endOf('day').toDate();
-  const requestedEnd = moment(endDateStr).endOf('day').toDate();
-  const rangeStart = moment(startDateStr).startOf('day').toDate();
+  const connected = await hasActiveCalendarConnectionByUserId(instructor.userId);
+
+  const horizon = moment.tz(LONDON_TZ).add(MAX_BOOKING_HORIZON_DAYS, 'day').endOf('day').toDate();
+  const requestedEnd = moment.tz(endDateStr, LONDON_TZ).endOf('day').toDate();
+  const rangeStart = moment.tz(startDateStr, LONDON_TZ).startOf('day').toDate();
   const rangeEnd = requestedEnd > horizon ? horizon : requestedEnd;
 
-  const [bookings, busy, templateRows] = await Promise.all([
-    prisma.booking.findMany({
-      where: {
-        instructorId,
-        status: { in: ['CONFIRMED', 'PENDING'] as any },
-        scheduledAt: { gte: rangeStart, lte: rangeEnd },
-      },
-      select: { scheduledAt: true, durationMins: true },
-    }),
-    mode === 'CALENDAR_SYNC'
-      ? prisma.instructorBusyBlock.findMany({
+  // Without a connected calendar every date will be returned with empty
+  // slots regardless, so skip the booking/busy-block lookups entirely.
+  const [bookings, busy] = connected
+    ? await Promise.all([
+        prisma.booking.findMany({
+          where: {
+            instructorId,
+            status: { in: ['CONFIRMED', 'PENDING'] as any },
+            scheduledAt: { gte: rangeStart, lte: rangeEnd },
+          },
+          select: { scheduledAt: true, durationMins: true },
+        }),
+        prisma.instructorBusyBlock.findMany({
           where: {
             instructorId,
             startsAt: { lte: rangeEnd },
             endsAt: { gte: rangeStart },
           },
           select: { startsAt: true, endsAt: true },
-        })
-      : Promise.resolve([] as Array<{ startsAt: Date; endsAt: Date }>),
-    mode === 'CUSTOM_SLOTS'
-      ? prisma.$queryRawUnsafe<Array<{ dayOfWeek: number; startTime: string; endTime: string }>>(
-          `SELECT "dayOfWeek", "startTime", "endTime" FROM "Availability" WHERE "instructorId" = $1 AND "isAvailable" = true`,
-          instructorId
-        )
-      : Promise.resolve([] as Array<{ dayOfWeek: number; startTime: string; endTime: string }>),
-  ]);
-
-  const rawTemplateByDay = new Map<number, DayWindow[]>();
-  for (const row of templateRows) {
-    const start = parseHHMM(row.startTime.slice(0, 5));
-    const end = parseHHMM(row.endTime.slice(0, 5));
-    if (start === null || end === null || end <= start) continue;
-    const list = rawTemplateByDay.get(row.dayOfWeek) ?? [];
-    list.push({ start, end });
-    rawTemplateByDay.set(row.dayOfWeek, list);
-  }
-  const templateByDay = new Map<number, DayWindow[]>();
-  for (const [day, windows] of rawTemplateByDay) {
-    templateByDay.set(day, mergeWindows(windows));
-  }
+        }),
+      ])
+    : [[] as Array<{ scheduledAt: Date; durationMins: number }>, [] as Array<{ startsAt: Date; endsAt: Date }>];
 
   const blockersByDate = new Map<string, Array<{ start: number; end: number }>>();
   const addBlocker = (start: Date, end: Date) => {
-    let cursorDay = moment(start).startOf('day');
-    const finalDay = moment(end).startOf('day');
+    let cursorDay = moment.tz(start, LONDON_TZ).startOf('day');
+    const finalDay = moment.tz(end, LONDON_TZ).startOf('day');
     while (cursorDay.isSameOrBefore(finalDay)) {
       const dateKey = cursorDay.format('YYYY-MM-DD');
       const dayStart = cursorDay.clone().valueOf();
@@ -510,18 +490,17 @@ const getAvailability = async (
 
   const nowMs = Date.now();
   const result: { date: string; slots: string[] }[] = [];
-  let cursor = moment(rangeStart).startOf('day');
-  const end = moment(rangeEnd).startOf('day');
+  let cursor = moment.tz(rangeStart, LONDON_TZ).startOf('day');
+  const end = moment.tz(rangeEnd, LONDON_TZ).startOf('day');
 
   while (cursor.isSameOrBefore(end)) {
     const dateStr = cursor.format('YYYY-MM-DD');
-    const blockers = blockersByDate.get(dateStr) ?? [];
     const slots: string[] = [];
-    const windows = getDayWindows(mode, cursor.day(), templateByDay);
 
-    for (const window of windows) {
-      let t = window.start;
-      while (t + durationMins <= window.end) {
+    if (connected) {
+      const blockers = blockersByDate.get(dateStr) ?? [];
+      let t = 0;
+      while (t + durationMins <= 24 * 60) {
         const slotEnd = t + durationMins;
         const conflict = blockers.some(b => overlaps(t, slotEnd, b.start, b.end));
         if (!conflict) {

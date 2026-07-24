@@ -40,21 +40,6 @@ const putProfile = async (req: Request, res: Response) => {
   }
 };
 
-const getSchedule = async (req: Request, res: Response) => {
-  try {
-    const userId = req.drivingUser?.id;
-    if (!userId) return res.status(401).json({ error: 'Unauthorised' });
-
-    const schedule = await instructorAppService.getInstructorScheduleByUserId(userId);
-    if (!schedule) return res.status(404).json({ error: 'Instructor profile not found' });
-
-    return res.json({ data: schedule });
-  } catch (err) {
-    console.error('[instructor/schedule GET]', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
 const getScheduleOverview = async (req: Request, res: Response) => {
   try {
     const userId = req.drivingUser?.id;
@@ -72,26 +57,6 @@ const getScheduleOverview = async (req: Request, res: Response) => {
     return res.json({ data });
   } catch (err) {
     console.error('[instructor/schedule/overview GET]', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-const postSchedule = async (req: Request, res: Response) => {
-  try {
-    const userId = req.drivingUser?.id;
-    if (!userId) return res.status(401).json({ error: 'Unauthorised' });
-
-    const { slots } = req.body ?? {};
-    if (!Array.isArray(slots)) {
-      return res.status(400).json({ error: 'slots must be an array' });
-    }
-
-    const saved = await instructorAppService.replaceInstructorScheduleByUserId(userId, slots);
-    if (!saved) return res.status(404).json({ error: 'Instructor profile not found' });
-
-    return res.json(saved);
-  } catch (err) {
-    console.error('[instructor/schedule POST]', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -255,9 +220,7 @@ export default {
   getProfile,
   putProfile,
   changePassword,
-  getSchedule,
   getScheduleOverview,
-  postSchedule,
   getStudents,
   getStats,
   getMyBookings,

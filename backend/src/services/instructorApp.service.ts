@@ -1,7 +1,8 @@
+import moment from 'moment-timezone';
 import prisma from '../client';
 import refundService from './refund.service';
 import emailService from './email.service';
-import instructorAvailabilityModeService from './instructorAvailabilityMode.service';
+import { LONDON_TZ } from '../utils/instructorAvailability';
 
 type InstructorProfileRow = {
   instructor: Record<string, unknown>;
@@ -10,13 +11,6 @@ type InstructorProfileRow = {
   userEmail: string;
   userPhone: string | null;
   userImage: string | null;
-};
-
-type AvailabilityInput = {
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  isAvailable: boolean;
 };
 
 function getInitials(name: string): string {
@@ -69,14 +63,6 @@ const updateInstructorProfileByUserId = async (userId: string, body: Record<stri
   const instructor = instructorRows[0];
   if (!instructor) return null;
 
-  if (body.availabilityMode !== undefined) {
-    await instructorAvailabilityModeService.assertSafeModeSwitch(
-      instructor.id,
-      body.availabilityMode as 'CUSTOM_SLOTS' | 'CALENDAR_SYNC',
-      body.force === true
-    );
-  }
-
   const setClauses: string[] = [];
   const values: unknown[] = [];
   let idx = 1;
@@ -116,11 +102,6 @@ const updateInstructorProfileByUserId = async (userId: string, body: Record<stri
     values.push(body.isFemale);
     idx++;
   }
-  if (body.availabilityMode !== undefined) {
-    setClauses.push(`"availabilityMode" = $${idx}::"AvailabilityMode"`);
-    values.push(body.availabilityMode);
-    idx++;
-  }
 
   if (setClauses.length > 0) {
     await prisma.$executeRawUnsafe(
@@ -154,7 +135,7 @@ const updateInstructorProfileByUserId = async (userId: string, body: Record<stri
   return getInstructorProfileByUserId(userId);
 };
 
-const getInstructorScheduleByUserId = async (userId: string) => {
+const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toStr: string) => {
   const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
     `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
     userId
@@ -162,29 +143,8 @@ const getInstructorScheduleByUserId = async (userId: string) => {
   const instructor = instructorRows[0];
   if (!instructor) return null;
 
-  const availabilityRows = await prisma.$queryRawUnsafe<Array<{ row: Record<string, unknown> }>>(
-    `SELECT to_jsonb(a) AS row
-     FROM "Availability" a
-     WHERE a."instructorId" = $1
-     ORDER BY a."dayOfWeek" ASC, a."startTime" ASC`,
-    instructor.id
-  );
-
-  return availabilityRows.map(a => a.row);
-};
-
-const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toStr: string) => {
-  const instructorRows = await prisma.$queryRawUnsafe<
-    Array<{ id: string; availabilityMode: string }>
-  >(
-    `SELECT id, "availabilityMode"::text AS "availabilityMode" FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
-    userId
-  );
-  const instructor = instructorRows[0];
-  if (!instructor) return null;
-
-  const from = new Date(fromStr + 'T00:00:00Z');
-  const to = new Date(toStr + 'T23:59:59Z');
+  const from = moment.tz(fromStr, LONDON_TZ).startOf('day').toDate();
+  const to = moment.tz(toStr, LONDON_TZ).endOf('day').toDate();
 
   const [bookings, busy, integration] = await Promise.all([
     prisma.$queryRawUnsafe<
@@ -219,17 +179,17 @@ const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toSt
       orderBy: { startsAt: 'asc' },
       select: { id: true, startsAt: true, endsAt: true, isAllDay: true, source: true },
     }),
-    prisma.userIntegration.findUnique({
-      where: { userId_provider: { userId, provider: 'google_calendar' } },
-      select: { enabled: true, externalEmail: true },
+    prisma.userIntegration.findFirst({
+      where: { userId, provider: { in: ['google_calendar', 'apple_ics'] }, enabled: true },
+      select: { provider: true, externalEmail: true },
     }),
   ]);
 
   return {
     from: fromStr,
     to: toStr,
-    availabilityMode: instructor.availabilityMode,
-    calendarConnected: !!integration?.enabled,
+    calendarConnected: !!integration,
+    calendarProvider: integration?.provider ?? null,
     calendarEmail: integration?.externalEmail ?? null,
     bookings: bookings.map(b => ({
       id: b.id,
@@ -247,35 +207,6 @@ const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toSt
       source: b.source,
     })),
   };
-};
-
-const replaceInstructorScheduleByUserId = async (userId: string, slots: AvailabilityInput[]) => {
-  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
-    `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
-    userId
-  );
-  const instructor = instructorRows[0];
-  if (!instructor) return null;
-
-  await prisma.$transaction([
-    prisma.$executeRawUnsafe(`DELETE FROM "Availability" WHERE "instructorId" = $1`, instructor.id),
-    ...slots.map(slot =>
-      prisma.$executeRawUnsafe(
-        `INSERT INTO "Availability" (
-          id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable"
-        ) VALUES (
-          gen_random_uuid(), $1, $2, $3::time, $4::time, $5
-        )`,
-        instructor.id,
-        slot.dayOfWeek,
-        slot.startTime,
-        slot.endTime,
-        slot.isAvailable
-      )
-    ),
-  ]);
-
-  return { success: true, count: slots.length };
 };
 
 const getInstructorStudentsByUserId = async (userId: string) => {
@@ -385,24 +316,18 @@ const getInstructorStatsByUserId = async (userId: string) => {
   const instructor = instructorRows[0];
   if (!instructor) return null;
 
-  const now = new Date();
+  const nowLondon = moment.tz(LONDON_TZ);
+  const now = nowLondon.toDate();
 
-  const dayOfWeek = now.getDay();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-  weekStart.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
+  const weekStart = nowLondon.clone().startOf('isoWeek').toDate();
+  const weekEnd = nowLondon.clone().startOf('isoWeek').add(7, 'day').toDate();
 
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStart = nowLondon.clone().startOf('month').toDate();
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
+  const todayStart = nowLondon.clone().startOf('day').toDate();
+  const todayEnd = nowLondon.clone().endOf('day').toDate();
 
-  const next7Days = new Date(now);
-  next7Days.setDate(now.getDate() + 7);
+  const next7Days = nowLondon.clone().add(7, 'day').toDate();
 
   const [
     lessonsThisWeekRows,
@@ -781,8 +706,6 @@ const cancelMyBooking = async (
 export default {
   getInstructorProfileByUserId,
   updateInstructorProfileByUserId,
-  getInstructorScheduleByUserId,
-  replaceInstructorScheduleByUserId,
   getScheduleOverviewByUserId,
   getInstructorStudentsByUserId,
   getInstructorStatsByUserId,

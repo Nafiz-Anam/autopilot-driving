@@ -776,35 +776,6 @@ async function seedDrivingSchoolTables() {
     `);
   }
 
-  if (await tableExists('Availability')) {
-    await prisma.$executeRawUnsafe(`
-      INSERT INTO "Availability" (id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable")
-      VALUES
-        -- Ian Instructor (seed-inst-1): Monday-Friday 9am-5pm
-        ('seed-av-1-1', 'seed-inst-1', 1, '09:00', '17:00', true),
-        ('seed-av-1-2', 'seed-inst-1', 2, '09:00', '17:00', true),
-        ('seed-av-1-3', 'seed-inst-1', 3, '09:00', '17:00', true),
-        ('seed-av-1-4', 'seed-inst-1', 4, '09:00', '17:00', true),
-        ('seed-av-1-5', 'seed-inst-1', 5, '09:00', '17:00', true),
-        ('seed-av-1-6', 'seed-inst-1', 6, '10:00', '14:00', true),
-        -- Emma Evans (seed-inst-2): Tuesday-Saturday, mornings and afternoons
-        ('seed-av-2-2', 'seed-inst-2', 2, '08:00', '12:00', true),
-        ('seed-av-2-3', 'seed-inst-2', 3, '14:00', '18:00', true),
-        ('seed-av-2-4', 'seed-inst-2', 4, '08:00', '12:00', true),
-        ('seed-av-2-5', 'seed-inst-2', 5, '14:00', '18:00', true),
-        ('seed-av-2-6', 'seed-inst-2', 6, '09:00', '17:00', true),
-        ('seed-av-2-7', 'seed-inst-2', 7, '10:00', '16:00', true),
-        -- David Driver (seed-inst-3): Weekdays afternoons and Saturday full day
-        ('seed-av-3-1', 'seed-inst-3', 1, '13:00', '19:00', true),
-        ('seed-av-3-2', 'seed-inst-3', 2, '13:00', '19:00', true),
-        ('seed-av-3-3', 'seed-inst-3', 3, '13:00', '19:00', true),
-        ('seed-av-3-4', 'seed-inst-3', 4, '13:00', '19:00', true),
-        ('seed-av-3-5', 'seed-inst-3', 5, '13:00', '19:00', true),
-        ('seed-av-3-6', 'seed-inst-3', 6, '08:00', '18:00', true)
-      ON CONFLICT (id) DO NOTHING
-    `);
-  }
-
   if (await tableExists('LessonPricingCategory')) {
     await prisma.$executeRawUnsafe(`
       INSERT INTO "LessonPricingCategory" (id, "lessonType", slug, "displayName", description, "sortOrder", "isActive", "createdAt", "updatedAt")

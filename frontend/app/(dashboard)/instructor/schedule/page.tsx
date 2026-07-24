@@ -3,11 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Info, RefreshCw, CalendarDays, X, User, Clock, Hash } from "lucide-react";
 import Link from "next/link";
-import toast from "react-hot-toast";
 import { instructorApiFetch } from "@/lib/instructor-api";
-import AvailabilityGridEditor from "@/components/shared/AvailabilityGridEditor";
-
-type AvailabilityMode = "CUSTOM_SLOTS" | "CALENDAR_SYNC";
 
 type Booking = {
   id: string;
@@ -29,15 +25,24 @@ type BusyBlock = {
 type Overview = {
   from: string;
   to: string;
-  availabilityMode: AvailabilityMode;
   calendarConnected: boolean;
+  calendarProvider: string | null;
   calendarEmail: string | null;
   bookings: Booking[];
   busy: BusyBlock[];
 };
 
 type ViewMode = "week" | "month";
-type Section = "slots" | "calendar";
+
+const PROVIDER_LABELS: Record<string, string> = {
+  google_calendar: "Google Calendar",
+  apple_ics: "Apple Calendar",
+  google: "Google Calendar",
+};
+
+function calendarLabel(source: string | null | undefined): string {
+  return (source && PROVIDER_LABELS[source]) || "your calendar";
+}
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -122,7 +127,7 @@ function segmentsForDay(day: Date, bookings: Booking[], busy: BusyBlock[]): Segm
       startMins: (segStart - dayStart.getTime()) / 60_000,
       endMins: (segEnd - dayStart.getTime()) / 60_000,
       label: "Busy",
-      title: `Blocked in Google Calendar${b.isAllDay ? " (all day)" : ""}`,
+      title: `Blocked in ${calendarLabel(b.source)}${b.isAllDay ? " (all day)" : ""}`,
     });
   }
 
@@ -155,18 +160,12 @@ export default function InstructorSchedulePage() {
   }, []);
   const horizonMax = useMemo(() => addDays(today, MAX_HORIZON_DAYS), [today]);
 
-  const [section, setSection] = useState<Section>("slots");
   const [view, setView] = useState<ViewMode>("week");
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [modeSaving, setModeSaving] = useState(false);
-
-  const mode: AvailabilityMode = data?.availabilityMode ?? "CUSTOM_SLOTS";
-  const showSlotsTabs = mode === "CUSTOM_SLOTS";
-  const effectiveSection: Section = showSlotsTabs ? section : "calendar";
 
   const range = useMemo(() => {
     if (view === "week") {
@@ -204,12 +203,7 @@ export default function InstructorSchedulePage() {
     }
   }, [range.from, range.to]);
 
-  // Mount: load once to get availabilityMode for the mode toggle.
-  // Range change: only reload when user is actively viewing the calendar section.
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (effectiveSection === "calendar") load();
-  }, [effectiveSection, range.from, range.to]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [range.from, range.to]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goPrev = () => setCursor(view === "week" ? addDays(cursor, -7) : addMonths(cursor, -1));
   const goNext = () => setCursor(view === "week" ? addDays(cursor, 7) : addMonths(cursor, 1));
@@ -223,278 +217,148 @@ export default function InstructorSchedulePage() {
     return range.from.toLocaleDateString(undefined, { month: "long", year: "numeric" });
   }, [view, range.from, range.to]);
 
-  async function handleSetMode(next: AvailabilityMode, force = false) {
-    setModeSaving(true);
-    try {
-      const res = await instructorApiFetch("/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availabilityMode: next, force }),
-      });
-      if (res.status === 409) {
-        if (window.confirm("You have no available slots configured, so students won't be able to book you. Switch anyway?")) {
-          return handleSetMode(next, true);
-        }
-        return;
-      }
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        toast.error(json.error ?? "Failed to update availability mode");
-        return;
-      }
-      setData((prev) => (prev ? { ...prev, availabilityMode: next } : prev));
-      toast.success("Availability mode updated");
-    } finally {
-      setModeSaving(false);
-    }
-  }
-
-  const fetchSchedule = useCallback(() => instructorApiFetch("/schedule"), []);
-  const saveSchedule = useCallback(
-    (slots: unknown) =>
-      instructorApiFetch("/schedule", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slots }),
-      }),
-    []
-  );
-
   return (
     <div className="min-h-screen bg-brand-surface">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-6 flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-brand-black">My Schedule</h1>
-            <p className="text-sm text-brand-muted mt-1">Manage your availability and view your calendar.</p>
-          </div>
-          <ModeSwitch mode={mode} disabled={modeSaving} onChange={(m) => handleSetMode(m)} />
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-brand-black">My Schedule</h1>
+          <p className="text-sm text-brand-muted mt-1">Manage your availability and view your calendar.</p>
         </div>
 
-        {showSlotsTabs && (
-          <div className="flex gap-1 bg-white border border-brand-border rounded-2xl p-1 mb-5 w-fit">
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 text-xs text-blue-800">
+          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <p>
+            Your availability is driven by your connected calendar. Blocks you add in Google/Apple Calendar
+            automatically make those slots unbookable.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <div className="inline-flex bg-white border border-brand-border rounded-xl p-0.5 text-xs font-semibold">
+              <button
+                onClick={() => setView("week")}
+                className={`px-3 py-1.5 rounded-lg transition ${
+                  view === "week" ? "bg-brand-red text-white" : "text-brand-muted hover:text-brand-black"
+                }`}
+              >
+                Week
+              </button>
+              <button
+                onClick={() => setView("month")}
+                className={`px-3 py-1.5 rounded-lg transition ${
+                  view === "month" ? "bg-brand-red text-white" : "text-brand-muted hover:text-brand-black"
+                }`}
+              >
+                Month
+              </button>
+            </div>
             <button
-              onClick={() => setSection("slots")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                section === "slots"
-                  ? "bg-brand-red text-white shadow-sm"
-                  : "text-brand-muted hover:text-brand-black"
-              }`}
+              onClick={load}
+              disabled={loading}
+              className="flex items-center gap-2 px-3 py-2 border border-brand-border rounded-xl text-xs font-semibold text-brand-black bg-white hover:bg-brand-surface transition disabled:opacity-60"
+              title="Refresh"
             >
-              My Slots
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              Refresh
             </button>
-            <button
-              onClick={() => setSection("calendar")}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                section === "calendar"
-                  ? "bg-brand-red text-white shadow-sm"
-                  : "text-brand-muted hover:text-brand-black"
-              }`}
-            >
-              Calendar View
-            </button>
+          </div>
+        </div>
+
+        {!data?.calendarConnected && !loading && (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+            <Info className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-amber-800">
+              <p className="font-semibold mb-1">Calendar not connected</p>
+              <p>
+                Connect a Google or Apple calendar on the{" "}
+                <a href="/instructor/profile" className="underline font-semibold">Profile &rsaquo; Calendar tab</a>{" "}
+                to have your calendar events block booking slots automatically. Until then, students can&apos;t book you.
+              </p>
+            </div>
           </div>
         )}
 
-        {effectiveSection === "slots" && (
-          <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-5">
-            <p className="text-xs text-brand-muted mb-4">Students book against the weekly template below.</p>
-            <AvailabilityGridEditor fetchSchedule={fetchSchedule} saveSchedule={saveSchedule} />
+        {data?.calendarConnected && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs text-blue-800">
+            <Info className="w-4 h-4 flex-shrink-0" />
+            <span>
+              Synced with <span className="font-semibold">{data.calendarEmail ?? calendarLabel(data.calendarProvider)}</span>.
+              {" "}Block time in {calendarLabel(data.calendarProvider)} to make yourself unavailable.
+            </span>
           </div>
         )}
 
-        {effectiveSection === "calendar" && (
-          <>
-            {mode === "CALENDAR_SYNC" && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 text-xs text-blue-800">
-                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>
-                  Your availability is driven by your connected calendar. Blocks you add in Google/Apple Calendar automatically
-                  make those slots unbookable. Switch to Custom Slots to manage a weekly template instead.
-                </p>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <div className="inline-flex bg-white border border-brand-border rounded-xl p-0.5 text-xs font-semibold">
-                  <button
-                    onClick={() => setView("week")}
-                    className={`px-3 py-1.5 rounded-lg transition ${
-                      view === "week" ? "bg-brand-red text-white" : "text-brand-muted hover:text-brand-black"
-                    }`}
-                  >
-                    Week
-                  </button>
-                  <button
-                    onClick={() => setView("month")}
-                    className={`px-3 py-1.5 rounded-lg transition ${
-                      view === "month" ? "bg-brand-red text-white" : "text-brand-muted hover:text-brand-black"
-                    }`}
-                  >
-                    Month
-                  </button>
-                </div>
-                <button
-                  onClick={load}
-                  disabled={loading}
-                  className="flex items-center gap-2 px-3 py-2 border border-brand-border rounded-xl text-xs font-semibold text-brand-black bg-white hover:bg-brand-surface transition disabled:opacity-60"
-                  title="Refresh"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                  Refresh
-                </button>
-              </div>
+        <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-4 mb-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-brand-muted" />
+              <span className="font-semibold text-brand-black text-sm">{rangeLabel}</span>
             </div>
-
-            {!data?.calendarConnected && !loading && (
-              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                <Info className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-amber-800">
-                  <p className="font-semibold mb-1">Google Calendar not connected</p>
-                  <p>
-                    Connect on the{" "}
-                    <a href="/instructor/profile" className="underline font-semibold">Profile &rsaquo; Calendar tab</a>{" "}
-                    to have your calendar events block booking slots automatically.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {data?.calendarConnected && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-2 text-xs text-blue-800">
-                <Info className="w-4 h-4 flex-shrink-0" />
-                <span>
-                  Synced with <span className="font-semibold">{data.calendarEmail}</span>. Block time in Google Calendar to make yourself unavailable.
-                </span>
-              </div>
-            )}
-
-            <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-4 mb-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="w-4 h-4 text-brand-muted" />
-                  <span className="font-semibold text-brand-black text-sm">{rangeLabel}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={goPrev}
-                    disabled={!canGoBack}
-                    className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={goToday}
-                    className="px-3 py-1.5 text-xs font-semibold text-brand-black border border-brand-border rounded-lg hover:bg-brand-surface transition"
-                  >
-                    Today
-                  </button>
-                  <button
-                    onClick={goNext}
-                    disabled={!canGoForward}
-                    className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={goPrev}
+                disabled={!canGoBack}
+                className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={goToday}
+                className="px-3 py-1.5 text-xs font-semibold text-brand-black border border-brand-border rounded-lg hover:bg-brand-surface transition"
+              >
+                Today
+              </button>
+              <button
+                onClick={goNext}
+                disabled={!canGoForward}
+                className="p-1.5 rounded-lg border border-brand-border text-brand-muted hover:text-brand-black hover:bg-brand-surface transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
+          </div>
+        </div>
 
-            <div className="flex items-center gap-4 mb-3 text-xs text-brand-muted">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block w-3 h-3 rounded-sm bg-green-500" />
-                <span>Booking</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block w-3 h-3 rounded-sm bg-red-400" />
-                <span>Blocked (calendar)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block w-3 h-3 rounded-sm bg-white border border-brand-border" />
-                <span>Free</span>
-              </div>
-            </div>
+        <div className="flex items-center gap-4 mb-3 text-xs text-brand-muted">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm bg-green-500" />
+            <span>Booking</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm bg-red-400" />
+            <span>Blocked (calendar)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm bg-white border border-brand-border" />
+            <span>Free</span>
+          </div>
+        </div>
 
-            {error && (
-              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">{error}</div>
-            )}
-
-            {view === "week" ? (
-              <WeekGrid today={today} weekStart={range.from} data={data} onBookingClick={setSelectedBooking} />
-            ) : (
-              <MonthGrid
-                today={today}
-                monthCursor={cursor}
-                data={data}
-                onDayClick={(d) => { setCursor(d); setView("week"); }}
-                horizonMax={horizonMax}
-              />
-            )}
-
-            <p className="mt-4 text-xs text-brand-muted">
-              Students can book any free hour within the next {MAX_HORIZON_DAYS} days.
-            </p>
-          </>
+        {error && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">{error}</div>
         )}
+
+        {view === "week" ? (
+          <WeekGrid today={today} weekStart={range.from} data={data} onBookingClick={setSelectedBooking} />
+        ) : (
+          <MonthGrid
+            today={today}
+            monthCursor={cursor}
+            data={data}
+            onDayClick={(d) => { setCursor(d); setView("week"); }}
+            horizonMax={horizonMax}
+          />
+        )}
+
+        <p className="mt-4 text-xs text-brand-muted">
+          Students can book any free hour within the next {MAX_HORIZON_DAYS} days.
+        </p>
       </div>
 
       {selectedBooking && (
         <BookingDetailsModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
       )}
-    </div>
-  );
-}
-
-function ModeSwitch({
-  mode,
-  onChange,
-  disabled,
-}: {
-  mode: AvailabilityMode;
-  onChange: (m: AvailabilityMode) => void;
-  disabled?: boolean;
-}) {
-  const isSync = mode === "CALENDAR_SYNC";
-  return (
-    <div className="flex items-center gap-2.5">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange("CUSTOM_SLOTS")}
-        className={`text-sm font-semibold transition-colors disabled:opacity-60 ${
-          !isSync ? "text-brand-black" : "text-brand-muted hover:text-brand-black"
-        }`}
-      >
-        Custom Slots
-      </button>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isSync}
-        aria-label="Toggle between Custom Slots and Calendar Sync"
-        disabled={disabled}
-        onClick={() => onChange(isSync ? "CUSTOM_SLOTS" : "CALENDAR_SYNC")}
-        className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-60 flex-shrink-0 ${
-          isSync ? "bg-brand-red" : "bg-brand-border"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-            isSync ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
-      </button>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange("CALENDAR_SYNC")}
-        className={`text-sm font-semibold transition-colors disabled:opacity-60 ${
-          isSync ? "text-brand-black" : "text-brand-muted hover:text-brand-black"
-        }`}
-      >
-        Calendar Sync
-      </button>
     </div>
   );
 }

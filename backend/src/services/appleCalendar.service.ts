@@ -1,7 +1,8 @@
 import * as ical from 'node-ical';
+import moment from 'moment-timezone';
 import prisma from '../client';
 import { encrypt, decrypt } from '../utils/tokenEncryption';
-import instructorAvailabilityModeService from './instructorAvailabilityMode.service';
+import { LONDON_TZ } from '../utils/instructorAvailability';
 
 const PROVIDER = 'apple_ics';
 const SOURCE = 'apple_ics';
@@ -57,6 +58,18 @@ type ParsedEvent = {
   isAllDay: boolean;
 };
 
+// node-ical builds VALUE=DATE (all-day) events using the process's local
+// timezone getters, not UTC or Europe/London. Re-anchor the Y/M/D it parsed
+// (read back with the same local getters) to Europe/London midnight so
+// all-day events line up with the business's real calendar day regardless
+// of what timezone the server process happens to run in.
+function toLondonMidnight(d: Date): Date {
+  return moment
+    .tz([d.getFullYear(), d.getMonth(), d.getDate()], LONDON_TZ)
+    .startOf('day')
+    .toDate();
+}
+
 function parseEvents(icsText: string, horizonEnd: Date): ParsedEvent[] {
   const parsed = ical.sync.parseICS(icsText);
   const now = new Date();
@@ -68,6 +81,7 @@ function parseEvents(icsText: string, horizonEnd: Date): ParsedEvent[] {
     if (!item.start || !item.end) continue;
 
     const uid = item.uid ?? key;
+    const isAllDay = !!(item.datetype === 'date');
 
     // Handle recurring events by expanding via rrule
     if (item.rrule) {
@@ -83,9 +97,9 @@ function parseEvents(icsText: string, horizonEnd: Date): ParsedEvent[] {
         const end = override ? new Date(override.end) : new Date(instStart.getTime() + duration);
         events.push({
           externalId: `${uid}::${instStart.toISOString()}`,
-          startsAt: start,
-          endsAt: end,
-          isAllDay: !!(item.datetype === 'date'),
+          startsAt: isAllDay ? toLondonMidnight(start) : start,
+          endsAt: isAllDay ? toLondonMidnight(end) : end,
+          isAllDay,
         });
       }
     } else {
@@ -95,9 +109,9 @@ function parseEvents(icsText: string, horizonEnd: Date): ParsedEvent[] {
       if (start > horizonEnd) continue;
       events.push({
         externalId: uid,
-        startsAt: start,
-        endsAt: end,
-        isAllDay: !!(item.datetype === 'date'),
+        startsAt: isAllDay ? toLondonMidnight(start) : start,
+        endsAt: isAllDay ? toLondonMidnight(end) : end,
+        isAllDay,
       });
     }
   }
@@ -189,7 +203,6 @@ export async function disconnect(userId: string): Promise<void> {
       where: { instructorId, source: SOURCE },
     });
   }
-  await instructorAvailabilityModeService.autoFlipToCustomSlotsIfNeeded(userId);
 }
 
 /**

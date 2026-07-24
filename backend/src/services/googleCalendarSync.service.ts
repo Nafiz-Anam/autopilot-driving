@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import moment from 'moment-timezone';
 import prisma from '../client';
 import config from '../config/config';
 import {
@@ -7,6 +8,7 @@ import {
   PROVIDER_ID,
   AUTOPILOT_SOURCE_TAG,
 } from './googleCalendar.service';
+import { LONDON_TZ } from '../utils/instructorAvailability';
 
 const WATCH_TTL_MS = 7 * 24 * 60 * 60 * 1000; // Google max
 const SYNC_HORIZON_DAYS = 90;
@@ -22,13 +24,13 @@ async function findInstructorIdForUser(userId: string): Promise<string | null> {
 function extractStart(ev: any): { at: Date; allDay: boolean } | null {
   if (!ev.start) return null;
   if (ev.start.dateTime) return { at: new Date(ev.start.dateTime), allDay: false };
-  if (ev.start.date) return { at: new Date(ev.start.date + 'T00:00:00Z'), allDay: true };
+  if (ev.start.date) return { at: moment.tz(ev.start.date, LONDON_TZ).startOf('day').toDate(), allDay: true };
   return null;
 }
 
 function extractEnd(ev: any, fallback: Date): Date {
   if (ev.end?.dateTime) return new Date(ev.end.dateTime);
-  if (ev.end?.date) return new Date(ev.end.date + 'T00:00:00Z');
+  if (ev.end?.date) return moment.tz(ev.end.date, LONDON_TZ).startOf('day').toDate();
   return new Date(fallback.getTime() + 60 * 60 * 1000);
 }
 

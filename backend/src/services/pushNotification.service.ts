@@ -1,9 +1,11 @@
 import { Request } from 'express';
 import { NotificationType } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import moment from 'moment-timezone';
 import config from '../config/config';
 import ApiError from '../utils/ApiError';
 import httpStatus from 'http-status';
+import { LONDON_TZ } from '../utils/instructorAvailability';
 
 interface PushNotificationData {
   userId: string;
@@ -60,8 +62,8 @@ class PushNotificationService {
       return false;
     }
 
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const now = moment.tz(LONDON_TZ);
+    const currentTime = now.hours() * 60 + now.minutes();
     const [startHour, startMin] = preferences.quietHours.start.split(':').map(Number);
     const [endHour, endMin] = preferences.quietHours.end.split(':').map(Number);
     const startTime = startHour * 60 + startMin;
