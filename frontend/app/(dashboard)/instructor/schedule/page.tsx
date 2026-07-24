@@ -37,7 +37,7 @@ type Overview = {
 };
 
 type ViewMode = "week" | "month";
-type Section = "calendar" | "availability";
+type Section = "slots" | "calendar";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -155,7 +155,7 @@ export default function InstructorSchedulePage() {
   }, []);
   const horizonMax = useMemo(() => addDays(today, MAX_HORIZON_DAYS), [today]);
 
-  const [section, setSection] = useState<Section>("availability");
+  const [section, setSection] = useState<Section>("slots");
   const [view, setView] = useState<ViewMode>("week");
   const [cursor, setCursor] = useState<Date>(() => new Date());
   const [data, setData] = useState<Overview | null>(null);
@@ -163,6 +163,10 @@ export default function InstructorSchedulePage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modeSaving, setModeSaving] = useState(false);
+
+  const mode: AvailabilityMode = data?.availabilityMode ?? "CUSTOM_SLOTS";
+  const showSlotsTabs = mode === "CUSTOM_SLOTS";
+  const effectiveSection: Section = showSlotsTabs ? section : "calendar";
 
   const range = useMemo(() => {
     if (view === "week") {
@@ -204,8 +208,8 @@ export default function InstructorSchedulePage() {
   // Range change: only reload when user is actively viewing the calendar section.
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (section === "calendar") load();
-  }, [section, range.from, range.to]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (effectiveSection === "calendar") load();
+  }, [effectiveSection, range.from, range.to]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goPrev = () => setCursor(view === "week" ? addDays(cursor, -7) : addMonths(cursor, -1));
   const goNext = () => setCursor(view === "week" ? addDays(cursor, 7) : addMonths(cursor, 1));
@@ -259,72 +263,58 @@ export default function InstructorSchedulePage() {
   return (
     <div className="min-h-screen bg-brand-surface">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-brand-black">My Schedule</h1>
-          <p className="text-sm text-brand-muted mt-1">Manage your availability and view your calendar.</p>
+        <div className="mb-6 flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-brand-black">My Schedule</h1>
+            <p className="text-sm text-brand-muted mt-1">Manage your availability and view your calendar.</p>
+          </div>
+          <ModeSwitch mode={mode} disabled={modeSaving} onChange={(m) => handleSetMode(m)} />
         </div>
 
-        {/* Section tabs */}
-        <div className="flex gap-1 bg-white border border-brand-border rounded-2xl p-1 mb-5 w-fit">
-          <button
-            onClick={() => setSection("availability")}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              section === "availability"
-                ? "bg-brand-red text-white shadow-sm"
-                : "text-brand-muted hover:text-brand-black"
-            }`}
-          >
-            My Availability
-          </button>
-          <button
-            onClick={() => setSection("calendar")}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              section === "calendar"
-                ? "bg-brand-red text-white shadow-sm"
-                : "text-brand-muted hover:text-brand-black"
-            }`}
-          >
-            Calendar View
-          </button>
-        </div>
+        {showSlotsTabs && (
+          <div className="flex gap-1 bg-white border border-brand-border rounded-2xl p-1 mb-5 w-fit">
+            <button
+              onClick={() => setSection("slots")}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                section === "slots"
+                  ? "bg-brand-red text-white shadow-sm"
+                  : "text-brand-muted hover:text-brand-black"
+              }`}
+            >
+              My Slots
+            </button>
+            <button
+              onClick={() => setSection("calendar")}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                section === "calendar"
+                  ? "bg-brand-red text-white shadow-sm"
+                  : "text-brand-muted hover:text-brand-black"
+              }`}
+            >
+              Calendar View
+            </button>
+          </div>
+        )}
 
-        {section === "availability" && (
+        {effectiveSection === "slots" && (
           <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-5">
-            {/* Mode toggle */}
-            <div className="flex items-center gap-2 mb-4 p-1 bg-brand-surface rounded-xl w-fit">
-              {(["CUSTOM_SLOTS", "CALENDAR_SYNC"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  disabled={modeSaving}
-                  onClick={() => handleSetMode(m)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    data?.availabilityMode === m ? "bg-white text-brand-black shadow-sm" : "text-brand-muted hover:text-brand-black"
-                  }`}
-                >
-                  {m === "CUSTOM_SLOTS" ? "Custom Slots" : "Calendar Sync"}
-                </button>
-              ))}
-            </div>
-
-            {data?.availabilityMode === "CALENDAR_SYNC" ? (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 text-xs text-blue-800">
-                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>
-                  Your availability is driven by your connected calendar. Blocks you add in Google/Apple Calendar automatically
-                  make those slots unbookable. Switch to Custom Slots to manage your own weekly template instead.
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-brand-muted mb-4">Students book against the weekly template below.</p>
-            )}
-
+            <p className="text-xs text-brand-muted mb-4">Students book against the weekly template below.</p>
             <AvailabilityGridEditor fetchSchedule={fetchSchedule} saveSchedule={saveSchedule} />
           </div>
         )}
 
-        {section === "calendar" && (
+        {effectiveSection === "calendar" && (
           <>
+            {mode === "CALENDAR_SYNC" && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 text-xs text-blue-800">
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  Your availability is driven by your connected calendar. Blocks you add in Google/Apple Calendar automatically
+                  make those slots unbookable. Switch to Custom Slots to manage a weekly template instead.
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <div className="inline-flex bg-white border border-brand-border rounded-xl p-0.5 text-xs font-semibold">
@@ -452,6 +442,59 @@ export default function InstructorSchedulePage() {
       {selectedBooking && (
         <BookingDetailsModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
       )}
+    </div>
+  );
+}
+
+function ModeSwitch({
+  mode,
+  onChange,
+  disabled,
+}: {
+  mode: AvailabilityMode;
+  onChange: (m: AvailabilityMode) => void;
+  disabled?: boolean;
+}) {
+  const isSync = mode === "CALENDAR_SYNC";
+  return (
+    <div className="flex items-center gap-2.5">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onChange("CUSTOM_SLOTS")}
+        className={`text-sm font-semibold transition-colors disabled:opacity-60 ${
+          !isSync ? "text-brand-black" : "text-brand-muted hover:text-brand-black"
+        }`}
+      >
+        Custom Slots
+      </button>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isSync}
+        aria-label="Toggle between Custom Slots and Calendar Sync"
+        disabled={disabled}
+        onClick={() => onChange(isSync ? "CUSTOM_SLOTS" : "CALENDAR_SYNC")}
+        className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-60 flex-shrink-0 ${
+          isSync ? "bg-brand-red" : "bg-brand-border"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+            isSync ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onChange("CALENDAR_SYNC")}
+        className={`text-sm font-semibold transition-colors disabled:opacity-60 ${
+          isSync ? "text-brand-black" : "text-brand-muted hover:text-brand-black"
+        }`}
+      >
+        Calendar Sync
+      </button>
     </div>
   );
 }
