@@ -133,6 +133,33 @@ const cancelMyBooking = async (req: Request, res: Response) => {
   }
 };
 
+const markBookingComplete = async (req: Request, res: Response) => {
+  try {
+    const userId = req.drivingUser?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorised' });
+
+    const bookingId = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
+
+    const result = await instructorAppService.markMyBookingComplete(bookingId, userId);
+
+    if ('error' in result) {
+      const errCode: Record<string, number> = {
+        NOT_FOUND: 404,
+        FORBIDDEN: 403,
+        BAD_STATE: 400,
+        NOT_YET_DUE: 409,
+      };
+      const code = errCode[result.error] ?? 400;
+      return res.status(code).json({ error: result.error });
+    }
+
+    return res.json({ success: true, data: result.data });
+  } catch (err) {
+    console.error('[instructor/bookings/:id/complete PATCH]', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 const postReschedule = async (req: Request, res: Response) => {
   try {
     const userId = req.drivingUser?.id;
@@ -225,6 +252,7 @@ export default {
   getStats,
   getMyBookings,
   cancelMyBooking,
+  markBookingComplete,
   postReschedule,
   patchReschedule,
 };

@@ -2,6 +2,7 @@ import moment from 'moment-timezone';
 import prisma from '../client';
 import refundService from './refund.service';
 import emailService from './email.service';
+import progressReportService from './progressReport.service';
 import { LONDON_TZ } from '../utils/instructorAvailability';
 
 type InstructorProfileRow = {
@@ -282,10 +283,15 @@ const getInstructorStudentsByUserId = async (userId: string) => {
     studentMap.get(sid)!.bookings.push(booking);
   }
 
-  return Array.from(studentMap.values()).map(({ student, bookings: sb }) => {
+  const entries = Array.from(studentMap.values());
+  const overviews = await Promise.all(
+    entries.map(({ student }) => progressReportService.getOverviewForStudent(student.id))
+  );
+
+  return entries.map(({ student, bookings: sb }, i) => {
     const completedLessons = sb.filter(b => b.status === 'COMPLETED').length;
     const lastLesson = sb[0]?.scheduledAt?.toISOString() ?? null;
-    const progress = Math.min(Math.round((completedLessons / 20) * 100), 100);
+    const overview = overviews[i];
     const recentBookings = sb.slice(0, 5).map(b => ({
       date: b.scheduledAt.toISOString(),
       lessonType: b.lessonType,
@@ -303,7 +309,9 @@ const getInstructorStudentsByUserId = async (userId: string) => {
       totalLessons: sb.length,
       completedLessons,
       lastLesson,
-      progress,
+      // Bound to actual scored skills from published progress reports, not just a lesson-count proxy.
+      progress: overview.overallPercent,
+      progressReportsCount: overview.reportsCount,
       recentBookings,
     };
   });
@@ -570,7 +578,19 @@ const listMyBookings = async (userId: string, params: { status?: string; page?: 
       proposedDateTime: string;
       reason: string | null;
     },
+    progressReportStatus: 'NONE' as 'NONE' | 'DRAFT' | 'PUBLISHED',
   }));
+
+  const progressReports = await prisma.lessonProgressReport.findMany({
+    where: { bookingId: { in: bookings.map(b => b.id) } },
+    select: { bookingId: true, published: true },
+  });
+  const publishedByBooking = new Map(progressReports.map(r => [r.bookingId, r.published]));
+  for (const b of bookings) {
+    if (publishedByBooking.has(b.id)) {
+      b.progressReportStatus = publishedByBooking.get(b.id) ? 'PUBLISHED' : 'DRAFT';
+    }
+  }
 
   const pending = await fetchPendingReschedules(bookings.map(b => b.id));
   for (const b of bookings) {
@@ -703,6 +723,43 @@ const cancelMyBooking = async (
   return { data: { id: bookingId, status: 'CANCELLED' as const, refund: refundResult } };
 };
 
+const markMyBookingComplete = async (bookingId: string, userId: string) => {
+  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+    userId
+  );
+  const instructor = instructorRows[0];
+  if (!instructor) return { error: 'NOT_FOUND' as const };
+
+  const bookingRows = await prisma.$queryRawUnsafe<
+    Array<{
+      id: string;
+      instructorId: string;
+      status: string;
+      scheduledAt: Date;
+      durationMins: number;
+    }>
+  >(
+    `SELECT id, "instructorId", status::text AS status, "scheduledAt", "durationMins"
+     FROM "Booking" WHERE id = $1 LIMIT 1`,
+    bookingId
+  );
+  const booking = bookingRows[0];
+  if (!booking) return { error: 'NOT_FOUND' as const };
+  if (booking.instructorId !== instructor.id) return { error: 'FORBIDDEN' as const };
+  if (booking.status !== 'CONFIRMED') return { error: 'BAD_STATE' as const };
+
+  const endsAt = new Date(booking.scheduledAt).getTime() + booking.durationMins * 60_000;
+  if (endsAt > Date.now()) return { error: 'NOT_YET_DUE' as const };
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE "Booking" SET status = 'COMPLETED', "updatedAt" = NOW() WHERE id = $1`,
+    bookingId
+  );
+
+  return { data: { id: bookingId, status: 'COMPLETED' as const } };
+};
+
 export default {
   getInstructorProfileByUserId,
   updateInstructorProfileByUserId,
@@ -711,4 +768,5 @@ export default {
   getInstructorStatsByUserId,
   listMyBookings,
   cancelMyBooking,
+  markMyBookingComplete,
 };

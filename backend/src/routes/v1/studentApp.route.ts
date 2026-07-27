@@ -1,8 +1,11 @@
 import express from 'express';
 import studentAppController from '../../controllers/studentApp.controller';
 import calendarController from '../../controllers/calendar.controller';
+import progressReportController from '../../controllers/progressReport.controller';
 import nextAuthBridge from '../../middlewares/nextAuthBridge';
 import { loadDrivingSchoolUser, requireDrivingRoles } from '../../middlewares/drivingSchoolUser';
+import validate from '../../middlewares/validate';
+import progressReportValidation from '../../validations/progressReport.validation';
 
 const router = express.Router();
 
@@ -32,6 +35,18 @@ router.post(
   '/theory/progress',
   requireDrivingRoles('STUDENT'),
   studentAppController.createTheoryProgress
+);
+
+router.get(
+  '/bookings/:id/progress-report',
+  requireDrivingRoles('STUDENT'),
+  validate(progressReportValidation.getReport),
+  progressReportController.getStudentReport
+);
+router.get(
+  '/progress/overview',
+  requireDrivingRoles('STUDENT'),
+  progressReportController.getStudentOverview
 );
 
 export default router;

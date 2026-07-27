@@ -112,7 +112,19 @@ const listForStudent = async (studentId: string) => {
       proposedDateTime: string;
       reason: string | null;
     },
+    progressReportStatus: 'NONE' as 'NONE' | 'DRAFT' | 'PUBLISHED',
   }));
+
+  const progressReports = await prisma.lessonProgressReport.findMany({
+    where: { bookingId: { in: bookings.map(b => b.id) } },
+    select: { bookingId: true, published: true },
+  });
+  const publishedByBooking = new Map(progressReports.map(r => [r.bookingId, r.published]));
+  for (const b of bookings) {
+    if (publishedByBooking.has(b.id)) {
+      b.progressReportStatus = publishedByBooking.get(b.id) ? 'PUBLISHED' : 'DRAFT';
+    }
+  }
 
   const pending = await fetchPendingReschedules(bookings.map(b => b.id));
   for (const b of bookings) {
