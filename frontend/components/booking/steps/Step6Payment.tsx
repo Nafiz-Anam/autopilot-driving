@@ -1,16 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import {
-  Elements,
-  PaymentElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
-import type { Stripe } from "@stripe/stripe-js";
+import { useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
+import { Elements } from "@stripe/react-stripe-js";
 import { Tag, Lock, CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import { BookingSummary } from "@/components/booking/BookingSummary";
@@ -18,106 +11,8 @@ import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
-
-/* ── Inner payment form (inside <Elements>) ─────────────────── */
-function PaymentForm({
-  total,
-  onSuccess,
-}: {
-  total: number;
-  onSuccess: () => void;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const paymentIntentIdFromStore = useBookingStore((s) => s.paymentIntentId);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function confirmPayment() {
-    if (!stripe || !elements) return false;
-    setError("");
-
-    const { error: submitError, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/booking?step=7`,
-      },
-      redirect: "if_required",
-    });
-
-    if (submitError) {
-      setError(submitError.message ?? "Payment failed. Please try again.");
-      return false;
-    }
-
-    const piId = paymentIntent?.id ?? paymentIntentIdFromStore;
-    if (!piId) {
-      setError("Could not confirm payment. Please try again.");
-      return false;
-    }
-
-    try {
-      const confirmHeaders = await getNextAuthBridgeHeaders();
-      await axios.post(backendApiUrl("/payments/confirm"), { paymentIntentId: piId }, {
-        headers: confirmHeaders,
-      });
-    } catch {
-      /* webhook or retry may still complete the booking */
-    }
-
-    return true;
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    const ok = await confirmPayment();
-    if (ok) onSuccess();
-    else setLoading(false);
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-5">
-        <PaymentElement options={{ layout: "tabs" }} />
-      </div>
-
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4"
-        >
-          <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          {error}
-        </motion.div>
-      )}
-
-      <button
-        type="submit"
-        disabled={!stripe || loading}
-        className="w-full py-4 bg-brand-red text-white rounded-full font-bold text-base hover:bg-brand-orange active:scale-[0.99] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-brand-red/25 flex items-center justify-center gap-2"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Processing…
-          </>
-        ) : (
-          <>
-            <Lock className="w-4 h-4" />
-            Confirm &amp; Pay £{Math.max(0, total)}
-          </>
-        )}
-      </button>
-
-      <p className="text-center text-xs text-brand-muted mt-3 flex items-center justify-center gap-1.5">
-        <Lock className="w-3 h-3" />
-        Secure payment via Stripe. SSL encrypted.
-      </p>
-    </form>
-  );
-}
+import { useStripePromise, STRIPE_APPEARANCE } from "@/lib/stripe-client";
+import { StripePaymentForm } from "@/components/payment/StripePaymentForm";
 
 /* ── Promo code section ─────────────────────────────────────── */
 function PromoInput() {
@@ -260,25 +155,13 @@ export function Step6Payment() {
     prevStep,
   } = useBookingStore();
 
-  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+  const stripePromise = useStripePromise();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadingIntent, setLoadingIntent] = useState(false);
   const [initError, setInitError] = useState("");
   const [paymentStarted, setPaymentStarted] = useState(false);
 
   const total = Math.max(0, (selectedPackage?.price ?? 0) - promoDiscount);
-
-  // Load Stripe publishable key from server (admin can change it via DB)
-  useEffect(() => {
-    fetch(backendApiUrl("/site/stripe/config"))
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.publishableKey) {
-          setStripePromise(loadStripe(d.publishableKey));
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   async function initPayment() {
     setLoadingIntent(true);
@@ -422,19 +305,32 @@ export function Step6Payment() {
             ) : clientSecret && stripePromise ? (
               <Elements
                 stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  appearance: {
-                    theme: "stripe",
-                    variables: {
-                      colorPrimary: "#E8200A",
-                      borderRadius: "12px",
-                      fontFamily: "Barlow, system-ui, sans-serif",
-                    },
-                  },
-                }}
+                options={{ clientSecret, appearance: STRIPE_APPEARANCE }}
               >
-                <PaymentForm total={total} onSuccess={nextStep} />
+                <StripePaymentForm
+                  amount={total}
+                  buttonLabel="Confirm & Pay"
+                  returnUrl={`${window.location.origin}/booking?step=7`}
+                  onConfirmed={async (piId) => {
+                    try {
+                      const confirmHeaders = await getNextAuthBridgeHeaders();
+                      await axios.post(
+                        backendApiUrl("/payments/confirm"),
+                        { paymentIntentId: piId },
+                        { headers: confirmHeaders }
+                      );
+                    } catch {
+                      /* webhook or retry may still complete the booking */
+                    }
+                    nextStep();
+                  }}
+                  footnote={
+                    <p className="text-center text-xs text-brand-muted mt-3 flex items-center justify-center gap-1.5">
+                      <Lock className="w-3 h-3" />
+                      Secure payment via Stripe. SSL encrypted.
+                    </p>
+                  }
+                />
               </Elements>
             ) : (
               <p className="text-brand-muted text-sm text-center py-8">

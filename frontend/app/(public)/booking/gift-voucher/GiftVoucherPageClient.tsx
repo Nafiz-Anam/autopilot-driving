@@ -6,13 +6,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Gift, Star, CheckCircle2, Loader2, Copy, Check, Lock, XCircle, ArrowLeft } from "lucide-react";
-import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
-import type { Stripe } from "@stripe/stripe-js";
+import { Gift, Star, CheckCircle2, Loader2, Copy, Check, Lock, XCircle } from "lucide-react";
+import { Elements } from "@stripe/react-stripe-js";
 import { giftVoucherSchema, type GiftVoucherInput } from "@/lib/validations/giftVoucher.schema";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
+import { useStripePromise, STRIPE_APPEARANCE } from "@/lib/stripe-client";
+import { StripePaymentForm } from "@/components/payment/StripePaymentForm";
 
 const CONFETTI_COLORS = ["#E8200A", "#FF5500", "#FFB800", "#00C853", "#2979FF", "#AA00FF"];
 
@@ -221,120 +221,6 @@ function Field({
   );
 }
 
-function GiftPayForm({
-  amount,
-  onPaid,
-  onBack,
-}: {
-  amount: number;
-  onPaid: (code: string) => void;
-  onBack: () => void;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [hasWallets, setHasWallets] = useState(false);
-
-  async function confirmPayment() {
-    if (!stripe || !elements) return false;
-    setError("");
-    const { error: err, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/booking/gift-voucher`,
-      },
-      redirect: "if_required",
-    });
-    if (err) {
-      setError(err.message ?? "Payment failed.");
-      return false;
-    }
-    const piId = paymentIntent?.id;
-    if (!piId) {
-      setError("Could not verify payment.");
-      return false;
-    }
-    let code = "";
-    try {
-      const { data } = await axios.post(backendApiUrl("/gift-vouchers/confirm"), {
-        paymentIntentId: piId,
-      });
-      if (data.success && data.data?.code) code = data.data.code;
-    } catch {
-      /* webhook may complete first; parent falls back to payCtx.code */
-    }
-    onPaid(code);
-    return true;
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    const ok = await confirmPayment();
-    if (!ok) setLoading(false);
-  }
-
-  async function handleExpressConfirm() {
-    setLoading(true);
-    const ok = await confirmPayment();
-    if (!ok) setLoading(false);
-  }
-
-  return (
-    <form onSubmit={submit} className="space-y-5">
-      <ExpressCheckoutElement
-        onConfirm={handleExpressConfirm}
-        onReady={({ availablePaymentMethods }) =>
-          setHasWallets(availablePaymentMethods != null)
-        }
-        options={{ buttonHeight: 52 }}
-      />
-
-      {hasWallets && (
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-brand-border" />
-          <span className="text-xs text-brand-muted">or pay by card</span>
-          <div className="h-px flex-1 bg-brand-border" />
-        </div>
-      )}
-
-      <PaymentElement options={{ layout: "tabs" }} />
-      {error && (
-        <div className="flex items-start gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-          <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          {error}
-        </div>
-      )}
-      <button
-        type="submit"
-        disabled={!stripe || loading}
-        className="w-full py-4 bg-brand-red text-white rounded-full font-bold text-base hover:bg-brand-orange disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Processing…
-          </>
-        ) : (
-          <>
-            <Lock className="w-4 h-4" />
-            Pay £{amount}
-          </>
-        )}
-      </button>
-      <button
-        type="button"
-        onClick={onBack}
-        className="w-full py-3 border border-brand-border rounded-full text-sm font-semibold text-brand-black hover:border-brand-red flex items-center justify-center gap-2"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to details
-      </button>
-    </form>
-  );
-}
-
 const inputClass =
   "w-full px-4 py-2.5 border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-red text-sm transition-shadow";
 
@@ -350,7 +236,7 @@ export default function GiftVoucherPageClient() {
   const [voucherCode, setVoucherCode] = useState("");
   const [charCount, setCharCount] = useState(0);
   const [formError, setFormError] = useState("");
-  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+  const stripePromise = useStripePromise();
   const [payCtx, setPayCtx] = useState<{
     clientSecret: string;
     code: string;
@@ -370,15 +256,6 @@ export default function GiftVoucherPageClient() {
 
   const watchedValues = watch();
   const finalAmount = useCustom ? parseFloat(customInput) || 0 : amount;
-
-  useEffect(() => {
-    fetch(backendApiUrl("/site/stripe/config"))
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.publishableKey) setStripePromise(loadStripe(d.publishableKey));
-      })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     const pi = searchParams.get("payment_intent");
@@ -445,25 +322,29 @@ export default function GiftVoucherPageClient() {
             </p>
             <Elements
               stripe={stripePromise}
-              options={{
-                clientSecret: payCtx.clientSecret,
-                appearance: {
-                  theme: "stripe",
-                  variables: {
-                    colorPrimary: "#E8200A",
-                    borderRadius: "12px",
-                    fontFamily: "Barlow, system-ui, sans-serif",
-                  },
-                },
-              }}
+              options={{ clientSecret: payCtx.clientSecret, appearance: STRIPE_APPEARANCE }}
             >
-              <GiftPayForm
+              <StripePaymentForm
                 amount={payCtx.amount}
-                onPaid={afterInlinePay}
-                onBack={() => {
+                buttonLabel="Pay"
+                returnUrl={`${window.location.origin}/booking/gift-voucher`}
+                onConfirmed={async (piId) => {
+                  let code = "";
+                  try {
+                    const { data } = await axios.post(backendApiUrl("/gift-vouchers/confirm"), {
+                      paymentIntentId: piId,
+                    });
+                    if (data.success && data.data?.code) code = data.data.code;
+                  } catch {
+                    /* webhook may complete first; parent falls back to payCtx.code */
+                  }
+                  afterInlinePay(code);
+                }}
+                onCancel={() => {
                   setPhase("form");
                   setPayCtx(null);
                 }}
+                cancelLabel="Back to details"
               />
             </Elements>
           </div>
