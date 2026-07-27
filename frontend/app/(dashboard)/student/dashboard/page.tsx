@@ -13,10 +13,16 @@ import {
   TrendingUp,
   TrendingDown,
   Car,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
+import { studentApiFetch } from "@/lib/student-api";
+import {
+  CompetencyLevel,
+  CompetencyLevelControl,
+} from "@/components/progress/CompetencyLevelControl";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type BookingStatus = "CONFIRMED" | "COMPLETED" | "CANCELLED" | "PENDING";
@@ -39,6 +45,18 @@ interface ApiBooking {
   lessonType: string;
   status: BookingStatus;
   durationMins: number;
+}
+
+interface SkillProgress {
+  skillId: string;
+  skillName: string;
+  level: CompetencyLevel | null;
+}
+
+interface ProgressOverview {
+  reportsCount: number;
+  overallPercent: number;
+  skills: SkillProgress[];
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -186,15 +204,17 @@ export default function StudentDashboard() {
 
   const [stats, setStats] = useState<ApiStats | null>(null);
   const [bookings, setBookings] = useState<ApiBooking[]>([]);
+  const [progress, setProgress] = useState<ProgressOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
         const bookingHeaders = await getNextAuthBridgeHeaders();
-        const [statsRes, bookingsRes] = await Promise.all([
+        const [statsRes, bookingsRes, progressRes] = await Promise.all([
           fetch(backendApiUrl("/student/stats"), { headers: bookingHeaders }),
           fetch(backendApiUrl("/bookings"), { headers: bookingHeaders }),
+          studentApiFetch("/progress/overview"),
         ]);
         if (statsRes.ok) {
           const data = await statsRes.json();
@@ -203,6 +223,10 @@ export default function StudentDashboard() {
         if (bookingsRes.ok) {
           const data = await bookingsRes.json();
           setBookings(Array.isArray(data) ? data : data.data ?? []);
+        }
+        if (progressRes.ok) {
+          const data = await progressRes.json();
+          setProgress(data.data);
         }
       } finally {
         setLoading(false);
@@ -374,6 +398,39 @@ export default function StudentDashboard() {
           </span>
         </div>
       </motion.div>
+
+      {/* ── Practical Skills Progress — temporarily disabled
+      <motion.div
+        variants={itemVariants}
+        className="bg-white rounded-2xl border border-brand-border shadow-sm p-6 mb-8"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="w-4 h-4 text-brand-red" />
+            <h3 className="font-bold text-brand-black text-sm">
+              Practical Skills Progress
+            </h3>
+          </div>
+          {progress && progress.reportsCount > 0 && (
+            <span className="text-xl font-extrabold text-brand-red">{progress.overallPercent}%</span>
+          )}
+        </div>
+        {!progress || progress.reportsCount === 0 ? (
+          <p className="text-sm text-brand-muted">
+            Complete lessons and your instructor will publish progress reports here.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+            {progress.skills.map((skill) => (
+              <div key={skill.skillId} className="flex items-center justify-between gap-3">
+                <span className="text-xs text-brand-black">{skill.skillName}</span>
+                <CompetencyLevelControl value={skill.level} readOnly />
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+      */}
 
       {/* ── CTA ── */}
       <motion.div

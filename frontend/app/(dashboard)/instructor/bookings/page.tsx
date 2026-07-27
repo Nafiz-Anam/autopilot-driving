@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, ChevronLeft, ChevronRight, InboxIcon, X, CalendarClock } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, InboxIcon, X, CalendarClock, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
@@ -28,7 +29,14 @@ interface Booking {
   notes: string | null;
   student: { id: string; name: string | null; email: string };
   pendingReschedule?: PendingReschedule | null;
+  progressReportStatus: "NONE" | "DRAFT" | "PUBLISHED";
 }
+
+const PROGRESS_REPORT_CONFIG: Record<"NONE" | "DRAFT" | "PUBLISHED", { label: string; classes: string }> = {
+  NONE:      { label: "Add Progress Report", classes: "border-brand-border text-brand-muted hover:bg-brand-surface hover:text-brand-black" },
+  DRAFT:     { label: "Report Draft",        classes: "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100" },
+  PUBLISHED: { label: "Report Published",    classes: "border-green-300 bg-green-50 text-green-800 hover:bg-green-100" },
+};
 
 const STATUS_TABS = [
   { value: "", label: "All" },
@@ -73,6 +81,9 @@ function formatTime(iso: string) {
 }
 function hoursUntil(scheduledAt: string) {
   return (new Date(scheduledAt).getTime() - Date.now()) / (1000 * 60 * 60);
+}
+function hasLessonEnded(scheduledAt: string, durationMins: number) {
+  return new Date(scheduledAt).getTime() + durationMins * 60_000 <= Date.now();
 }
 function toLocalDatetimeValue(iso: string) {
   const d = new Date(iso);
@@ -299,6 +310,21 @@ export default function InstructorBookingsPage() {
     finally { setUpdatingId(null); }
   }
 
+  async function handleMarkComplete(booking: Booking) {
+    setUpdatingId(booking.id);
+    try {
+      const headers = await getNextAuthBridgeHeaders();
+      const res = await fetch(backendApiUrl(`/instructor/bookings/${booking.id}/complete`), {
+        method: "PATCH",
+        headers,
+      });
+      if (res.ok) {
+        setBookings((prev) => prev.map((b) => b.id === booking.id ? { ...b, status: "COMPLETED" } : b));
+      }
+    } catch { /* ignore */ }
+    finally { setUpdatingId(null); }
+  }
+
   return (
     <>
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
@@ -371,6 +397,7 @@ export default function InstructorBookingsPage() {
                   const pc = PAYMENT_CONFIG[booking.paymentStatus] ?? "bg-gray-100 text-brand-muted border border-gray-200";
                   const typeLabel = LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType;
                   const isActive = ["PENDING", "CONFIRMED"].includes(booking.status);
+                  const lessonEnded = hasLessonEnded(booking.scheduledAt, booking.durationMins);
                   const busy = updatingId === booking.id;
                   const pr = booking.pendingReschedule;
                   const actionRequired = pr && pr.requestedByRole === "STUDENT";
@@ -433,7 +460,13 @@ export default function InstructorBookingsPage() {
                               </button>
                             </div>
                           )}
-                          {isActive && !actionRequired && !awaitingResponse && (
+                          {isActive && !actionRequired && !awaitingResponse && booking.status === "CONFIRMED" && lessonEnded && (
+                            <button onClick={() => handleMarkComplete(booking)} disabled={busy}
+                              className="text-xs px-2.5 py-1 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50">
+                              Mark Complete
+                            </button>
+                          )}
+                          {isActive && !actionRequired && !awaitingResponse && !lessonEnded && (
                             <>
                               <button onClick={() => setRescheduleBooking(booking)}
                                 className="text-xs px-2.5 py-1 border border-brand-border text-brand-muted rounded-lg font-medium hover:bg-brand-surface hover:text-brand-black transition-colors">
@@ -444,6 +477,13 @@ export default function InstructorBookingsPage() {
                                 Cancel
                               </button>
                             </>
+                          )}
+                          {booking.status === "COMPLETED" && (
+                            <Link href={`/instructor/bookings/${booking.id}`}
+                              className={cn("inline-flex items-center gap-1 text-xs px-2.5 py-1 border rounded-lg font-medium transition-colors",
+                                PROGRESS_REPORT_CONFIG[booking.progressReportStatus].classes)}>
+                              <ClipboardCheck className="w-3 h-3" />{PROGRESS_REPORT_CONFIG[booking.progressReportStatus].label}
+                            </Link>
                           )}
                         </div>
                       </td>

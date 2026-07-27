@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, CalendarPlus, InboxIcon, RotateCcw, X, CalendarClock, AlertTriangle } from "lucide-react";
+import { CalendarDays, CalendarPlus, InboxIcon, RotateCcw, X, CalendarClock, AlertTriangle, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
@@ -33,7 +34,14 @@ interface Booking {
     areas: string[];
   };
   pendingReschedule?: PendingReschedule | null;
+  progressReportStatus: "NONE" | "DRAFT" | "PUBLISHED";
 }
+
+const FEEDBACK_CONFIG: Record<"NONE" | "DRAFT" | "PUBLISHED", { label: string; classes: string }> = {
+  NONE:      { label: "Instructor Feedback", classes: "border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100" },
+  DRAFT:     { label: "Instructor Feedback", classes: "border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100" },
+  PUBLISHED: { label: "Instructor Feedback", classes: "border-green-300 bg-green-50 text-green-800 hover:bg-green-100" },
+};
 
 const STATUS_TABS = [
   { value: "ALL",        label: "All" },
@@ -79,6 +87,9 @@ function formatTime(iso: string) {
 }
 function hoursUntil(scheduledAt: string) {
   return (new Date(scheduledAt).getTime() - Date.now()) / (1000 * 60 * 60);
+}
+function hasLessonEnded(scheduledAt: string, durationMins: number) {
+  return new Date(scheduledAt).getTime() + durationMins * 60_000 <= Date.now();
 }
 function toLocalDatetimeValue(iso: string) {
   const d = new Date(iso);
@@ -379,6 +390,7 @@ export default function StudentBookingsPage() {
                   const pc = PAYMENT_CONFIG[booking.paymentStatus] ?? "bg-gray-100 text-brand-muted border border-gray-200";
                   const typeLabel = LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType;
                   const isActive = booking.status === "CONFIRMED" || booking.status === "PENDING";
+                  const lessonEnded = hasLessonEnded(booking.scheduledAt, booking.durationMins);
                   const busy = updatingId === booking.id;
                   const pr = booking.pendingReschedule;
                   const actionRequired = pr && pr.requestedByRole === "INSTRUCTOR";
@@ -448,19 +460,21 @@ export default function StudentBookingsPage() {
                             </div>
                           )}
                           {isActive && !actionRequired && !awaitingResponse && (
+                            <button
+                              onClick={() => {
+                                const dt = new Date(booking.scheduledAt);
+                                const end = new Date(dt.getTime() + booking.durationMins * 60000);
+                                const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+                                window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(booking.lessonType)}&dates=${fmt(dt)}/${fmt(end)}`, "_blank");
+                              }}
+                              className="flex items-center gap-1 text-xs font-medium text-brand-muted border border-brand-border px-2.5 py-1 rounded-lg hover:bg-brand-surface transition-colors"
+                            >
+                              <CalendarPlus className="w-3 h-3" />
+                              <span className="hidden sm:inline">Add to Calendar</span>
+                            </button>
+                          )}
+                          {isActive && !actionRequired && !awaitingResponse && !lessonEnded && (
                             <>
-                              <button
-                                onClick={() => {
-                                  const dt = new Date(booking.scheduledAt);
-                                  const end = new Date(dt.getTime() + booking.durationMins * 60000);
-                                  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-                                  window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(booking.lessonType)}&dates=${fmt(dt)}/${fmt(end)}`, "_blank");
-                                }}
-                                className="flex items-center gap-1 text-xs font-medium text-brand-muted border border-brand-border px-2.5 py-1 rounded-lg hover:bg-brand-surface transition-colors"
-                              >
-                                <CalendarPlus className="w-3 h-3" />
-                                <span className="hidden sm:inline">Calendar</span>
-                              </button>
                               <button onClick={() => setRescheduleBooking(booking)}
                                 className="text-xs px-2.5 py-1 border border-brand-border text-brand-muted rounded-lg font-medium hover:bg-brand-surface hover:text-brand-black transition-colors">
                                 Reschedule
@@ -472,9 +486,16 @@ export default function StudentBookingsPage() {
                             </>
                           )}
                           {booking.status === "COMPLETED" && (
-                            <a href="/book" className="flex items-center gap-1 text-xs font-semibold text-brand-red border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-50 transition-colors">
-                              <RotateCcw className="w-3 h-3" />Book Again
-                            </a>
+                            <>
+                              <Link href={`/student/bookings/${booking.id}`}
+                                className={cn("flex items-center gap-1 text-xs font-semibold border px-2.5 py-1 rounded-lg transition-colors",
+                                  FEEDBACK_CONFIG[booking.progressReportStatus].classes)}>
+                                <ClipboardCheck className="w-3 h-3" />{FEEDBACK_CONFIG[booking.progressReportStatus].label}
+                              </Link>
+                              <a href="/book" className="flex items-center gap-1 text-xs font-semibold text-brand-red border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-50 transition-colors">
+                                <RotateCcw className="w-3 h-3" />Book Again
+                              </a>
+                            </>
                           )}
                         </div>
                       </td>

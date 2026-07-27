@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, AlertTriangle, X, Loader2, User, Lock, Calendar } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle, X, Loader2, User, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
-import { GoogleCalendarSyncCard } from "@/components/shared/GoogleCalendarSyncCard";
-import { AppleCalendarSyncCard } from "@/components/shared/AppleCalendarSyncCard";
 
 interface ProfileForm {
   name: string;
@@ -27,12 +25,11 @@ interface SidebarStats {
   theoryScore: number;
 }
 
-type Tab = "details" | "password" | "calendar";
+type Tab = "details" | "password";
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "details", label: "Personal Details", icon: User },
   { id: "password", label: "Change Password", icon: Lock },
-  { id: "calendar", label: "Calendar", icon: Calendar },
 ];
 
 function FormField({
@@ -536,20 +533,6 @@ export default function StudentProfilePage() {
                     </div>
                   </form>
                 </div>
-              </motion.div>
-            )}
-
-            {activeTab === "calendar" && (
-              <motion.div
-                key="calendar"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-4"
-              >
-                <GoogleCalendarSyncCard role="student" />
-                <AppleCalendarSyncCard role="student" />
               </motion.div>
             )}
           </AnimatePresence>

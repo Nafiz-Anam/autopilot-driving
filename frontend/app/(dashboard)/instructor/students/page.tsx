@@ -29,7 +29,8 @@ interface Student {
   initials: string;
   totalLessons: number;
   lastLesson: string;
-  progress: number; // 0-100
+  progress: number; // 0-100, from scored skills in published progress reports
+  progressReportsCount: number;
   phone: string;
   lessons: LessonRecord[];
   notes: string;
@@ -52,6 +53,7 @@ interface ApiStudent {
   completedLessons: number;
   lastLesson: string | null;
   progress: number;
+  progressReportsCount: number;
   recentBookings: ApiStudentBooking[];
 }
 
@@ -94,6 +96,7 @@ function mapApiStudent(s: ApiStudent): Student {
     totalLessons: s.totalLessons,
     lastLesson: s.lastLesson ? formatBookingDate(s.lastLesson) : "No lessons yet",
     progress: s.progress ?? 0,
+    progressReportsCount: s.progressReportsCount ?? 0,
     phone: s.phone ?? "",
     notes: "",
     lessons: (s.recentBookings ?? []).map((b) => ({
@@ -257,20 +260,30 @@ function StudentCard({ student }: { student: Student }) {
             )}
           </div>
 
-          {/* Progress */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-2 bg-brand-border rounded-full overflow-hidden">
-              <motion.div
-                className={cn("h-full rounded-full", progressColor(student.progress))}
-                initial={{ width: "0%" }}
-                animate={{ width: `${student.progress}%` }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
-              />
+          {/* Progress — temporarily disabled
+          <p className="text-[11px] font-semibold text-brand-muted uppercase tracking-wide mb-1">
+            Practical Skills Progress
+          </p>
+          {student.progressReportsCount === 0 ? (
+            <p className="text-xs text-brand-muted">
+              No published progress reports yet
+            </p>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-2 bg-brand-border rounded-full overflow-hidden">
+                <motion.div
+                  className={cn("h-full rounded-full", progressColor(student.progress))}
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${student.progress}%` }}
+                  transition={{ duration: 0.7, ease: "easeOut" }}
+                />
+              </div>
+              <span className="text-xs font-bold text-brand-black shrink-0">
+                {student.progress}%
+              </span>
             </div>
-            <span className="text-xs font-bold text-brand-black shrink-0">
-              {student.progress}%
-            </span>
-          </div>
+          )}
+          */}
         </div>
       </div>
 
