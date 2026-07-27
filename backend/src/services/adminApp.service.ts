@@ -177,12 +177,12 @@ const getStats = async () => {
   const newContactsTodayRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
     `SELECT COUNT(*)::int AS total
      FROM "ContactSubmission"
-     WHERE "createdAt" >= date_trunc('day', now() AT TIME ZONE 'UTC')`
+     WHERE "createdAt" >= date_trunc('day', now() AT TIME ZONE 'Europe/London') AT TIME ZONE 'Europe/London' AT TIME ZONE 'UTC'`
   );
   const bookingsThisMonthRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
     `SELECT COUNT(*)::int AS total
      FROM "Booking"
-     WHERE "createdAt" >= date_trunc('month', now() AT TIME ZONE 'UTC')`
+     WHERE "createdAt" >= date_trunc('month', now() AT TIME ZONE 'Europe/London') AT TIME ZONE 'Europe/London' AT TIME ZONE 'UTC'`
   );
   const activeAreasRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
     `SELECT COUNT(*)::int AS total FROM "Area" WHERE "isActive" = true`

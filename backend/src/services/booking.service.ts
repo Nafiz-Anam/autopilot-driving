@@ -178,8 +178,7 @@ const createForStudent = async (input: CreateBookingInput) => {
   // 60-day booking horizon (matches Google Cal sync window)
   if (!isTheory) {
     const scheduled = new Date(scheduledAt);
-    const horizon = new Date();
-    horizon.setDate(horizon.getDate() + MAX_BOOKING_HORIZON_DAYS);
+    const horizon = moment.tz(LONDON_TZ).add(MAX_BOOKING_HORIZON_DAYS, 'day').toDate();
     if (scheduled > horizon) {
       return { horizonExceeded: true as const };
     }
