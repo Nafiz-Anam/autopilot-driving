@@ -13,32 +13,6 @@ interface InstructorCardProps {
   showBookButton?: boolean;
 }
 
-function AvailabilityDot({ availability }: { availability: "high" | "medium" | "low" }) {
-  return (
-    <span
-      className={cn(
-        "inline-block w-2.5 h-2.5 rounded-full flex-shrink-0",
-        availability === "high" && "bg-green-500",
-        availability === "medium" && "bg-amber-400",
-        availability === "low" && "bg-red-500"
-      )}
-    />
-  );
-}
-
-function getAvailabilityLabel(availability: "high" | "medium" | "low"): string {
-  if (availability === "high") return "High availability";
-  if (availability === "medium") return "Limited slots";
-  return "Few slots left";
-}
-
-function deriveAvailability(instructor: InstructorPublic): "high" | "medium" | "low" {
-  // Placeholder heuristic based on rating / area count; real logic would query slots
-  if (instructor.areas.length >= 3) return "high";
-  if (instructor.areas.length === 2) return "medium";
-  return "low";
-}
-
 export function InstructorCard({
   instructor,
   selected = false,
@@ -48,7 +22,6 @@ export function InstructorCard({
   const name = instructor.user.name;
   const initials = getInitials(name);
   const photoUrl = instructor.user.image ?? instructor.photoUrl;
-  const availability = deriveAvailability(instructor);
 
   return (
     <motion.div
@@ -100,15 +73,6 @@ export function InstructorCard({
               {initials}
             </div>
           )}
-          {/* Availability dot overlay */}
-          <span
-            className={cn(
-              "absolute bottom-0.5 right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white",
-              availability === "high" && "bg-green-500",
-              availability === "medium" && "bg-amber-400",
-              availability === "low" && "bg-red-500"
-            )}
-          />
         </div>
 
         {/* Name + rating */}
@@ -182,17 +146,13 @@ export function InstructorCard({
         </div>
       )}
 
-      {/* Footer: price + availability */}
+      {/* Footer: price */}
       <div className="flex items-center justify-between pt-1 border-t border-brand-border mt-auto">
         <div>
           <span className="text-2xl font-extrabold text-brand-red">
             {formatPrice(instructor.pricePerHour)}
           </span>
           <span className="text-xs text-brand-muted ml-1">/ hr</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <AvailabilityDot availability={availability} />
-          <span className="text-xs text-brand-muted">{getAvailabilityLabel(availability)}</span>
         </div>
       </div>
 

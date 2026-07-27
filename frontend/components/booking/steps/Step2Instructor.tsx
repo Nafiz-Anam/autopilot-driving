@@ -33,32 +33,6 @@ function SkeletonCard() {
   );
 }
 
-/* ── Availability badge ─────────────────────────────────────── */
-type AvailStatus = "available" | "limited" | "full";
-
-function AvailBadge({ status }: { status: AvailStatus }) {
-  const map: Record<AvailStatus, { dot: string; label: string; text: string }> = {
-    available: { dot: "bg-green-500", label: "Available this week", text: "text-green-700" },
-    limited: { dot: "bg-amber-400", label: "Limited availability", text: "text-amber-700" },
-    full: { dot: "bg-red-500", label: "Fully booked", text: "text-red-600" },
-  };
-  const { dot, label, text } = map[status];
-  return (
-    <span className={cn("flex items-center gap-1 text-xs font-medium", text)}>
-      <span className={cn("w-1.5 h-1.5 rounded-full", dot)} />
-      {label}
-    </span>
-  );
-}
-
-/* ── Helper: derive fake availability from id hash ─────────── */
-function deriveAvailability(id: string): AvailStatus {
-  const code = id.charCodeAt(id.length - 1);
-  if (code % 5 === 0) return "full";
-  if (code % 3 === 0) return "limited";
-  return "available";
-}
-
 /* ── Main component ─────────────────────────────────────────── */
 export function Step2Instructor() {
   const { selectedInstructor, setInstructor, nextStep, prevStep, lessonType } = useBookingStore();
@@ -184,8 +158,6 @@ export function Step2Instructor() {
         >
           {filteredInstructors.map((inst, i) => {
             const selected = selectedInstructor?.id === inst.id;
-            const avail = deriveAvailability(inst.id);
-            const isFullyBooked = avail === "full";
             const initials = inst.user.name ? getInitials(inst.user.name) : "??";
 
             return (
@@ -194,17 +166,12 @@ export function Step2Instructor() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: i * 0.06 }}
-                whileHover={
-                  !isFullyBooked ? { y: -3, boxShadow: "0 8px 24px rgba(232,32,10,0.12)" } : {}
-                }
-                onClick={() => !isFullyBooked && setInstructor(inst)}
-                disabled={isFullyBooked}
+                whileHover={{ y: -3, boxShadow: "0 8px 24px rgba(232,32,10,0.12)" }}
+                onClick={() => setInstructor(inst)}
                 className={cn(
                   "relative text-left p-5 rounded-2xl border-2 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-red",
                   selected
                     ? "border-brand-red bg-red-50/60"
-                    : isFullyBooked
-                    ? "border-brand-border bg-gray-50 opacity-60 cursor-not-allowed"
                     : "border-brand-border bg-white hover:border-brand-red/40"
                 )}
               >
@@ -277,13 +244,12 @@ export function Step2Instructor() {
                     <span>{inst.yearsExp} years experience</span>
                   </div>
 
-                  {/* Price + availability */}
+                  {/* Price */}
                   <div className="flex items-center justify-between pt-1 border-t border-brand-border">
                     <span className="text-lg font-extrabold text-brand-red">
                       £{inst.pricePerHour}
                       <span className="text-xs font-medium text-brand-muted">/hr</span>
                     </span>
-                    <AvailBadge status={avail} />
                   </div>
                 </div>
               </motion.button>
