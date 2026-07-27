@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Elements } from "@stripe/react-stripe-js";
@@ -338,6 +339,14 @@ export function Step6Payment() {
               </p>
             )}
           </div>
+
+          <Image
+            src="/payment-methods.png"
+            alt="We accept Visa, Mastercard, Amex, Google Pay, Apple Pay, PayPal, Klarna"
+            width={1974}
+            height={262}
+            className="w-full h-auto mt-5"
+          />
 
           <div className="flex items-center justify-between mt-5 w-full">
             <button
