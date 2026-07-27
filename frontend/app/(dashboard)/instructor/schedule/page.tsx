@@ -47,38 +47,77 @@ function calendarLabel(source: string | null | undefined): string {
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MAX_HORIZON_DAYS = 60;
+const LONDON_TZ = "Europe/London";
+
+// Calendar days in this grid are represented as a Date holding UTC midnight
+// for that (year, month, day) -- an unambiguous key, never a real instant.
+// Read/write them with the getUTC*/setUTC* family only, never the local
+// (browser-timezone-dependent) accessors, so grid math never shifts based on
+// the viewing device's own clock.
+function dayKey(y: number, m: number, d: number): Date {
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+// "local minus UTC" offset in minutes for Europe/London at a real instant
+// (e.g. +60 during BST, 0 during GMT).
+function londonOffsetMinutes(instant: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: LONDON_TZ,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(instant);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  const asUTC = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
+  return (asUTC - instant.getTime()) / 60_000;
+}
+
+// The real UTC instant of Europe/London midnight for a given (y, m, d).
+function londonMidnightUTC(y: number, m: number, d: number): Date {
+  const guess = Date.UTC(y, m - 1, d, 0, 0, 0);
+  const offsetMin = londonOffsetMinutes(new Date(guess));
+  return new Date(guess - offsetMin * 60_000);
+}
+
+function londonToday(): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: LONDON_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return dayKey(get("year"), get("month"), get("day"));
+}
 
 function startOfWeek(d: Date): Date {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  const day = copy.getDay();
+  const day = d.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day;
-  copy.setDate(copy.getDate() + diff);
-  return copy;
+  return addDays(d, diff);
 }
 
 function startOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
+  return dayKey(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
 }
 
 function endOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+  return dayKey(d.getUTCFullYear(), d.getUTCMonth() + 2, 0);
 }
 
 function addDays(d: Date, n: number): Date {
-  const copy = new Date(d);
-  copy.setDate(copy.getDate() + n);
-  return copy;
+  return new Date(d.getTime() + n * 86_400_000);
 }
 
 function addMonths(d: Date, n: number): Date {
-  const copy = new Date(d);
-  copy.setMonth(copy.getMonth() + n);
-  return copy;
+  return dayKey(d.getUTCFullYear(), d.getUTCMonth() + 1 + n, d.getUTCDate());
 }
 
 function fmtDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
 function sameDay(a: Date, b: Date): boolean {
@@ -95,10 +134,11 @@ type Segment = {
 };
 
 function segmentsForDay(day: Date, bookings: Booking[], busy: BusyBlock[]): Segment[] {
-  const dayStart = new Date(day);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(day);
-  dayEnd.setHours(24, 0, 0, 0);
+  const y = day.getUTCFullYear();
+  const m = day.getUTCMonth() + 1;
+  const d = day.getUTCDate();
+  const dayStart = londonMidnightUTC(y, m, d);
+  const dayEnd = londonMidnightUTC(y, m, d + 1);
   const segs: Segment[] = [];
 
   for (const b of bookings) {
@@ -135,8 +175,11 @@ function segmentsForDay(day: Date, bookings: Booking[], busy: BusyBlock[]): Segm
 }
 
 function countsForDay(day: Date, bookings: Booking[], busy: BusyBlock[]) {
-  const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(day); dayEnd.setHours(24, 0, 0, 0);
+  const y = day.getUTCFullYear();
+  const m = day.getUTCMonth() + 1;
+  const d = day.getUTCDate();
+  const dayStart = londonMidnightUTC(y, m, d);
+  const dayEnd = londonMidnightUTC(y, m, d + 1);
   let bookingCount = 0;
   let busyCount = 0;
   for (const b of bookings) {
@@ -153,15 +196,11 @@ function countsForDay(day: Date, bookings: Booking[], busy: BusyBlock[]) {
 }
 
 export default function InstructorSchedulePage() {
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
+  const today = useMemo(() => londonToday(), []);
   const horizonMax = useMemo(() => addDays(today, MAX_HORIZON_DAYS), [today]);
 
   const [view, setView] = useState<ViewMode>("week");
-  const [cursor, setCursor] = useState<Date>(() => new Date());
+  const [cursor, setCursor] = useState<Date>(() => londonToday());
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -207,14 +246,16 @@ export default function InstructorSchedulePage() {
 
   const goPrev = () => setCursor(view === "week" ? addDays(cursor, -7) : addMonths(cursor, -1));
   const goNext = () => setCursor(view === "week" ? addDays(cursor, 7) : addMonths(cursor, 1));
-  const goToday = () => setCursor(new Date());
+  const goToday = () => setCursor(londonToday());
 
   const rangeLabel = useMemo(() => {
+    // range.from/to are UTC-midnight day keys, so force UTC formatting to
+    // read back the exact (y, m, d) they were built from.
     if (view === "week") {
-      const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+      const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", timeZone: "UTC" };
       return `${range.from.toLocaleDateString(undefined, opts)} — ${range.to.toLocaleDateString(undefined, { ...opts, year: "numeric" })}`;
     }
-    return range.from.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    return range.from.toLocaleDateString(undefined, { month: "long", year: "numeric", timeZone: "UTC" });
   }, [view, range.from, range.to]);
 
   return (
@@ -366,8 +407,15 @@ export default function InstructorSchedulePage() {
 function BookingDetailsModal({ booking, onClose }: { booking: Booking; onClose: () => void }) {
   const start = new Date(booking.scheduledAt);
   const end = new Date(start.getTime() + booking.durationMins * 60_000);
-  const dateStr = start.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const timeStr = `${start.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
+  // Always show the lesson's real London time, regardless of the viewing device's own timezone.
+  const dateStr = start.toLocaleDateString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: LONDON_TZ,
+  });
+  const timeStr = `${start.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", timeZone: LONDON_TZ })} – ${end.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", timeZone: LONDON_TZ })}`;
 
   const statusColor =
     booking.status === "CONFIRMED"
@@ -466,10 +514,10 @@ function WeekGrid({
               className={`border-b border-r last:border-r-0 border-brand-border p-2 text-center ${isToday ? "bg-brand-red/10" : ""}`}
             >
               <div className="text-[10px] uppercase text-brand-muted">
-                {DAY_LABELS[d.getDay() === 0 ? 6 : d.getDay() - 1]}
+                {DAY_LABELS[d.getUTCDay() === 0 ? 6 : d.getUTCDay() - 1]}
               </div>
               <div className={`text-sm font-bold ${isToday ? "text-brand-red" : "text-brand-black"}`}>
-                {d.getDate()}
+                {d.getUTCDate()}
               </div>
             </div>
           );
@@ -539,7 +587,7 @@ function MonthGrid({
     return days;
   }, [monthCursor]);
 
-  const monthIdx = monthCursor.getMonth();
+  const monthIdx = monthCursor.getUTCMonth();
   const past = (d: Date) => d < today;
   const future = (d: Date) => d > horizonMax;
 
@@ -552,7 +600,7 @@ function MonthGrid({
           </div>
         ))}
         {cells.map((d, i) => {
-          const inMonth = d.getMonth() === monthIdx;
+          const inMonth = d.getUTCMonth() === monthIdx;
           const isToday = sameDay(d, today);
           const disabled = future(d);
           const counts = data ? countsForDay(d, data.bookings, data.busy) : { bookingCount: 0, busyCount: 0 };
@@ -569,7 +617,7 @@ function MonthGrid({
               } ${past(d) && !isToday ? "opacity-60" : ""}`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className={`text-xs font-bold ${isToday ? "text-brand-red" : ""}`}>{d.getDate()}</span>
+                <span className={`text-xs font-bold ${isToday ? "text-brand-red" : ""}`}>{d.getUTCDate()}</span>
                 {(counts.bookingCount > 0 || counts.busyCount > 0) && (
                   <span className="text-[9px] text-brand-muted">{counts.bookingCount + counts.busyCount}</span>
                 )}
