@@ -105,6 +105,8 @@ services:
     environment:
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3008}
       NEXT_PUBLIC_BACKEND_API_BASE_URL: ${NEXT_PUBLIC_BACKEND_API_BASE_URL:-http://localhost:8008/v1}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3008}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-autopilot}:${POSTGRES_PASSWORD:-autopilot_secret}@db:5432/${POSTGRES_DB:-autopilot}
       NODE_ENV: development
       PORT: 3000
       HOSTNAME: 0.0.0.0
@@ -117,6 +119,7 @@ services:
     ports:
       - "3008:3000"
     volumes:
+      - ./frontend/.env.local:/app/.env.local
       - ./frontend/app:/app/app
       - ./frontend/components:/app/components
       - ./frontend/lib:/app/lib
