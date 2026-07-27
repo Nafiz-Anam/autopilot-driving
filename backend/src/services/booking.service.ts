@@ -21,6 +21,10 @@ import {
 // calendar has zero bookable slots rather than defaulting to fully open.
 const SLOT_STEP_MINS = 60;
 const MAX_BOOKING_HORIZON_DAYS = 60;
+// PENDING+UNPAID bookings hold a slot while checkout is in progress. If payment
+// is never completed, the hold is released after this many minutes so the slot
+// doesn't stay blocked forever.
+const ABANDONED_BOOKING_HOLD_MINUTES = 20;
 
 // Fetch pending reschedule requests for a set of booking IDs
 async function fetchPendingReschedules(bookingIds: string[]) {
@@ -194,8 +198,8 @@ const createForStudent = async (input: CreateBookingInput) => {
     }
   }
 
-  try {
-    await prisma.$executeRawUnsafe(
+  const insertBooking = () =>
+    prisma.$executeRawUnsafe(
       `INSERT INTO "Booking" (
         id, reference, "studentId", "instructorId", "lessonType", transmission, "scheduledAt",
         "durationMins", status, "paymentStatus", "totalAmount", "pricingPackageId",
@@ -221,11 +225,41 @@ const createForStudent = async (input: CreateBookingInput) => {
       now.toISOString(),
       now.toISOString()
     );
+
+  try {
+    await insertBooking();
   } catch (err: any) {
-    if (String(err?.message ?? '').includes('booking_no_overlap')) {
-      return { conflict: true as const };
+    if (!String(err?.message ?? '').includes('booking_no_overlap')) {
+      throw err;
     }
-    throw err;
+
+    // The conflict may be the same student's own abandoned attempt at this exact
+    // slot (never paid for). Release it and retry once instead of surfacing a
+    // confusing "slot taken" error for a slot the student themselves is holding.
+    if (!isTheory && input.instructorId) {
+      const released = await prisma.$executeRawUnsafe(
+        `UPDATE "Booking"
+         SET status = 'CANCELLED', "cancellationReason" = 'Replaced by new booking attempt', "updatedAt" = NOW()
+         WHERE "studentId" = $1 AND "instructorId" = $2 AND "scheduledAt" = $3::timestamp
+           AND status = 'PENDING' AND "paymentStatus" = 'UNPAID'`,
+        input.studentId,
+        input.instructorId,
+        scheduledAt
+      );
+      if (released > 0) {
+        try {
+          await insertBooking();
+        } catch (err2: any) {
+          if (String(err2?.message ?? '').includes('booking_no_overlap')) {
+            return { conflict: true as const };
+          }
+          throw err2;
+        }
+        return { id, reference, status: 'PENDING', paymentStatus: 'UNPAID' };
+      }
+    }
+
+    return { conflict: true as const };
   }
 
   return {
@@ -234,6 +268,18 @@ const createForStudent = async (input: CreateBookingInput) => {
     status: 'PENDING',
     paymentStatus: 'UNPAID',
   };
+};
+
+// Releases slots held by checkouts that were started but never paid for. Silent —
+// nothing was ever confirmed or charged, so no refund/calendar/email side effects apply.
+const cancelAbandonedUnpaidBookings = async () => {
+  const cutoff = new Date(Date.now() - ABANDONED_BOOKING_HOLD_MINUTES * 60 * 1000);
+  return prisma.$executeRawUnsafe(
+    `UPDATE "Booking"
+     SET status = 'CANCELLED', "cancellationReason" = 'Abandoned checkout — payment never completed', "updatedAt" = NOW()
+     WHERE status = 'PENDING' AND "paymentStatus" = 'UNPAID' AND "createdAt" < $1::timestamp`,
+    cutoff.toISOString()
+  );
 };
 
 const cancelForStudent = async (bookingId: string, studentId: string, reason: string) => {
@@ -540,6 +586,7 @@ const getAvailability = async (
 export default {
   listForStudent,
   createForStudent,
+  cancelAbandonedUnpaidBookings,
   cancelForStudent,
   createRescheduleRequest,
   respondToRescheduleRequest,

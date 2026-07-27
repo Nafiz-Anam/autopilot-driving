@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import axios from "axios";
+import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import { Elements } from "@stripe/react-stripe-js";
 import { Tag, Lock, CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
@@ -202,8 +203,9 @@ export function Step6Payment() {
       );
 
       if (!bookingRes.data.success) {
-        setInitError("Could not create booking. Please go back and try again.");
-        setPaymentStarted(false);
+        const message = "Could not create booking. Please go back and try again.";
+        setInitError(message);
+        toast.error(message);
         return;
       }
 
@@ -232,12 +234,17 @@ export function Step6Payment() {
       } else if (piRes.data.data?.fullyDiscounted) {
         nextStep();
       } else if (!piRes.data.success) {
-        setInitError(piRes.data.error ?? "Payment setup failed. Please try again.");
-        setPaymentStarted(false);
+        const message = piRes.data.message ?? piRes.data.error ?? "Payment setup failed. Please try again.";
+        setInitError(message);
+        toast.error(message);
       }
-    } catch {
-      setInitError("Something went wrong. Please go back and try again.");
-      setPaymentStarted(false);
+    } catch (err) {
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Something went wrong. Please go back and try again.";
+      setInitError(message);
+      toast.error(message);
     } finally {
       setLoadingIntent(false);
     }
@@ -299,9 +306,18 @@ export function Step6Payment() {
                 <p className="text-sm text-brand-muted">Setting up secure payment…</p>
               </div>
             ) : initError ? (
-              <div className="flex items-start gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                {initError}
+              <div className="flex flex-col gap-3 text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <div className="flex items-start gap-2">
+                  <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  {initError}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void initPayment()}
+                  className="self-start text-xs font-semibold text-brand-red underline hover:no-underline"
+                >
+                  Try again
+                </button>
               </div>
             ) : clientSecret && stripePromise ? (
               <Elements

@@ -4,6 +4,7 @@ import prisma from './client';
 import config from './config/config';
 import logger from './config/logger';
 import tokenCleanupService from './services/tokenCleanup.service';
+import bookingService from './services/booking.service';
 import { initializeWebSocket } from './controllers/websocket.controller';
 import { initializeTracing } from './utils/tracing';
 import googleCalendarSyncService from './services/googleCalendarSync.service';
@@ -33,6 +34,17 @@ prisma
 
       // Schedule token cleanup to run every 15 minutes
       tokenCleanupService.scheduleTokenCleanup(15);
+
+      // Release slots held by abandoned (never-paid) checkouts every 5 minutes
+      const FIVE_MIN = 5 * 60 * 1000;
+      bookingService
+        .cancelAbandonedUnpaidBookings()
+        .catch(e => logger.warn('abandoned booking cleanup failed', { error: e?.message }));
+      setInterval(() => {
+        bookingService
+          .cancelAbandonedUnpaidBookings()
+          .catch(e => logger.warn('abandoned booking cleanup failed', { error: e?.message }));
+      }, FIVE_MIN);
 
       // Google Calendar sync: renew expiring watches every 6h, cleanup past busy blocks daily.
       // Kick a first pass 30s after boot so restarts w/ soon-to-expire channels self-heal.
