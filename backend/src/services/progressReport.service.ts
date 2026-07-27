@@ -6,6 +6,7 @@ import ApiError from '../utils/ApiError';
 interface ScoreInput {
   skillId: string;
   level: SkillCompetencyLevel;
+  scorePercent?: number;
   note?: string;
 }
 
@@ -20,6 +21,9 @@ const LEVEL_WEIGHT: Record<string, number> = {
   UNDER_INSTRUCTION: 2,
   INDEPENDENT: 3,
 };
+
+const itemPercent = (level: string, scorePercent: number | null | undefined): number =>
+  scorePercent ?? Math.round((LEVEL_WEIGHT[level] / 3) * 100);
 
 const listActiveSkills = async () => {
   return prisma.drivingSkill.findMany({
@@ -47,7 +51,14 @@ const buildReportPayload = (
   booking: { id: string; scheduledAt: Date; status: string; lessonType: string },
   skills: { id: string; key: string; name: string }[],
   report:
-    | ({ scores: { skillId: string; level: string; note: string | null }[] } & {
+    | ({
+        scores: {
+          skillId: string;
+          level: string;
+          scorePercent: number | null;
+          note: string | null;
+        }[];
+      } & {
         id: string;
         published: boolean;
         publishedAt: Date | null;
@@ -57,6 +68,14 @@ const buildReportPayload = (
     | null
 ) => {
   const scoreBySkillId = new Map(report?.scores.map(s => [s.skillId, s]) ?? []);
+  const assessed = report?.scores.filter(s => s.level) ?? [];
+  const overallPercent = assessed.length
+    ? Math.round(
+        assessed.reduce((sum, s) => sum + itemPercent(s.level, s.scorePercent), 0) /
+          assessed.length
+      )
+    : 0;
+
   return {
     exists: !!report,
     id: report?.id ?? null,
@@ -65,6 +84,7 @@ const buildReportPayload = (
     publishedAt: report?.publishedAt ?? null,
     overallNotes: report?.overallNotes ?? null,
     updatedAt: report?.updatedAt ?? null,
+    overallPercent,
     booking: {
       id: booking.id,
       scheduledAt: booking.scheduledAt,
@@ -78,6 +98,7 @@ const buildReportPayload = (
         skillKey: skill.key,
         skillName: skill.name,
         level: score?.level ?? null,
+        scorePercent: score?.scorePercent ?? null,
         note: score?.note ?? null,
       };
     }),
@@ -138,9 +159,14 @@ const upsertDraft = async (
             reportId: report.id,
             skillId: score.skillId,
             level: score.level,
+            scorePercent: score.scorePercent ?? null,
             note: score.note ?? null,
           },
-          update: { level: score.level, note: score.note ?? null },
+          update: {
+            level: score.level,
+            scorePercent: score.scorePercent ?? null,
+            note: score.note ?? null,
+          },
         })
       )
     );
@@ -211,11 +237,15 @@ const getOverviewForStudent = async (studentUserId: string) => {
     orderBy: { booking: { scheduledAt: 'asc' } },
   });
 
-  const latestBySkill = new Map<string, { level: string; lastAssessedAt: Date }>();
+  const latestBySkill = new Map<
+    string,
+    { level: string; scorePercent: number | null; lastAssessedAt: Date }
+  >();
   for (const report of reports) {
     for (const score of report.scores) {
       latestBySkill.set(score.skillId, {
         level: score.level,
+        scorePercent: score.scorePercent,
         lastAssessedAt: report.booking.scheduledAt,
       });
     }
@@ -228,6 +258,7 @@ const getOverviewForStudent = async (studentUserId: string) => {
       skillKey: skill.key,
       skillName: skill.name,
       level: latest?.level ?? null,
+      scorePercent: latest?.scorePercent ?? null,
       lastAssessedAt: latest?.lastAssessedAt ?? null,
     };
   });
@@ -235,9 +266,10 @@ const getOverviewForStudent = async (studentUserId: string) => {
   const assessed = skillSummaries.filter(s => s.level !== null);
   const overallPercent = assessed.length
     ? Math.round(
-        (assessed.reduce((sum, s) => sum + LEVEL_WEIGHT[s.level as string], 0) /
-          (assessed.length * 3)) *
-          100
+        assessed.reduce(
+          (sum, s) => sum + itemPercent(s.level as string, s.scorePercent),
+          0
+        ) / assessed.length
       )
     : 0;
 

@@ -26,6 +26,7 @@ const upsertReport = {
         z.object({
           skillId: z.string().min(1, { message: 'skillId is required' }),
           level: z.enum(SCORE_LEVELS),
+          scorePercent: z.number().int().min(0).max(100).optional(),
           note: z.string().max(1000).optional(),
         })
       )

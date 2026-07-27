@@ -6,13 +6,19 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, CalendarDays, Clock, InboxIcon } from "lucide-react";
 import { studentApiFetch } from "@/lib/student-api";
-import { CompetencyLevel, CompetencyLevelControl } from "@/components/progress/CompetencyLevelControl";
+import {
+  CompetencyLevel,
+  CompetencyLevelControl,
+  ScorePercentBadge,
+  ScorePercentInput,
+} from "@/components/progress/CompetencyLevelControl";
 
 interface ScoreEntry {
   skillId: string;
   skillKey: string;
   skillName: string;
   level: CompetencyLevel | null;
+  scorePercent: number | null;
   note: string | null;
 }
 
@@ -20,6 +26,7 @@ interface ReportData {
   published: boolean;
   publishedAt: string | null;
   overallNotes: string | null;
+  overallPercent: number;
   booking: { id: string; scheduledAt: string; status: string; lessonType: string };
   scores: ScoreEntry[];
 }
@@ -93,13 +100,16 @@ export default function StudentProgressReportPage() {
         <ArrowLeft className="w-4 h-4" />Back to Bookings
       </Link>
 
-      <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-5 mb-6">
-        <h2 className="text-xl font-extrabold text-brand-black mb-1">Instructor Feedback</h2>
-        <div className="flex items-center gap-3 text-sm text-brand-muted">
-          <span className="inline-flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" />{formatDate(report.booking.scheduledAt)}</span>
-          <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{formatTime(report.booking.scheduledAt)}</span>
-          <span className="text-xs border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">{typeLabel}</span>
+      <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-5 mb-6 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-extrabold text-brand-black mb-1">Instructor Feedback</h2>
+          <div className="flex items-center gap-3 text-sm text-brand-muted">
+            <span className="inline-flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" />{formatDate(report.booking.scheduledAt)}</span>
+            <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{formatTime(report.booking.scheduledAt)}</span>
+            <span className="text-xs border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">{typeLabel}</span>
+          </div>
         </div>
+        <ScorePercentBadge percent={report.overallPercent} />
       </div>
 
       <div className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden mb-6">
@@ -110,7 +120,10 @@ export default function StudentProgressReportPage() {
                 <p className="font-semibold text-brand-black text-sm">{score.skillName}</p>
                 {score.note && <p className="text-xs text-brand-muted mt-0.5">{score.note}</p>}
               </div>
-              <CompetencyLevelControl value={score.level} readOnly />
+              <div className="flex items-center gap-3">
+                <CompetencyLevelControl value={score.level} readOnly />
+                <ScorePercentInput value={score.scorePercent} readOnly />
+              </div>
             </div>
           ))}
         </div>

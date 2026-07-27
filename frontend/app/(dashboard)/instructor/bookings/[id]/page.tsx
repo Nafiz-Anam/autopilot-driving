@@ -10,6 +10,9 @@ import { instructorApiFetch } from "@/lib/instructor-api";
 import {
   CompetencyLevel,
   CompetencyLevelControl,
+  ScorePercentBadge,
+  ScorePercentInput,
+  computeScorePercent,
 } from "@/components/progress/CompetencyLevelControl";
 
 interface ScoreEntry {
@@ -17,6 +20,7 @@ interface ScoreEntry {
   skillKey: string;
   skillName: string;
   level: CompetencyLevel | null;
+  scorePercent: number | null;
   note: string | null;
 }
 
@@ -28,6 +32,7 @@ interface ReportData {
   publishedAt: string | null;
   overallNotes: string | null;
   updatedAt: string | null;
+  overallPercent: number;
   booking: { id: string; scheduledAt: string; status: string; lessonType: string };
   scores: ScoreEntry[];
 }
@@ -52,6 +57,7 @@ export default function InstructorProgressReportPage() {
   const [notFound, setNotFound] = useState(false);
   const [report, setReport] = useState<ReportData | null>(null);
   const [levels, setLevels] = useState<Record<string, CompetencyLevel>>({});
+  const [scorePercents, setScorePercents] = useState<Record<string, number | null>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [overallNotes, setOverallNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -74,6 +80,9 @@ export default function InstructorProgressReportPage() {
       setReport(data);
       setLevels(
         Object.fromEntries(data.scores.map((s) => [s.skillId, s.level ?? "NOT_COVERED"]))
+      );
+      setScorePercents(
+        Object.fromEntries(data.scores.map((s) => [s.skillId, s.scorePercent]))
       );
       setNotes(Object.fromEntries(data.scores.map((s) => [s.skillId, s.note ?? ""])));
       setOverallNotes(data.overallNotes ?? "");
@@ -100,6 +109,7 @@ export default function InstructorProgressReportPage() {
           scores: report.scores.map((s) => ({
             skillId: s.skillId,
             level: levels[s.skillId] ?? "NOT_COVERED",
+            scorePercent: scorePercents[s.skillId] ?? undefined,
             note: notes[s.skillId] || undefined,
           })),
         }),
@@ -164,6 +174,12 @@ export default function InstructorProgressReportPage() {
 
   const isCompleted = report.booking.status === "COMPLETED";
   const typeLabel = LESSON_TYPE_LABELS[report.booking.lessonType] ?? report.booking.lessonType;
+  const scorePercent = computeScorePercent(
+    report.scores.map((s) => ({
+      level: levels[s.skillId] ?? null,
+      scorePercent: scorePercents[s.skillId] ?? null,
+    }))
+  );
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -180,12 +196,15 @@ export default function InstructorProgressReportPage() {
             <span className="text-xs border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">{typeLabel}</span>
           </div>
         </div>
-        <span className={cn(
-          "text-xs font-semibold px-2.5 py-1 rounded-full border",
-          report.published ? "bg-green-100 text-green-800 border-green-300" : "bg-gray-100 text-brand-muted border-gray-200"
-        )}>
-          {report.published ? "Published" : "Draft"}
-        </span>
+        <div className="flex items-center gap-2">
+          <ScorePercentBadge percent={scorePercent} />
+          <span className={cn(
+            "text-xs font-semibold px-2.5 py-1 rounded-full border",
+            report.published ? "bg-green-100 text-green-800 border-green-300" : "bg-gray-100 text-brand-muted border-gray-200"
+          )}>
+            {report.published ? "Published" : "Draft"}
+          </span>
+        </div>
       </div>
 
       {!isCompleted && (
@@ -199,11 +218,18 @@ export default function InstructorProgressReportPage() {
           {report.scores.map((score) => (
             <div key={score.skillId} className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
               <p className="font-semibold text-brand-black text-sm min-w-[180px]">{score.skillName}</p>
-              <CompetencyLevelControl
-                value={levels[score.skillId] ?? "NOT_COVERED"}
-                onChange={isCompleted ? (level) => setLevels((prev) => ({ ...prev, [score.skillId]: level })) : undefined}
-                readOnly={!isCompleted}
-              />
+              <div className="flex items-center gap-3">
+                <CompetencyLevelControl
+                  value={levels[score.skillId] ?? "NOT_COVERED"}
+                  onChange={isCompleted ? (level) => setLevels((prev) => ({ ...prev, [score.skillId]: level })) : undefined}
+                  readOnly={!isCompleted}
+                />
+                <ScorePercentInput
+                  value={scorePercents[score.skillId] ?? null}
+                  onChange={isCompleted ? (percent) => setScorePercents((prev) => ({ ...prev, [score.skillId]: percent })) : undefined}
+                  readOnly={!isCompleted}
+                />
+              </div>
             </div>
           ))}
         </div>

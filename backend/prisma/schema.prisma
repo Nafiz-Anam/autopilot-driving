@@ -924,13 +924,14 @@ model LessonProgressReport {
 }
 
 model SkillScore {
-  id        String               @id @default(cuid())
-  reportId  String               @map("report_id")
-  skillId   String               @map("skill_id")
-  level     SkillCompetencyLevel
-  note      String?              @db.Text
-  createdAt DateTime             @default(now()) @map("created_at")
-  updatedAt DateTime             @updatedAt @map("updated_at")
+  id           String               @id @default(cuid())
+  reportId     String               @map("report_id")
+  skillId      String               @map("skill_id")
+  level        SkillCompetencyLevel
+  scorePercent Int?                 @map("score_percent")
+  note         String?              @db.Text
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
 
   report    LessonProgressReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
   skill     DrivingSkill         @relation(fields: [skillId], references: [id], onDelete: Restrict)
