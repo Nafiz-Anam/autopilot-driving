@@ -1,5 +1,44 @@
 "use client";
 
+/* ─── Driving Theory 4 All embed ────────────────────────────────────────────
+ * Our own quiz (below, commented out) is replaced with the DT4A iframe
+ * embed provided by Ryan at drivingtheory4all.co.uk.
+ * HostReferrerCode: Autopilotdrivingschool
+ */
+export default function StudentTheoryPage() {
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold text-brand-black">
+          Theory Training
+        </h1>
+        <p className="text-brand-muted mt-1 text-sm">
+          Practice, track progress, and ace your DVSA theory test.
+        </p>
+      </div>
+
+      <div>
+        <a id="DT4A"></a>
+        <iframe
+          id="DT4A"
+          name="iframe"
+          src="https://www.drivingtheory4all.co.uk/Embed.aspx?HostPageUrl=https://autopilotdrivingschool.co.uk/student/theory&HostReferrerCode=Autopilotdrivingschool"
+          width="100%"
+          height="1600px"
+          scrolling="auto"
+          frameBorder="0"
+          className="wrapper"
+        >
+          This option will not work correctly. Unfortunately, your browser
+          does not support inline frames.
+        </iframe>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Old in-house theory quiz (disabled, kept for reference) ──────────────
+
 import { useState, useEffect, useCallback } from "react";
 import { useAppSession } from "@/components/providers/AppAuthProvider";
 import { motion, AnimatePresence } from "framer-motion";
@@ -173,7 +212,7 @@ function MockTest({
         animate={{ opacity: 1, scale: 1 }}
         className="p-8"
       >
-        {/* Score circle */}
+        // Score circle
         <div className="flex flex-col items-center mb-8">
           <div
             className={cn(
@@ -214,7 +253,7 @@ function MockTest({
           </span>
         </div>
 
-        {/* Category breakdown */}
+        // Category breakdown
         <div className="mb-8">
           <h4 className="text-sm font-bold text-brand-black mb-4">
             Category Breakdown
@@ -266,7 +305,7 @@ function MockTest({
 
   return (
     <div className="p-6">
-      {/* Header */}
+      // Header
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <FlaskConical className="w-4 h-4 text-brand-red" />
@@ -285,7 +324,7 @@ function MockTest({
         </button>
       </div>
 
-      {/* Progress bar */}
+      // Progress bar
       <div className="h-1.5 bg-brand-border rounded-full overflow-hidden mb-6">
         <div
           className="h-full bg-brand-red rounded-full transition-all duration-300"
@@ -295,7 +334,7 @@ function MockTest({
         />
       </div>
 
-      {/* Category pill */}
+      // Category pill
       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-red bg-red-50 px-2.5 py-1 rounded-full mb-4">
         {categories.find((c) => c.id === normalizeCategoryId(q.category))?.name ?? q.category}
       </span>
@@ -383,7 +422,7 @@ function MockTest({
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-export default function StudentTheoryPage() {
+function OldStudentTheoryPage() {
   useAppSession();
   const [testOpen, setTestOpen] = useState(false);
   const [testQuestions, setTestQuestions] = useState<Question[]>([]);
@@ -509,7 +548,7 @@ export default function StudentTheoryPage() {
             animate="visible"
             exit={{ opacity: 0 }}
           >
-            {/* ── Hero / overall progress ── */}
+            // ── Hero / overall progress ──
             <motion.div
               variants={itemVariants}
               className="bg-white rounded-2xl border border-brand-border shadow-sm p-6 mb-6"
@@ -546,7 +585,7 @@ export default function StudentTheoryPage() {
               </div>
             </motion.div>
 
-            {/* ── Category grid ── */}
+            // ── Category grid ──
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {categories.map((cat) => (
                 <motion.div
@@ -598,7 +637,7 @@ export default function StudentTheoryPage() {
               ))}
             </div>
 
-            {/* ── Mock test CTA ── */}
+            // ── Mock test CTA ──
             <motion.div
               variants={itemVariants}
               className="bg-brand-black rounded-2xl p-8 text-white text-center relative overflow-hidden"
@@ -635,3 +674,5 @@ export default function StudentTheoryPage() {
     </div>
   );
 }
+
+*/
