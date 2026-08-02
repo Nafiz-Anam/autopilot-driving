@@ -143,11 +143,13 @@ export function Step3Package() {
 
                 <div className="mb-3 pr-8">
                   <h3 className="font-bold text-brand-black text-base">{pkg.name}</h3>
-                  <p className="text-xs text-brand-muted mt-0.5">
-                    {pkg.lessons === 1 ? "1 lesson" : `${pkg.lessons} lessons`}
-                    {" · "}
-                    {pkg.hours === 1 ? "1 hour" : `${pkg.hours} hours`}
-                  </p>
+                  {(pkg.lessons > 0 || pkg.hours > 0) && (
+                    <p className="text-xs text-brand-muted mt-0.5">
+                      {pkg.lessons === 1 ? "1 lesson" : `${pkg.lessons} lessons`}
+                      {" · "}
+                      {pkg.hours === 1 ? "1 hour" : `${pkg.hours} hours`}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-baseline gap-2 mb-1">
@@ -159,7 +161,7 @@ export function Step3Package() {
 
                 <div className="flex items-center gap-3 mb-2">
                   {(() => {
-                    const ratePerHour = pkg.pricePerHour ?? (pkg.hours ? Math.round(pkg.price / pkg.hours) : null);
+                    const ratePerHour = pkg.hours > 0 ? (pkg.pricePerHour ?? Math.round(pkg.price / pkg.hours)) : null;
                     return ratePerHour != null ? (
                       <span className="text-xs font-semibold text-brand-muted bg-brand-surface border border-brand-border px-2 py-0.5 rounded-full">
                         £{ratePerHour}/hr
