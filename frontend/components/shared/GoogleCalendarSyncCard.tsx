@@ -185,14 +185,25 @@ export function GoogleCalendarSyncCard({ role }: Props) {
           </div>
         </div>
       ) : connectHref ? (
-        <a
-          href={connectHref}
-          onClick={() => setBusy("connecting")}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-red text-white text-xs font-semibold rounded-xl hover:bg-brand-orange transition-colors"
-        >
-          <LinkIcon className="w-3.5 h-3.5" />
-          Connect Google Calendar
-        </a>
+        <div className="space-y-3">
+          {status?.externalEmail && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2 text-xs text-red-800">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-600" />
+              <div>
+                <p className="font-semibold mb-0.5">Sync paused — reconnect required</p>
+                <p>Your Google Calendar connection was lost. Lessons are no longer syncing to <span className="font-medium">{status.externalEmail}</span>.</p>
+              </div>
+            </div>
+          )}
+          <a
+            href={connectHref}
+            onClick={() => setBusy("connecting")}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-red text-white text-xs font-semibold rounded-xl hover:bg-brand-orange transition-colors"
+          >
+            <LinkIcon className="w-3.5 h-3.5" />
+            {status?.externalEmail ? "Reconnect Google Calendar" : "Connect Google Calendar"}
+          </a>
+        </div>
       ) : (
         <p className="text-xs text-brand-muted text-center py-2">Sign-in required</p>
       )}

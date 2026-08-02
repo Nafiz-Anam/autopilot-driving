@@ -181,15 +181,16 @@ const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toSt
       select: { id: true, startsAt: true, endsAt: true, isAllDay: true, source: true },
     }),
     prisma.userIntegration.findFirst({
-      where: { userId, provider: { in: ['google_calendar', 'apple_ics'] }, enabled: true },
-      select: { provider: true, externalEmail: true },
+      where: { userId, provider: { in: ['google_calendar', 'apple_ics'] } },
+      select: { provider: true, externalEmail: true, enabled: true },
     }),
   ]);
 
   return {
     from: fromStr,
     to: toStr,
-    calendarConnected: !!integration,
+    calendarConnected: !!integration?.enabled,
+    calendarAutoDisconnected: !!integration && !integration.enabled,
     calendarProvider: integration?.provider ?? null,
     calendarEmail: integration?.externalEmail ?? null,
     bookings: bookings.map(b => ({

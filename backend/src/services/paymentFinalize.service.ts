@@ -105,8 +105,8 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
           scheduledAt: new Date(row.scheduledAt),
           durationMins: row.durationMins,
         })
-        .catch(() => {
-          /* non-critical */
+        .catch((err: unknown) => {
+          console.error('[paymentFinalize] Google Calendar broadcast failed', (err as Error)?.message);
         });
 
       // Notify instructor of new booking (fire-and-forget)

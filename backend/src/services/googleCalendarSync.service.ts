@@ -5,6 +5,7 @@ import config from '../config/config';
 import {
   getCalendarClient,
   markDisabled,
+  backfillUpcomingBookings,
   PROVIDER_ID,
   AUTOPILOT_SOURCE_TAG,
 } from './googleCalendar.service';
@@ -128,6 +129,11 @@ export async function startWatchAndInitialSync(userId: string): Promise<void> {
       console.error('[GoogleCalendarSync] initial sync failed', err?.message);
     });
   }
+
+  // Push existing upcoming bookings → Google Calendar (backfill for reconnects)
+  await backfillUpcomingBookings(userId).catch(err => {
+    console.error('[GoogleCalendarSync] backfill failed', err?.message);
+  });
 }
 
 async function runInitialSync(userId: string, instructorId: string): Promise<void> {

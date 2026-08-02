@@ -365,6 +365,64 @@ export async function broadcastBookingDeleted(params: {
 }
 
 /**
+ * Push all upcoming confirmed bookings for this user to their Google Calendar.
+ * Called after a successful OAuth reconnect so previously-missed events appear.
+ */
+export async function backfillUpcomingBookings(userId: string): Promise<void> {
+  const cal = await getCalendarClient(userId);
+  if (!cal) return;
+
+  type BookingRow = {
+    bookingId: string;
+    reference: string;
+    lessonType: string;
+    scheduledAt: Date;
+    durationMins: number;
+    studentName: string | null;
+    studentId: string;
+    instructorName: string | null;
+    instructorUserId: string | null;
+  };
+
+  const rows = await prisma.$queryRawUnsafe<BookingRow[]>(
+    `SELECT
+       b.id          AS "bookingId",
+       b.reference,
+       b."lessonType",
+       b."scheduledAt",
+       b."durationMins",
+       su.name       AS "studentName",
+       b."studentId",
+       iu.name       AS "instructorName",
+       iu.id         AS "instructorUserId"
+     FROM "Booking" b
+     INNER JOIN users su ON su.id = b."studentId"
+     LEFT  JOIN "Instructor" i  ON i.id = b."instructorId"
+     LEFT  JOIN users iu ON iu.id = i."userId"
+     WHERE b.status IN ('CONFIRMED', 'COMPLETED')
+       AND b."scheduledAt" >= NOW() - INTERVAL '1 day'
+       AND (b."studentId" = $1 OR iu.id = $1)`,
+    userId
+  );
+
+  await Promise.all(
+    rows.map(row => {
+      const params = {
+        bookingId: row.bookingId,
+        reference: row.reference,
+        lessonType: row.lessonType,
+        scheduledAt: new Date(row.scheduledAt),
+        durationMins: row.durationMins,
+        studentName: row.studentName ?? 'Student',
+        instructorName: row.instructorName ?? 'Autopilot Instructor',
+      };
+      const viewer = row.instructorUserId === userId ? 'instructor' : 'student';
+      return pushCreate(userId, params, viewer as 'student' | 'instructor');
+    })
+  );
+}
+
+/**
  * Kept for legacy start-up hook — table now Prisma-managed, no-op.
  */
 export async function ensureIntegrationTable(): Promise<void> {
@@ -387,6 +445,7 @@ export default {
   broadcastBookingCreated,
   broadcastBookingUpdated,
   broadcastBookingDeleted,
+  backfillUpcomingBookings,
   ensureIntegrationTable,
   getCalendarClient,
 };

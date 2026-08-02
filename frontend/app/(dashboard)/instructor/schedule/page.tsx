@@ -26,6 +26,7 @@ type Overview = {
   from: string;
   to: string;
   calendarConnected: boolean;
+  calendarAutoDisconnected: boolean;
   calendarProvider: string | null;
   calendarEmail: string | null;
   bookings: Booking[];
@@ -306,7 +307,21 @@ export default function InstructorSchedulePage() {
           </div>
         </div>
 
-        {!data?.calendarConnected && !loading && (
+        {!data?.calendarConnected && data?.calendarAutoDisconnected && !loading && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+            <Info className="w-4 h-4 text-red-700 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-red-800">
+              <p className="font-semibold mb-1">Google Calendar disconnected</p>
+              <p>
+                Your Google Calendar connection was lost — lessons are no longer syncing.{" "}
+                <a href="/instructor/profile#calendar" className="underline font-semibold">Reconnect on the Profile &rsaquo; Calendar tab</a>{" "}
+                to restore sync.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!data?.calendarConnected && !data?.calendarAutoDisconnected && !loading && (
           <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
             <Info className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-amber-800">
@@ -314,7 +329,7 @@ export default function InstructorSchedulePage() {
               <p>
                 Connect a Google or Apple calendar on the{" "}
                 <a href="/instructor/profile" className="underline font-semibold">Profile &rsaquo; Calendar tab</a>{" "}
-                to have your calendar events block booking slots automatically. Until then, students can&apos;t book you.
+                to have your calendar events block booking slots automatically.
               </p>
             </div>
           </div>
