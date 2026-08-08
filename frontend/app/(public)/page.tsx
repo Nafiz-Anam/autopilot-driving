@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HeroSection } from "@/components/home/HeroSection";
+import { AboutSection } from "@/components/home/AboutSection";
 import { StatsBar } from "@/components/home/StatsBar";
 import { LearningJourney } from "@/components/home/LearningJourney";
 import { AppFlowSlider } from "@/components/home/AppFlowSlider";
@@ -11,7 +12,7 @@ import { CTABanner } from "@/components/home/CTABanner";
 export const metadata: Metadata = {
   title: "Autopilot Driving School | Learn to Drive with Autopilot",
   description:
-    "UK's premier driving school covering Ilford, Romford, Barking, Dagenham and surrounding areas. Expert DVSA-approved instructors. Book your first lesson today.",
+    "Autopilot is an online booking platform for driving lessons in the UK. Learners search DVSA-approved instructors, book and manage lessons, and track progress. Instructors manage their schedule and can sync bookings to Google Calendar.",
   other: {
     "application/ld+json": JSON.stringify({
       "@context": "https://schema.org",
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
       },
       areaServed: ["Ilford", "Romford", "Barking", "Dagenham", "Wanstead", "Chigwell"],
       description:
-        "Premium driving school with DVSA-approved instructors covering East Berkshire and West London.",
+        "Autopilot is an online booking platform for driving lessons. Learners search DVSA-approved instructors, book and manage lessons, and track progress. Instructors manage their schedule and can sync bookings to Google Calendar.",
     }),
   },
 };
@@ -38,6 +39,8 @@ export default function HomePage() {
     <>
       {/* 1. White hero — full-screen, dot grid, floating instructor card */}
       <HeroSection />
+      {/* 1b. Plain-text app description — required for Google OAuth verification */}
+      <AboutSection />
       {/* 2. Dark — animated count-up stats for instant social proof */}
       <StatsBar />
       {/* 3. White — step-by-step journey with gradient progress line */}
