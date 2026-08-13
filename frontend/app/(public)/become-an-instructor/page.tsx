@@ -35,7 +35,7 @@ const adiSteps = [
     summary:
       "A computer-based test covering traffic signs, the Highway Code, and hazard perception. Minimum 85/100 to pass.",
     points: [
-      "Learning made simple — 24/7 access to our AI-powered learning platform whenever it suits you.",
+      "Learning made simple — 24/7 access to our online learning platform whenever it suits you.",
       "Join live interactive sessions with experienced trainers in our online classroom.",
       "Dive into our dedicated trainee forums for tips, peer support and discussions.",
       "Get exam-ready with mock tests, practice questions, and hazard perception support.",
@@ -48,7 +48,7 @@ const adiSteps = [
     summary:
       "Master the art of driving with smart, guided learning — assessed by a DVSA examiner against the 27 skills required for the UK driving test.",
     points: [
-      "AI-powered learning platform helps you understand all 27 skills the DVSA assess.",
+      "Our structured learning platform helps you understand all 27 skills the DVSA assess.",
       "Lesson planning tips and structure guidance for every topic — perfect for building confidence.",
       "Online classrooms covering hazard perception and the science behind safe driving.",
       "Hands-on practical training sessions woven through your six-day immersive course.",
@@ -63,7 +63,7 @@ const adiSteps = [
     points: [
       "3 days of immersive learning plus 3 days of in-car coaching across two weeks.",
       "Peer learning opportunities — share ideas, practise together, learn from one another.",
-      "Full support from our AI-powered platform, the Autopilot team, and experienced trainers.",
+      "Full support from our learning platform, the Autopilot team, and experienced trainers.",
       "Be ready to teach real learners with a driving school franchise on day one.",
     ],
   },
