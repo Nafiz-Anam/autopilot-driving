@@ -321,6 +321,7 @@ export function Step6Payment() {
               </div>
             ) : clientSecret && stripePromise ? (
               <Elements
+                key={`${clientSecret}-${total}`}
                 stripe={stripePromise}
                 options={{ clientSecret, appearance: STRIPE_APPEARANCE }}
               >
