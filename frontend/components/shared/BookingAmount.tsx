@@ -12,9 +12,9 @@ export function BookingAmount({
     return <span className="font-semibold">{formatPrice(totalAmount)}</span>;
   }
   return (
-    <span className="inline-flex items-baseline gap-1.5">
-      <span className="text-brand-muted line-through text-xs">{formatPrice(totalAmount)}</span>
+    <span className="flex flex-col leading-tight">
       <span className="font-semibold">{formatPrice(paidAmount(totalAmount, discount))}</span>
+      <span className="text-brand-muted line-through text-xs">{formatPrice(totalAmount)}</span>
     </span>
   );
 }
