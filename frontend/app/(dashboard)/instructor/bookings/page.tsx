@@ -7,6 +7,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, InboxIcon, X, CalendarClock, C
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
+import { BookingAmount } from "@/components/shared/BookingAmount";
 
 interface PendingReschedule {
   id: string;
@@ -26,6 +27,7 @@ interface Booking {
   status: string;
   paymentStatus: string;
   totalAmount: number;
+  discountAmount?: number | null;
   notes: string | null;
   student: { id: string; name: string | null; email: string };
   pendingReschedule?: PendingReschedule | null;
@@ -432,8 +434,8 @@ export default function InstructorBookingsPage() {
                         <span className="text-xs border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">{typeLabel}</span>
                       </td>
                       <td className="px-5 py-3.5 text-sm text-brand-muted hidden lg:table-cell">{booking.durationMins / 60}hr</td>
-                      <td className="px-5 py-3.5 text-sm font-semibold text-brand-black hidden lg:table-cell">
-                        £{Number(booking.totalAmount).toFixed(2)}
+                      <td className="px-5 py-3.5 text-sm text-brand-black hidden lg:table-cell">
+                        <BookingAmount totalAmount={Number(booking.totalAmount)} discountAmount={booking.discountAmount} />
                       </td>
                       <td className="px-5 py-3.5 hidden sm:table-cell">
                         <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", pc)}>

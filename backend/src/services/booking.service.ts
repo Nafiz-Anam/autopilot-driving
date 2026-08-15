@@ -72,6 +72,8 @@ const listForStudent = async (studentId: string) => {
       status: string;
       paymentStatus: string;
       totalAmount: string;
+      discountAmount: string | null;
+      couponCode: string | null;
       instructor_rating: number;
       instructor_areas: string[] | string | null;
       instructor_user_name: string | null;
@@ -80,6 +82,7 @@ const listForStudent = async (studentId: string) => {
   >(
     `SELECT b.id, b.reference, b."lessonType", b.transmission, b."scheduledAt", b."durationMins",
             b.status, b."paymentStatus", b."totalAmount"::text AS "totalAmount",
+            b."discountAmount"::text AS "discountAmount", b."couponCode",
             i.rating AS instructor_rating, i.areas AS instructor_areas,
             u.name AS instructor_user_name, u."profilePicture" AS instructor_user_image
      FROM "Booking" b
@@ -100,6 +103,8 @@ const listForStudent = async (studentId: string) => {
     status: b.status,
     paymentStatus: b.paymentStatus,
     totalAmount: Number(b.totalAmount),
+    discountAmount: b.discountAmount != null ? Number(b.discountAmount) : 0,
+    couponCode: b.couponCode,
     instructor: {
       user: { name: b.instructor_user_name, image: b.instructor_user_image },
       rating: b.instructor_rating,

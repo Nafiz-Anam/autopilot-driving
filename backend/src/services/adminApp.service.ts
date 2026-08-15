@@ -167,7 +167,7 @@ const getStats = async () => {
     `SELECT COUNT(*)::int AS total FROM "Booking"`
   );
   const totalRevenueRows = await prisma.$queryRawUnsafe<Array<{ total: string }>>(
-    `SELECT COALESCE(SUM("totalAmount"), 0)::text AS total
+    `SELECT COALESCE(SUM("totalAmount" - COALESCE("discountAmount", 0)), 0)::text AS total
      FROM "Booking"
      WHERE "paymentStatus" = 'PAID'`
   );
@@ -237,6 +237,8 @@ const listBookings = async (params: { status?: string; page?: number }) => {
       status: string;
       paymentStatus: string;
       totalAmount: string;
+      discountAmount: string | null;
+      couponCode: string | null;
       notes: string | null;
       studentId: string;
       studentName: string | null;
@@ -248,7 +250,8 @@ const listBookings = async (params: { status?: string; page?: number }) => {
     `SELECT
        b.id, b.reference, b."lessonType"::text AS "lessonType", b.transmission, b."scheduledAt",
        b."durationMins", b.status::text AS status, b."paymentStatus"::text AS "paymentStatus",
-       b."totalAmount"::text AS "totalAmount", b.notes,
+       b."totalAmount"::text AS "totalAmount", b."discountAmount"::text AS "discountAmount",
+       b."couponCode", b.notes,
        s.id AS "studentId", s.name AS "studentName", s.email AS "studentEmail",
        i.id AS "instructorId", iu.name AS "instructorUserName"
      FROM "Booking" b
@@ -274,6 +277,8 @@ const listBookings = async (params: { status?: string; page?: number }) => {
       status: r.status,
       paymentStatus: r.paymentStatus,
       totalAmount: Number(r.totalAmount),
+      discountAmount: r.discountAmount != null ? Number(r.discountAmount) : 0,
+      couponCode: r.couponCode,
       notes: r.notes,
       student: { id: r.studentId, name: r.studentName, email: r.studentEmail },
       instructor: { id: r.instructorId, user: { name: r.instructorUserName } },
@@ -309,6 +314,8 @@ const getBookingById = async (id: string) => {
       status: string;
       paymentStatus: string;
       totalAmount: string;
+      discountAmount: string | null;
+      couponCode: string | null;
       notes: string | null;
       studentId: string;
       studentName: string | null;
@@ -326,7 +333,8 @@ const getBookingById = async (id: string) => {
     `SELECT
        b.id, b.reference, b."lessonType"::text AS "lessonType", b.transmission, b."scheduledAt",
        b."durationMins", b.status::text AS status, b."paymentStatus"::text AS "paymentStatus",
-       b."totalAmount"::text AS "totalAmount", b.notes,
+       b."totalAmount"::text AS "totalAmount", b."discountAmount"::text AS "discountAmount",
+       b."couponCode", b.notes,
        s.id AS "studentId", s.name AS "studentName", s.email AS "studentEmail",
        s.phone AS "studentPhone", s."profilePicture" AS "studentImage",
        i.id AS "instructorId", iu.id AS "instructorUserId", iu.name AS "instructorUserName",
@@ -352,6 +360,8 @@ const getBookingById = async (id: string) => {
     status: b.status,
     paymentStatus: b.paymentStatus,
     totalAmount: Number(b.totalAmount),
+    discountAmount: b.discountAmount != null ? Number(b.discountAmount) : 0,
+    couponCode: b.couponCode,
     notes: b.notes,
     student: {
       id: b.studentId,

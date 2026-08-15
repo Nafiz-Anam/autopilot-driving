@@ -539,6 +539,8 @@ const listMyBookings = async (userId: string, params: { status?: string; page?: 
       status: string;
       paymentStatus: string;
       totalAmount: string;
+      discountAmount: string | null;
+      couponCode: string | null;
       notes: string | null;
       studentId: string;
       studentName: string | null;
@@ -547,7 +549,8 @@ const listMyBookings = async (userId: string, params: { status?: string; page?: 
   >(
     `SELECT b.id, b.reference, b."lessonType"::text AS "lessonType", b.transmission,
             b."scheduledAt", b."durationMins", b.status::text AS status,
-            b."paymentStatus"::text AS "paymentStatus", b."totalAmount"::text AS "totalAmount", b.notes,
+            b."paymentStatus"::text AS "paymentStatus", b."totalAmount"::text AS "totalAmount",
+            b."discountAmount"::text AS "discountAmount", b."couponCode", b.notes,
             s.id AS "studentId", s.name AS "studentName", s.email AS "studentEmail"
      FROM "Booking" b
      INNER JOIN users s ON s.id = b."studentId"
@@ -570,6 +573,8 @@ const listMyBookings = async (userId: string, params: { status?: string; page?: 
     status: b.status,
     paymentStatus: b.paymentStatus,
     totalAmount: Number(b.totalAmount),
+    discountAmount: b.discountAmount != null ? Number(b.discountAmount) : 0,
+    couponCode: b.couponCode,
     notes: b.notes,
     student: { id: b.studentId, name: b.studentName, email: b.studentEmail },
     pendingReschedule: null as null | {

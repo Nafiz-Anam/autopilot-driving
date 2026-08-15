@@ -4,8 +4,9 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { CalendarDays, ChevronLeft, ChevronRight, ChevronDown, X, CalendarClock, Info } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPaidAmount } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
+import { BookingAmount } from "@/components/shared/BookingAmount";
 
 interface PendingReschedule {
   id: string;
@@ -25,6 +26,8 @@ interface BookingRecord {
   status: string;
   paymentStatus: string;
   totalAmount: number;
+  discountAmount?: number | null;
+  couponCode?: string | null;
   notes: string | null;
   student: { id: string; name: string | null; email: string };
   instructor: { id: string; user: { id: string; name: string | null; email: string } };
@@ -216,7 +219,7 @@ function CancelModal({ booking, onClose, onDone }: {
                 className="w-4 h-4 accent-green-600" />
               <div>
                 <p className="text-sm font-semibold text-green-800">Issue full refund</p>
-                <p className="text-xs text-green-700">Payment status will be set to Refunded · £{Number(booking.totalAmount).toFixed(2)}</p>
+                <p className="text-xs text-green-700">Payment status will be set to Refunded · {formatPaidAmount(Number(booking.totalAmount), booking.discountAmount)}</p>
               </div>
             </label>
           )}
@@ -337,7 +340,7 @@ function BookingDetailsModal({ booking, onClose, onCancel, onReschedule }: {
     ["Duration",     `${booking.durationMins} min`],
     ["Type",         LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType],
     ["Transmission", booking.transmission],
-    ["Amount",       `£${Number(booking.totalAmount).toFixed(2)}`],
+    ["Amount",       formatPaidAmount(Number(booking.totalAmount), booking.discountAmount)],
     ["Payment",      booking.paymentStatus],
     ["Status",       booking.status],
     ...(booking.notes ? [["Notes", booking.notes] as [string, string]] : []),
@@ -570,8 +573,8 @@ export default function AdminBookingsPage() {
                           {LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-brand-black hidden lg:table-cell">
-                        £{Number(booking.totalAmount).toFixed(2)}
+                      <td className="px-4 py-3 text-sm text-brand-black hidden lg:table-cell">
+                        <BookingAmount totalAmount={Number(booking.totalAmount)} discountAmount={booking.discountAmount} />
                       </td>
                       <td className="px-4 py-3">
                         <BadgeDropdown value={booking.paymentStatus} options={PAYMENT_STATUSES}

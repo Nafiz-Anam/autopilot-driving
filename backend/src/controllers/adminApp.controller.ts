@@ -120,6 +120,7 @@ const patchBookingById = catchAsync(async (req: Request, res: Response) => {
         scheduledAt: b.scheduledAt,
         durationMins: b.durationMins,
         totalAmount: b.totalAmount,
+        discountAmount: b.discountAmount,
         icsContent: '',
       })
       .catch(() => {});

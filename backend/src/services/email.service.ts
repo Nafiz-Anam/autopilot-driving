@@ -513,6 +513,7 @@ const sendBookingConfirmationEmail = async (params: {
   scheduledAt: Date;
   durationMins: number;
   totalAmount: number;
+  discountAmount?: number;
   icsContent: string;
 }) => {
   const dateStr = params.scheduledAt.toLocaleDateString('en-GB', {
@@ -526,8 +527,20 @@ const sendBookingConfirmationEmail = async (params: {
     minute: '2-digit',
   });
 
+  const discountAmount = params.discountAmount ?? 0;
+  const paidAmount = Math.max(0, params.totalAmount - discountAmount);
+  const amountText =
+    discountAmount > 0
+      ? `£${paidAmount.toFixed(2)} (full price £${params.totalAmount.toFixed(2)})`
+      : `£${paidAmount.toFixed(2)}`;
+
   const subject = `Booking Confirmed — ${params.reference}`;
-  const text = `Hi ${params.studentName},\n\nYour driving lesson is confirmed.\n\nReference: ${params.reference}\nDate: ${dateStr} at ${timeStr}\nInstructor: ${params.instructorName}\nDuration: ${params.durationMins / 60}hr\nAmount: £${params.totalAmount.toFixed(2)}\n\nThe attached .ics file will add this lesson to your calendar.`;
+  const text = `Hi ${params.studentName},\n\nYour driving lesson is confirmed.\n\nReference: ${params.reference}\nDate: ${dateStr} at ${timeStr}\nInstructor: ${params.instructorName}\nDuration: ${params.durationMins / 60}hr\nAmount paid: ${amountText}\n\nThe attached .ics file will add this lesson to your calendar.`;
+
+  const amountHtml =
+    discountAmount > 0
+      ? `<span style="text-decoration:line-through;color:#9CA3AF;margin-right:6px;">£${params.totalAmount.toFixed(2)}</span><span style="font-weight:700;">£${paidAmount.toFixed(2)}</span>`
+      : `<span style="font-weight:700;">£${paidAmount.toFixed(2)}</span>`;
 
   const html = renderEmailLayout({
     title: 'Your lesson is confirmed!',
@@ -539,7 +552,7 @@ const sendBookingConfirmationEmail = async (params: {
         <tr><td style="padding:6px 0;color:#6B7280;">Time</td><td style="padding:6px 0;">${escapeHtml(timeStr)}</td></tr>
         <tr><td style="padding:6px 0;color:#6B7280;">Instructor</td><td style="padding:6px 0;">${escapeHtml(params.instructorName)}</td></tr>
         <tr><td style="padding:6px 0;color:#6B7280;">Duration</td><td style="padding:6px 0;">${params.durationMins / 60}hr</td></tr>
-        <tr><td style="padding:6px 0;color:#6B7280;">Amount paid</td><td style="padding:6px 0;font-weight:700;">£${params.totalAmount.toFixed(2)}</td></tr>
+        <tr><td style="padding:6px 0;color:#6B7280;">Amount paid</td><td style="padding:6px 0;">${amountHtml}</td></tr>
       </table>
       <p style="margin:16px 0 0;font-size:13px;color:#6B7280;">The attached file will add this lesson to Apple Calendar, Google Calendar, or Outlook automatically.</p>
     `,

@@ -19,7 +19,7 @@ import {
   Mail,
   Settings,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, paidAmount } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
 
 interface AdminStats {
@@ -40,6 +40,7 @@ interface RecentBooking {
   lessonType: string;
   scheduledAt: string;
   totalAmount: number;
+  discountAmount?: number | null;
   student: { name: string | null };
   instructor: { user: { name: string | null } };
 }
@@ -279,7 +280,9 @@ export default function AdminDashboardPage() {
                         <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full", cfg.classes)}>
                           {cfg.label}
                         </span>
-                        <span className="text-xs text-brand-muted">{formatCurrency(booking.totalAmount)}</span>
+                        <span className="text-xs text-brand-muted">
+                          {formatCurrency(paidAmount(booking.totalAmount, booking.discountAmount))}
+                        </span>
                       </div>
                     </div>
                   </div>

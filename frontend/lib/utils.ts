@@ -13,6 +13,18 @@ export function formatPrice(amount: number | string): string {
   }).format(num);
 }
 
+/** Amount actually paid on a booking, after any coupon/voucher discount. */
+export function paidAmount(totalAmount: number, discountAmount?: number | null): number {
+  return Math.max(0, totalAmount - (discountAmount ?? 0));
+}
+
+/** Plain-text "amount paid" for contexts without JSX (CSV export, modal copy). */
+export function formatPaidAmount(totalAmount: number, discountAmount?: number | null): string {
+  const discount = discountAmount ?? 0;
+  if (discount <= 0) return formatPrice(totalAmount);
+  return `${formatPrice(paidAmount(totalAmount, discount))} (full price ${formatPrice(totalAmount)})`;
+}
+
 export function generateBookingReference(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let result = "APS-";

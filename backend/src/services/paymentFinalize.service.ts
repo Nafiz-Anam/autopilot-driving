@@ -47,6 +47,7 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
         scheduledAt: Date;
         durationMins: number;
         totalAmount: string;
+        discountAmount: string | null;
         studentId: string;
         studentName: string | null;
         studentEmail: string;
@@ -56,6 +57,7 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
       }>
     >(
       `SELECT b.reference, b."lessonType", b."scheduledAt", b."durationMins", b."totalAmount"::text,
+              b."discountAmount"::text AS "discountAmount",
               b."studentId",
               su.name AS "studentName", su.email AS "studentEmail",
               iu.id AS "instructorUserId",
@@ -79,6 +81,7 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
         scheduledAt: new Date(row.scheduledAt),
         durationMins: row.durationMins,
         totalAmount: Number(row.totalAmount),
+        discountAmount: row.discountAmount != null ? Number(row.discountAmount) : 0,
       });
       await emailService.sendBookingConfirmationEmail({
         to: row.studentEmail,
@@ -89,6 +92,7 @@ async function finalizeBookingFromSucceededPayment(pi: Stripe.PaymentIntent): Pr
         scheduledAt: new Date(row.scheduledAt),
         durationMins: row.durationMins,
         totalAmount: Number(row.totalAmount),
+        discountAmount: row.discountAmount != null ? Number(row.discountAmount) : 0,
         icsContent,
       });
 

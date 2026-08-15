@@ -15,6 +15,7 @@ function generateBookingIcs(params: {
   scheduledAt: Date;
   durationMins: number;
   totalAmount: number;
+  discountAmount?: number;
 }): string {
   const cal = ical({
     name: 'Autopilot Driving School',
@@ -22,13 +23,14 @@ function generateBookingIcs(params: {
   });
 
   const end = new Date(params.scheduledAt.getTime() + params.durationMins * 60 * 1000);
+  const paidAmount = Math.max(0, params.totalAmount - (params.discountAmount ?? 0));
 
   cal.createEvent({
     id: `booking-${params.bookingId}@autopilotdrivingschool.co.uk`,
     start: params.scheduledAt,
     end,
     summary: `Driving Lesson — ${formatLessonType(params.lessonType)}`,
-    description: `Booking reference: ${params.reference}\nInstructor: ${params.instructorName}\nDuration: ${params.durationMins / 60}hr\nAmount: £${params.totalAmount.toFixed(2)}`,
+    description: `Booking reference: ${params.reference}\nInstructor: ${params.instructorName}\nDuration: ${params.durationMins / 60}hr\nAmount paid: £${paidAmount.toFixed(2)}`,
     organizer: { name: 'Autopilot Driving School', email: 'noreply@autopilotdrivingschool.co.uk' },
     attendees: [{ name: params.studentName, email: params.studentEmail, rsvp: false }],
   });

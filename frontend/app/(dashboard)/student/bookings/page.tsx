@@ -7,6 +7,8 @@ import { CalendarDays, CalendarPlus, InboxIcon, RotateCcw, X, CalendarClock, Ale
 import { cn } from "@/lib/utils";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders } from "@/lib/backend-auth-fetch";
+import { paidAmount } from "@/lib/utils";
+import { BookingAmount } from "@/components/shared/BookingAmount";
 
 type BookingStatus = "CONFIRMED" | "COMPLETED" | "CANCELLED" | "PENDING" | "NO_SHOW";
 
@@ -28,6 +30,7 @@ interface Booking {
   status: BookingStatus;
   paymentStatus: string;
   totalAmount: number;
+  discountAmount?: number | null;
   instructor: {
     user: { name: string | null; image: string | null };
     rating: number;
@@ -111,7 +114,9 @@ function CancelModal({
   const refundLabel = eligibleForRefund
     ? { label: "Full refund eligible", cls: "bg-green-50 border-green-200 text-green-800" }
     : { label: "No refund — lesson is within 24 hours", cls: "bg-red-50 border-red-200 text-brand-red" };
-  const refundAmount = eligibleForRefund ? Number(booking.totalAmount).toFixed(2) : "0.00";
+  const refundAmount = eligibleForRefund
+    ? paidAmount(Number(booking.totalAmount), booking.discountAmount).toFixed(2)
+    : "0.00";
 
   async function submit() {
     setSaving(true);
@@ -429,8 +434,8 @@ export default function StudentBookingsPage() {
                         <span className="text-xs border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">{typeLabel}</span>
                       </td>
                       <td className="px-5 py-3.5 text-sm text-brand-muted hidden lg:table-cell">{booking.durationMins / 60}hr</td>
-                      <td className="px-5 py-3.5 text-sm font-semibold text-brand-black hidden lg:table-cell">
-                        £{Number(booking.totalAmount).toFixed(2)}
+                      <td className="px-5 py-3.5 text-sm text-brand-black hidden lg:table-cell">
+                        <BookingAmount totalAmount={Number(booking.totalAmount)} discountAmount={booking.discountAmount} />
                       </td>
                       <td className="px-5 py-3.5 hidden sm:table-cell">
                         <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full", pc)}>{booking.paymentStatus.replace("_", " ")}</span>
