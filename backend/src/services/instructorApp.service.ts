@@ -356,8 +356,8 @@ const getInstructorStatsByUserId = async (userId: string) => {
       weekStart.toISOString(),
       weekEnd.toISOString()
     ),
-    prisma.$queryRawUnsafe<Array<{ totalAmount: string }>>(
-      `SELECT "totalAmount"::text AS "totalAmount"
+    prisma.$queryRawUnsafe<Array<{ totalAmount: string; discountAmount: string | null }>>(
+      `SELECT "totalAmount"::text AS "totalAmount", "discountAmount"::text AS "discountAmount"
          FROM "Booking"
          WHERE "instructorId" = $1
            AND "scheduledAt" >= $2::timestamp
@@ -429,7 +429,10 @@ const getInstructorStatsByUserId = async (userId: string) => {
   ]);
 
   const lessonsThisWeek = lessonsThisWeekRows[0]?.count ?? 0;
-  const earningsThisMonth = monthBookings.reduce((sum, b) => sum + Number(b.totalAmount), 0);
+  const earningsThisMonth = monthBookings.reduce(
+    (sum, b) => sum + (Number(b.totalAmount) - Number(b.discountAmount ?? 0)),
+    0
+  );
 
   const uniqueStudentIds = new Set(allBookingsForStudents.map(b => b.studentId));
   const totalStudents = uniqueStudentIds.size;

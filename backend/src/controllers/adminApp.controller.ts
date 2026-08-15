@@ -136,7 +136,7 @@ const patchBookingById = catchAsync(async (req: Request, res: Response) => {
         lessonType: b.lessonType,
         scheduledAt: b.scheduledAt,
         refunded,
-        refundAmount: refunded ? b.totalAmount : undefined,
+        refundAmount: refunded ? b.totalAmount - (b.discountAmount ?? 0) : undefined,
       })
       .catch(() => {});
     emailService

@@ -549,6 +549,7 @@ const getUserById = async (id: string) => {
       status: string;
       paymentStatus: string;
       totalAmount: string;
+      discountAmount: string | null;
       notes: string | null;
       instructorId: string;
       instructorUserName: string | null;
@@ -557,7 +558,7 @@ const getUserById = async (id: string) => {
     `SELECT
        b.id, b.reference, b."lessonType"::text AS "lessonType", b.transmission, b."scheduledAt",
        b."durationMins", b.status::text AS status, b."paymentStatus"::text AS "paymentStatus",
-       b."totalAmount"::text AS "totalAmount", b.notes,
+       b."totalAmount"::text AS "totalAmount", b."discountAmount"::text AS "discountAmount", b.notes,
        i.id AS "instructorId", iu.name AS "instructorUserName"
      FROM "Booking" b
      INNER JOIN "Instructor" i ON i.id = b."instructorId"
@@ -580,6 +581,7 @@ const getUserById = async (id: string) => {
       status: b.status,
       paymentStatus: b.paymentStatus,
       totalAmount: Number(b.totalAmount),
+      discountAmount: b.discountAmount != null ? Number(b.discountAmount) : 0,
       notes: b.notes,
       instructor: {
         id: b.instructorId,
@@ -1224,13 +1226,14 @@ const getInstructorById = async (id: string) => {
       status: string;
       paymentStatus: string;
       totalAmount: string;
+      discountAmount: string | null;
       studentName: string | null;
     }>
   >(
     `SELECT
        b.id, b.reference, b."lessonType"::text AS "lessonType", b.transmission, b."scheduledAt",
        b."durationMins", b.status::text AS status, b."paymentStatus"::text AS "paymentStatus",
-       b."totalAmount"::text AS "totalAmount", s.name AS "studentName"
+       b."totalAmount"::text AS "totalAmount", b."discountAmount"::text AS "discountAmount", s.name AS "studentName"
      FROM "Booking" b
      INNER JOIN users s ON s.id = b."studentId"
      WHERE b."instructorId" = $1
@@ -1271,6 +1274,7 @@ const getInstructorById = async (id: string) => {
       status: b.status,
       paymentStatus: b.paymentStatus,
       totalAmount: Number(b.totalAmount),
+      discountAmount: b.discountAmount != null ? Number(b.discountAmount) : 0,
       student: { name: b.studentName },
     })),
     _count: { bookings: instructor.bookingsCount },
