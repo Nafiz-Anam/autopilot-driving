@@ -6,7 +6,7 @@ import { Loader2, PoundSterling, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import type { LessonType } from "@/types";
 import { cn } from "@/lib/utils";
-import { adminApiFetch } from "@/lib/admin-api";
+import { adminApiFetch, assertOk } from "@/lib/admin-api";
 
 type TestCentre = { name: string; fee: number };
 
@@ -141,14 +141,16 @@ export default function AdminPricingPage() {
   async function saveTestCentres() {
     setTcSaving(true);
     try {
-      await adminApiFetch("/pricing/test-centres", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ centres: testCentres }),
-      });
+      await assertOk(
+        await adminApiFetch("/pricing/test-centres", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ centres: testCentres }),
+        })
+      );
       toast.success("Test Day Fees saved.");
-    } catch {
-      toast.error("Could not save test centres.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save test centres.");
     } finally {
       setTcSaving(false);
     }
@@ -157,23 +159,25 @@ export default function AdminPricingPage() {
   async function saveBlockBookingBanner() {
     setBannerSaving(true);
     try {
-      await adminApiFetch("/pricing/block-booking-banner", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          heading: banner.heading,
-          subtitle: banner.subtitle,
-          manualPrice: parseFloat(banner.manualPrice) || 0,
-          manualDescription: banner.manualDescription,
-          automaticPrice: parseFloat(banner.automaticPrice) || 0,
-          automaticDescription: banner.automaticDescription,
-          savingsPrice: parseFloat(banner.savingsPrice) || 0,
-          savingsDescription: banner.savingsDescription,
-        }),
-      });
+      await assertOk(
+        await adminApiFetch("/pricing/block-booking-banner", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            heading: banner.heading,
+            subtitle: banner.subtitle,
+            manualPrice: parseFloat(banner.manualPrice) || 0,
+            manualDescription: banner.manualDescription,
+            automaticPrice: parseFloat(banner.automaticPrice) || 0,
+            automaticDescription: banner.automaticDescription,
+            savingsPrice: parseFloat(banner.savingsPrice) || 0,
+            savingsDescription: banner.savingsDescription,
+          }),
+        })
+      );
       toast.success("Block Bookings banner saved.");
-    } catch {
-      toast.error("Could not save Block Bookings banner.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save Block Bookings banner.");
     } finally {
       setBannerSaving(false);
     }
@@ -181,27 +185,31 @@ export default function AdminPricingPage() {
 
   async function toggleCategoryActive(id: string, isActive: boolean) {
     try {
-      await adminApiFetch(`/pricing/categories/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !isActive }),
-      });
+      await assertOk(
+        await adminApiFetch(`/pricing/categories/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !isActive }),
+        })
+      );
       setCategories((prev) =>
         prev.map((c) => (c.id === id ? { ...c, isActive: !isActive } : c))
       );
       toast.success("Category updated.");
-    } catch {
-      toast.error("Could not update category.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update category.");
     }
   }
 
   async function togglePackageActive(pkgId: string, isActive: boolean) {
     try {
-      await adminApiFetch(`/pricing/packages/${pkgId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !isActive }),
-      });
+      await assertOk(
+        await adminApiFetch(`/pricing/packages/${pkgId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !isActive }),
+        })
+      );
       setCategories((prev) =>
         prev.map((c) => ({
           ...c,
@@ -211,66 +219,70 @@ export default function AdminPricingPage() {
         }))
       );
       toast.success("Package updated.");
-    } catch {
-      toast.error("Could not update package.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update package.");
     }
   }
 
   async function savePackage(pkg: AdminPkg) {
     try {
-      await adminApiFetch(`/pricing/packages/${pkg.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-        name: pkg.name,
-        hours: pkg.hours,
-        lessons: pkg.lessons,
-        price: pkg.price,
-        pricePerHour: pkg.pricePerHour,
-        savings: pkg.savings,
-        footerNote: pkg.footerNote,
-        badge: pkg.badge,
-        isPopular: pkg.isPopular,
-        sortOrder: pkg.sortOrder,
-        }),
-      });
+      await assertOk(
+        await adminApiFetch(`/pricing/packages/${pkg.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: pkg.name,
+            hours: pkg.hours,
+            lessons: pkg.lessons,
+            price: pkg.price,
+            pricePerHour: pkg.pricePerHour,
+            savings: pkg.savings,
+            footerNote: pkg.footerNote,
+            badge: pkg.badge,
+            isPopular: pkg.isPopular,
+            sortOrder: pkg.sortOrder,
+          }),
+        })
+      );
       toast.success("Saved package.");
       await load();
-    } catch {
-      toast.error("Could not save package.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save package.");
     }
   }
 
   async function createPackage(categoryId: string, lessonType: LessonType) {
     try {
-      await adminApiFetch("/pricing/packages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-        categoryId,
-        slug: `custom-${Date.now()}`,
-        name: "New package",
-        hours: 1,
-        lessons: 1,
-        price: 40,
-        sortOrder: 99,
-        isActive: true,
-        }),
-      });
+      await assertOk(
+        await adminApiFetch("/pricing/packages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            categoryId,
+            slug: `custom-${Date.now()}`,
+            name: "New package",
+            hours: 1,
+            lessons: 1,
+            price: 40,
+            sortOrder: 99,
+            isActive: true,
+          }),
+        })
+      );
       toast.success("Package created.");
       await load();
-    } catch {
-      toast.error("Could not create package.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create package.");
     }
   }
 
   async function removePackage(pkgId: string) {
     try {
-      await adminApiFetch(`/pricing/packages/${pkgId}`, { method: "DELETE" });
+      await assertOk(await adminApiFetch(`/pricing/packages/${pkgId}`, { method: "DELETE" }));
       toast.success("Package deactivated.");
       await load();
-    } catch {
-      toast.error("Could not remove package.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not remove package.");
     }
   }
 

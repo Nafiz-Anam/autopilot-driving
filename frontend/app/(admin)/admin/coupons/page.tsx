@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tag, Loader2, Plus, X, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { adminApiFetch } from "@/lib/admin-api";
+import { adminApiFetch, assertOk } from "@/lib/admin-api";
 import toast from "react-hot-toast";
 
 interface CouponRow {
@@ -78,32 +78,34 @@ function CouponModal({
       }
       const body = {
         code: form.code.trim(),
-        name: form.name.trim() || undefined,
+        name: form.name.trim() || null,
         type: form.type,
         value,
         maxDiscountAmount: form.maxDiscountAmount ? parseFloat(form.maxDiscountAmount) : null,
         minOrderAmount: form.minOrderAmount ? parseFloat(form.minOrderAmount) : null,
         maxRedemptions: form.maxRedemptions ? parseInt(form.maxRedemptions, 10) : null,
-        isActive: true,
+        isActive: editingCoupon ? editingCoupon.isActive : true,
       };
-      if (editingCoupon) {
-        await adminApiFetch(`/coupons/${editingCoupon.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      } else {
-        await adminApiFetch("/coupons", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
+      editingCoupon
+        ? await assertOk(
+            await adminApiFetch(`/coupons/${editingCoupon.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            })
+          )
+        : await assertOk(
+            await adminApiFetch("/coupons", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            })
+          );
       toast.success(editingCoupon ? "Coupon updated" : "Coupon created");
       onSaved();
       onClose();
-    } catch {
-      setErr(editingCoupon ? "Could not update coupon." : "Could not create (duplicate code?).");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : editingCoupon ? "Could not update coupon." : "Could not create coupon.");
     } finally {
       setSaving(false);
     }
@@ -295,15 +297,17 @@ export default function AdminCouponsPage() {
 
   async function toggleActive(id: string, isActive: boolean) {
     try {
-      await adminApiFetch(`/coupons/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !isActive }),
-      });
+      await assertOk(
+        await adminApiFetch(`/coupons/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !isActive }),
+        })
+      );
       setCoupons((prev) => prev.map((c) => (c.id === id ? { ...c, isActive: !isActive } : c)));
       toast.success("Coupon status updated");
-    } catch {
-      toast.error("Failed to update coupon");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update coupon");
     }
   }
 
@@ -311,11 +315,11 @@ export default function AdminCouponsPage() {
     if (!confirm("Delete this coupon? This cannot be undone.")) return;
     setDeletingId(id);
     try {
-      await adminApiFetch(`/coupons/${id}`, { method: "DELETE" });
+      await assertOk(await adminApiFetch(`/coupons/${id}`, { method: "DELETE" }));
       setCoupons((prev) => prev.filter((c) => c.id !== id));
       toast.success("Coupon deleted");
-    } catch {
-      toast.error("Failed to delete coupon");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete coupon");
     } finally {
       setDeletingId(null);
     }

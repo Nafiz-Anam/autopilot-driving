@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import httpStatus from 'http-status';
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
@@ -8,6 +9,7 @@ import emailService from './email.service';
 import refundService from './refund.service';
 import tokenService from './token.service';
 import config from '../config/config';
+import ApiError from '../utils/ApiError';
 
 const PAGE_SIZE = 20;
 const VALID_BOOKING_STATUSES = [
@@ -962,19 +964,58 @@ const createCoupon = async (payload: {
   return rows[0] ?? null;
 };
 
-const patchCouponById = async (id: string, payload: { isActive?: boolean }) => {
+const patchCouponById = async (
+  id: string,
+  payload: {
+    code?: string;
+    name?: string | null;
+    type?: string;
+    value?: number;
+    maxDiscountAmount?: number | null;
+    minOrderAmount?: number | null;
+    startsAt?: string | null;
+    endsAt?: string | null;
+    maxRedemptions?: number | null;
+    isActive?: boolean;
+  }
+) => {
   const hasCoupon = await legacyTableExists('Coupon');
   if (!hasCoupon) {
     return null;
   }
 
+  if (payload.type != null && !VALID_COUPON_TYPES.includes(payload.type as any)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid input');
+  }
+  if (payload.value != null && (!Number.isFinite(Number(payload.value)) || Number(payload.value) <= 0)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid input');
+  }
+
   const rows = await prisma.$queryRawUnsafe<any[]>(
     `UPDATE "Coupon"
-     SET "isActive" = COALESCE($2, "isActive"),
+     SET code = COALESCE($2, code),
+         name = CASE WHEN $3::boolean THEN $4 ELSE name END,
+         type = COALESCE($5::"CouponType", type),
+         value = COALESCE($6::decimal, value),
+         "maxDiscountAmount" = CASE WHEN $7::boolean THEN $8::decimal ELSE "maxDiscountAmount" END,
+         "minOrderAmount" = CASE WHEN $9::boolean THEN $10::decimal ELSE "minOrderAmount" END,
+         "maxRedemptions" = CASE WHEN $11::boolean THEN $12::int ELSE "maxRedemptions" END,
+         "isActive" = COALESCE($13, "isActive"),
          "updatedAt" = NOW()
      WHERE id = $1
      RETURNING *`,
     id,
+    payload.code != null ? normalizePromoCode(payload.code) : null,
+    'name' in payload,
+    payload.name ?? null,
+    payload.type ?? null,
+    payload.value != null ? Number(payload.value) : null,
+    'maxDiscountAmount' in payload,
+    payload.maxDiscountAmount ?? null,
+    'minOrderAmount' in payload,
+    payload.minOrderAmount ?? null,
+    'maxRedemptions' in payload,
+    payload.maxRedemptions ?? null,
     typeof payload.isActive === 'boolean' ? payload.isActive : null
   );
   return rows[0] ?? null;
