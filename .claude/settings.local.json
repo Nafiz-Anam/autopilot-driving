@@ -18,7 +18,10 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(b['title']\\) for b in d['blogs']]\")",
       "Read(//tmp/**)",
       "Bash(netstat -ano)",
-      "Bash(wsl.exe -e bash -lc 'export NVM_DIR=$HOME/.nvm; source $NVM_DIR/nvm.sh; cd /mnt/e/personal/autopilot-driving/backend && npx tsc --noEmit 2>&1 | head -80')"
+      "Bash(wsl.exe -e bash -lc 'export NVM_DIR=$HOME/.nvm; source $NVM_DIR/nvm.sh; cd /mnt/e/personal/autopilot-driving/backend && npx tsc --noEmit 2>&1 | head -80')",
+      "Bash(pnpm build *)",
+      "WebFetch(domain:autopilotdrivingschool.co.uk)",
+      "WebFetch(domain:support.google.com)"
     ]
   },
   "enableAllProjectMcpServers": true,

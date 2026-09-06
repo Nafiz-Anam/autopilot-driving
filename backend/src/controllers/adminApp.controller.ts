@@ -20,6 +20,7 @@ const getStats = catchAsync(async (_req: Request, res: Response) => {
 const getBookings = catchAsync(async (req: Request, res: Response) => {
   const data = await adminAppService.listBookings({
     status: String(req.query.status ?? ''),
+    lessonType: String(req.query.lessonType ?? ''),
     page: Number(req.query.page ?? 1),
   });
   res.status(httpStatus.OK).send(data);

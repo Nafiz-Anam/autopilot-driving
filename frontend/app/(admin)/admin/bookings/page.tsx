@@ -29,6 +29,9 @@ interface BookingRecord {
   discountAmount?: number | null;
   couponCode?: string | null;
   notes: string | null;
+  packageName?: string | null;
+  packageHours?: number | null;
+  packageLessons?: number | null;
   student: { id: string; name: string | null; email: string };
   instructor: { id: string; user: { id: string; name: string | null; email: string } };
   pendingReschedule?: PendingReschedule | null;
@@ -75,6 +78,16 @@ const LESSON_TYPE_LABELS: Record<string, string> = {
   MANUAL: "Manual", AUTOMATIC: "Auto", INTENSIVE: "Intensive",
   MOTORWAY: "Motorway", PASS_PLUS: "Pass Plus", REFRESHER: "Refresher", THEORY: "Theory",
 };
+
+const LESSON_TYPE_TABS = [
+  { value: "", label: "All Categories" },
+  { value: "MANUAL", label: "Manual" },
+  { value: "AUTOMATIC", label: "Automatic" },
+  { value: "INTENSIVE", label: "Intensive" },
+  { value: "REFRESHER", label: "Refresher" },
+  { value: "PASS_PLUS", label: "Pass Plus" },
+  { value: "THEORY", label: "Theory" },
+];
 
 const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } } };
 const itemVariants = { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
@@ -417,6 +430,7 @@ export default function AdminBookingsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
+  const [lessonTypeFilter, setLessonTypeFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [cancelBooking, setCancelBooking] = useState<BookingRecord | null>(null);
@@ -428,6 +442,7 @@ export default function AdminBookingsPage() {
     try {
       const params = new URLSearchParams({ page: String(page) });
       if (statusFilter && statusFilter !== "RESCHEDULE") params.set("status", statusFilter);
+      if (lessonTypeFilter) params.set("lessonType", lessonTypeFilter);
       const res = await adminApiFetch(`/bookings?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -437,7 +452,7 @@ export default function AdminBookingsPage() {
       }
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, lessonTypeFilter]);
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
@@ -489,23 +504,34 @@ export default function AdminBookingsPage() {
           </span>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="flex gap-1 flex-wrap mb-6">
-          {STATUS_TABS.map((tab) => {
-            const rescheduleCount = tab.value === "RESCHEDULE" ? bookings.filter(b => !!b.pendingReschedule).length : 0;
-            return (
-              <button key={tab.value} onClick={() => { setStatusFilter(tab.value); setPage(1); }}
-                className={cn("flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
-                  statusFilter === tab.value ? "bg-brand-black text-white" : "text-brand-muted hover:text-brand-black")}>
-                {tab.label}
-                {tab.value === "RESCHEDULE" && rescheduleCount > 0 && (
-                  <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-                    statusFilter === tab.value ? "bg-white text-brand-black" : "bg-amber-100 text-amber-700")}>
-                    {rescheduleCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <motion.div variants={itemVariants} className="flex items-center justify-between gap-3 flex-wrap mb-6">
+          <div className="flex gap-1 flex-wrap">
+            {STATUS_TABS.map((tab) => {
+              const rescheduleCount = tab.value === "RESCHEDULE" ? bookings.filter(b => !!b.pendingReschedule).length : 0;
+              return (
+                <button key={tab.value} onClick={() => { setStatusFilter(tab.value); setPage(1); }}
+                  className={cn("flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all duration-200",
+                    statusFilter === tab.value ? "bg-brand-black text-white" : "text-brand-muted hover:text-brand-black")}>
+                  {tab.label}
+                  {tab.value === "RESCHEDULE" && rescheduleCount > 0 && (
+                    <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+                      statusFilter === tab.value ? "bg-white text-brand-black" : "bg-amber-100 text-amber-700")}>
+                      {rescheduleCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <select
+            value={lessonTypeFilter}
+            onChange={(e) => { setLessonTypeFilter(e.target.value); setPage(1); }}
+            className="px-3.5 py-1.5 rounded-xl text-sm font-semibold border border-brand-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-red/30"
+          >
+            {LESSON_TYPE_TABS.map((tab) => (
+              <option key={tab.value} value={tab.value}>{tab.label}</option>
+            ))}
+          </select>
         </motion.div>
 
         <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">
@@ -569,9 +595,13 @@ export default function AdminBookingsPage() {
                         <p className="text-xs text-brand-muted">{formatTime(booking.scheduledAt)}</p>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <span className="text-xs border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">
+                        <p className="font-semibold text-brand-black text-sm leading-tight">
                           {LESSON_TYPE_LABELS[booking.lessonType] ?? booking.lessonType}
-                        </span>
+                        </p>
+                        <p className="text-xs text-brand-muted">
+                          {booking.packageName
+                            ?? (booking.packageHours ? `${booking.packageHours} hr${booking.packageHours === 1 ? "" : "s"}` : `${booking.durationMins} mins`)}
+                        </p>
                       </td>
                       <td className="px-4 py-3 text-sm text-brand-black hidden lg:table-cell">
                         <BookingAmount totalAmount={Number(booking.totalAmount)} discountAmount={booking.discountAmount} />

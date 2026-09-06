@@ -20,6 +20,14 @@ const VALID_BOOKING_STATUSES = [
   'NO_SHOW',
 ] as const;
 const VALID_PAYMENT_STATUSES = ['UNPAID', 'PAID', 'REFUNDED', 'PARTIAL_REFUND'] as const;
+const VALID_LESSON_TYPES = [
+  'MANUAL',
+  'AUTOMATIC',
+  'INTENSIVE',
+  'REFRESHER',
+  'PASS_PLUS',
+  'THEORY',
+] as const;
 const VALID_USER_ROLES = ['STUDENT', 'INSTRUCTOR', 'ADMIN'] as const;
 const VALID_APPLICATION_STATUSES = ['pending', 'approved', 'rejected'] as const;
 const VALID_COUPON_TYPES = ['PERCENT', 'FIXED'] as const;
@@ -202,7 +210,7 @@ const getStats = async () => {
   };
 };
 
-const listBookings = async (params: { status?: string; page?: number }) => {
+const listBookings = async (params: { status?: string; page?: number; lessonType?: string }) => {
   const hasBooking = await legacyTableExists('Booking');
   if (!hasBooking) {
     return {
@@ -214,15 +222,19 @@ const listBookings = async (params: { status?: string; page?: number }) => {
   }
 
   const status = params.status ?? '';
+  const lessonType = params.lessonType ?? '';
   const page = normalizePage(params.page);
   const whereStatus = VALID_BOOKING_STATUSES.includes(status as any) ? status : null;
+  const whereLessonType = VALID_LESSON_TYPES.includes(lessonType as any) ? lessonType : null;
   const offset = (page - 1) * PAGE_SIZE;
 
   const totalRows = await prisma.$queryRawUnsafe<Array<{ total: number }>>(
     `SELECT COUNT(*)::int AS total
      FROM "Booking" b
-     WHERE ($1::text IS NULL OR b.status::text = $1)`,
-    whereStatus
+     WHERE ($1::text IS NULL OR b.status::text = $1)
+       AND ($2::text IS NULL OR b."lessonType"::text = $2)`,
+    whereStatus,
+    whereLessonType
   );
   const total = totalRows[0]?.total ?? 0;
 
@@ -245,6 +257,9 @@ const listBookings = async (params: { status?: string; page?: number }) => {
       studentEmail: string;
       instructorId: string;
       instructorUserName: string | null;
+      packageName: string | null;
+      packageHours: number | null;
+      packageLessons: number | null;
     }>
   >(
     `SELECT
@@ -253,15 +268,19 @@ const listBookings = async (params: { status?: string; page?: number }) => {
        b."totalAmount"::text AS "totalAmount", b."discountAmount"::text AS "discountAmount",
        b."couponCode", b.notes,
        s.id AS "studentId", s.name AS "studentName", s.email AS "studentEmail",
-       i.id AS "instructorId", iu.name AS "instructorUserName"
+       i.id AS "instructorId", iu.name AS "instructorUserName",
+       pp.name AS "packageName", pp.hours AS "packageHours", pp.lessons AS "packageLessons"
      FROM "Booking" b
      INNER JOIN users s ON s.id = b."studentId"
      INNER JOIN "Instructor" i ON i.id = b."instructorId"
      INNER JOIN users iu ON iu.id = i."userId"
+     LEFT JOIN "LessonPricingPackage" pp ON pp.id = b."pricingPackageId"
      WHERE ($1::text IS NULL OR b.status::text = $1)
+       AND ($2::text IS NULL OR b."lessonType"::text = $2)
      ORDER BY b."scheduledAt" DESC
-     OFFSET $2 LIMIT $3`,
+     OFFSET $3 LIMIT $4`,
     whereStatus,
+    whereLessonType,
     offset,
     PAGE_SIZE
   );
@@ -280,6 +299,9 @@ const listBookings = async (params: { status?: string; page?: number }) => {
       discountAmount: r.discountAmount != null ? Number(r.discountAmount) : 0,
       couponCode: r.couponCode,
       notes: r.notes,
+      packageName: r.packageName,
+      packageHours: r.packageHours,
+      packageLessons: r.packageLessons,
       student: { id: r.studentId, name: r.studentName, email: r.studentEmail },
       instructor: { id: r.instructorId, user: { name: r.instructorUserName } },
     })),
@@ -1927,6 +1949,7 @@ const deleteInstructorById = async (id: string) => {
 
 export default {
   VALID_BOOKING_STATUSES,
+  VALID_LESSON_TYPES,
   VALID_PAYMENT_STATUSES,
   VALID_USER_ROLES,
   VALID_APPLICATION_STATUSES,
