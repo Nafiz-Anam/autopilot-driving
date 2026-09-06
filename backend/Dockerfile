@@ -16,7 +16,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" pnpm dlx prisma generate
+RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" pnpm exec prisma generate
 RUN pnpm build
 
 # ── Stage 3: runner ───────────────────────────────────────────────────────────
