@@ -14,8 +14,6 @@ interface ProfileForm {
   email: string;
   phone: string;
   bio: string;
-  pricePerHour: string;
-  yearsExp: string;
   licenceNumber: string;
   areas: string;
   transmission: string[];
@@ -174,8 +172,8 @@ function DeleteDialog({ onClose }: { onClose: () => void }) {
 }
 
 const empty: ProfileForm = {
-  name: "", email: "", phone: "", bio: "", pricePerHour: "",
-  yearsExp: "", licenceNumber: "", areas: "", transmission: [], isFemale: false,
+  name: "", email: "", phone: "", bio: "",
+  licenceNumber: "", areas: "", transmission: [], isFemale: false,
 };
 
 export default function InstructorProfilePage() {
@@ -203,8 +201,6 @@ export default function InstructorProfilePage() {
             email: d.user?.email ?? "",
             phone: d.user?.phone ?? "",
             bio: d.bio ?? "",
-            pricePerHour: d.pricePerHour != null ? String(d.pricePerHour) : "",
-            yearsExp: d.yearsExp != null ? String(d.yearsExp) : "",
             licenceNumber: d.licenceNumber ?? "",
             areas: Array.isArray(d.areas) ? d.areas.join(", ") : (d.areas ?? ""),
             transmission: Array.isArray(d.transmission) ? d.transmission : [],
@@ -248,7 +244,6 @@ export default function InstructorProfilePage() {
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({
           name: profile.name, phone: profile.phone || null, bio: profile.bio || null,
-          pricePerHour: Number(profile.pricePerHour) || 0, yearsExp: Number(profile.yearsExp) || 0,
           licenceNumber: profile.licenceNumber || null, areas, transmission: profile.transmission,
           isFemale: profile.isFemale,
         }),
@@ -321,14 +316,6 @@ export default function InstructorProfilePage() {
             </span>
             <div className="mt-6 w-full border-t border-brand-border pt-4 space-y-2 text-left">
               <div className="flex justify-between text-xs">
-                <span className="text-brand-muted">Price / hr</span>
-                <span className="font-semibold text-brand-black">£{profile.pricePerHour || "—"}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-brand-muted">Experience</span>
-                <span className="font-semibold text-brand-black">{profile.yearsExp ? `${profile.yearsExp} yrs` : "—"}</span>
-              </div>
-              <div className="flex justify-between text-xs">
                 <span className="text-brand-muted">Transmission</span>
                 <span className="font-semibold text-brand-black capitalize">{profile.transmission.join(", ") || "—"}</span>
               </div>
@@ -395,10 +382,6 @@ export default function InstructorProfilePage() {
                         placeholder="Tell students a bit about yourself…"
                         className="w-full px-4 py-2.5 border border-brand-border rounded-xl text-sm bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-red focus:border-transparent resize-none"
                       />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <FormField label="Price / hr (£)" name="pricePerHour" value={profile.pricePerHour} onChange={handleChange} type="number" placeholder="45" />
-                      <FormField label="Years Experience" name="yearsExp" value={profile.yearsExp} onChange={handleChange} type="number" placeholder="5" />
                     </div>
                     <FormField label="Service Areas (comma-separated)" name="areas" value={profile.areas} onChange={handleChange} placeholder="IG1, IG2, E1" />
                     <div>

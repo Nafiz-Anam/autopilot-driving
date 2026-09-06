@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-import { Check, MapPin, Clock, Search } from "lucide-react";
+import { Check, MapPin, Search } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
 import type { InstructorPublic } from "@/types";
 import { backendApiUrl } from "@/lib/backend-api";
@@ -235,20 +235,6 @@ export function Step2Instructor() {
                     <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
                     <span className="leading-tight">
                       {inst.areas.slice(0, 3).join(", ")}
-                    </span>
-                  </div>
-
-                  {/* Exp */}
-                  <div className="flex items-center gap-1.5 text-xs text-brand-muted">
-                    <Clock className="w-3 h-3 shrink-0" />
-                    <span>{inst.yearsExp} years experience</span>
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-center justify-between pt-1 border-t border-brand-border">
-                    <span className="text-lg font-extrabold text-brand-red">
-                      £{inst.pricePerHour}
-                      <span className="text-xs font-medium text-brand-muted">/hr</span>
                     </span>
                   </div>
                 </div>

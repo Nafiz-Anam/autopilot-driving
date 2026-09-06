@@ -154,6 +154,50 @@ function BadgeDropdown({
   );
 }
 
+function FilterDropdown({
+  value, options, onChange,
+}: {
+  value: string; options: { value: string; label: string }[]; onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = options.find((o) => o.value === value) ?? options[0];
+
+  useEffect(() => {
+    function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); }
+    if (open) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-sm font-semibold border border-brand-border bg-white text-brand-black hover:border-brand-red/40 transition-colors"
+      >
+        {current?.label}
+        <ChevronDown className={cn("w-3.5 h-3.5 text-brand-muted transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 bg-white border border-brand-border rounded-xl shadow-lg z-30 overflow-hidden min-w-[170px] py-1">
+          {options.map((opt) => (
+            <button key={opt.value} type="button"
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={cn(
+                "flex items-center w-full px-3.5 py-2 text-sm text-left transition-colors hover:bg-brand-surface",
+                value === opt.value ? "font-semibold text-brand-red bg-red-50/60" : "text-brand-black"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Cancel Modal ────────────────────────────────────────────────────────────
 function CancelModal({ booking, onClose, onDone }: {
   booking: BookingRecord;
@@ -523,15 +567,11 @@ export default function AdminBookingsPage() {
               );
             })}
           </div>
-          <select
+          <FilterDropdown
             value={lessonTypeFilter}
-            onChange={(e) => { setLessonTypeFilter(e.target.value); setPage(1); }}
-            className="px-3.5 py-1.5 rounded-xl text-sm font-semibold border border-brand-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-red/30"
-          >
-            {LESSON_TYPE_TABS.map((tab) => (
-              <option key={tab.value} value={tab.value}>{tab.label}</option>
-            ))}
-          </select>
+            options={LESSON_TYPE_TABS}
+            onChange={(v) => { setLessonTypeFilter(v); setPage(1); }}
+          />
         </motion.div>
 
         <motion.div variants={itemVariants} className="bg-white rounded-2xl border border-brand-border shadow-sm overflow-hidden">

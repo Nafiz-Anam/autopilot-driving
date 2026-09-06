@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Star, MapPin, Clock, Car, Check } from "lucide-react";
+import { Star, MapPin, Car, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getInitials, formatPrice } from "@/lib/utils";
+import { getInitials } from "@/lib/utils";
 import type { InstructorPublic } from "@/types";
 
 interface InstructorCardProps {
@@ -102,9 +102,6 @@ export function InstructorCard({
               ({instructor.reviewCount})
             </span>
           </div>
-          <p className="text-xs text-brand-muted mt-0.5">
-            {instructor.yearsExp} {instructor.yearsExp === 1 ? "yr" : "yrs"} experience
-          </p>
         </div>
       </div>
 
@@ -146,16 +143,6 @@ export function InstructorCard({
         </div>
       )}
 
-      {/* Footer: price */}
-      <div className="flex items-center justify-between pt-1 border-t border-brand-border mt-auto">
-        <div>
-          <span className="text-2xl font-extrabold text-brand-red">
-            {formatPrice(instructor.pricePerHour)}
-          </span>
-          <span className="text-xs text-brand-muted ml-1">/ hr</span>
-        </div>
-      </div>
-
       {/* Select / Book button */}
       {showBookButton && (
         <button
@@ -165,7 +152,7 @@ export function InstructorCard({
             onSelect?.();
           }}
           className={cn(
-            "w-full py-2.5 rounded-full font-semibold text-sm transition-colors duration-200",
+            "w-full py-2.5 rounded-full font-semibold text-sm transition-colors duration-200 mt-auto",
             selected
               ? "bg-brand-red text-white hover:bg-brand-orange"
               : "bg-brand-surface text-brand-black border border-brand-border hover:bg-brand-red hover:text-white hover:border-brand-red"

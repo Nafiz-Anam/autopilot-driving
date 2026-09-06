@@ -15,13 +15,10 @@ interface InstructorRecord {
   id: string;
   userId: string;
   bio: string | null;
-
   reviewCount: number;
-  yearsExp: number;
   licenceNumber?: string | null;
   transmission: string[];
   areas: string[];
-  pricePerHour: number;
   isFemale: boolean;
   isActive: boolean;
   user: { id: string; name: string | null; email: string; phone: string | null; image: string | null };
@@ -34,9 +31,7 @@ interface InstructorFormData {
   phone: string;
   password: string;
   bio: string;
-  pricePerHour: string;
   transmission: string[];
-  yearsExp: string;
   licenceNumber: string;
   isFemale: boolean;
   areas: string;
@@ -44,8 +39,8 @@ interface InstructorFormData {
 }
 
 const emptyForm: InstructorFormData = {
-  name: "", email: "", phone: "", password: "", bio: "", pricePerHour: "",
-  transmission: [], yearsExp: "", licenceNumber: "", isFemale: false, areas: "", isActive: true,
+  name: "", email: "", phone: "", password: "", bio: "",
+  transmission: [], licenceNumber: "", isFemale: false, areas: "", isActive: true,
 };
 
 const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } };
@@ -81,9 +76,7 @@ function InstructorModal({
               phone: editInstructor.user.phone ?? "",
               password: "",
               bio: editInstructor.bio ?? "",
-              pricePerHour: String(editInstructor.pricePerHour),
               transmission: editInstructor.transmission ?? [],
-              yearsExp: String(editInstructor.yearsExp),
               licenceNumber: editInstructor.licenceNumber ?? "",
               isFemale: editInstructor.isFemale,
               areas: (editInstructor.areas ?? []).join(", "),
@@ -115,9 +108,7 @@ function InstructorModal({
       const areas = form.areas.split(",").map((s) => s.trim()).filter(Boolean);
       const body: Record<string, unknown> = {
         bio: form.bio || null,
-        pricePerHour: Number(form.pricePerHour) || 0,
         transmission: form.transmission,
-        yearsExp: Number(form.yearsExp) || 0,
         licenceNumber: form.licenceNumber || null,
         isFemale: form.isFemale,
         areas,
@@ -148,9 +139,7 @@ function InstructorModal({
         ? {
             ...editInstructor,
             bio: form.bio || null,
-            pricePerHour: Number(form.pricePerHour) || 0,
             transmission: form.transmission,
-            yearsExp: Number(form.yearsExp) || 0,
             licenceNumber: form.licenceNumber || null,
             isFemale: form.isFemale,
             areas: form.areas.split(",").map((s) => s.trim()).filter(Boolean),
@@ -162,11 +151,9 @@ function InstructorModal({
             userId: json.data.userId ?? "",
             bio: form.bio || null,
             reviewCount: 0,
-            yearsExp: Number(form.yearsExp) || 0,
             licenceNumber: form.licenceNumber || null,
             transmission: form.transmission,
             areas: form.areas.split(",").map((s) => s.trim()).filter(Boolean),
-            pricePerHour: Number(form.pricePerHour) || 0,
             isFemale: form.isFemale,
             isActive: form.isActive,
             user: { id: "", name: form.name, email: form.email, phone: form.phone || null, image: null },
@@ -233,19 +220,6 @@ function InstructorModal({
             <label className="block text-xs font-semibold text-brand-muted mb-1">Bio</label>
             <textarea value={form.bio} onChange={(e) => set("bio", e.target.value)} rows={2}
               className="w-full px-3 py-2 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red resize-none" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-brand-muted mb-1">Price / hr (£)</label>
-              <input type="number" min="0" step="1" value={form.pricePerHour} onChange={(e) => set("pricePerHour", e.target.value)}
-                className="w-full px-3 py-2 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-brand-muted mb-1">Years Experience</label>
-              <input type="number" min="0" value={form.yearsExp} onChange={(e) => set("yearsExp", e.target.value)}
-                className="w-full px-3 py-2 border border-brand-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-red" />
-            </div>
           </div>
 
           <div>
@@ -332,14 +306,6 @@ function InstructorDetailsModal({ instructor, onClose }: { instructor: Instructo
           )}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Experience</p>
-              <p className="font-semibold text-brand-black">{instructor.yearsExp} yrs</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Price / hr</p>
-              <p className="font-semibold text-brand-black">£{Number(instructor.pricePerHour).toFixed(0)}</p>
-            </div>
-            <div>
               <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Licence</p>
               <p className="font-semibold text-brand-black font-mono">{instructor.licenceNumber ?? "—"}</p>
             </div>
@@ -412,9 +378,6 @@ function InstructorRow({
             <span key={t} className="text-xs font-medium border border-brand-border px-2 py-0.5 rounded-lg text-brand-black">{t}</span>
           ))}
         </div>
-      </td>
-      <td className="px-5 py-3.5 text-sm font-semibold text-brand-black hidden md:table-cell whitespace-nowrap">
-        £{Number(instructor.pricePerHour).toFixed(0)}/hr
       </td>
       <td className="px-5 py-3.5 hidden sm:table-cell">
         <button onClick={() => onToggleActive(instructor.id, instructor.isActive)}
@@ -563,7 +526,6 @@ export default function AdminInstructorsPage() {
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-brand-muted uppercase tracking-wide">Instructor</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-brand-muted uppercase tracking-wide hidden md:table-cell">Areas</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-brand-muted uppercase tracking-wide hidden lg:table-cell">Transmission</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-brand-muted uppercase tracking-wide hidden md:table-cell">Price/hr</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-brand-muted uppercase tracking-wide hidden sm:table-cell">Status</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-brand-muted uppercase tracking-wide hidden lg:table-cell">Bookings</th>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold text-brand-muted uppercase tracking-wide">Actions</th>
@@ -576,8 +538,6 @@ export default function AdminInstructorsPage() {
                     <td className="px-5 py-4"><div className="flex items-center gap-3"><div className="w-9 h-9 bg-gray-100 rounded-full" /><div><div className="h-3 bg-gray-100 rounded w-24 mb-1.5" /><div className="h-2.5 bg-gray-100 rounded w-32" /></div></div></td>
                     <td className="px-5 py-4 hidden md:table-cell"><div className="h-5 bg-gray-100 rounded w-20" /></td>
                     <td className="px-5 py-4 hidden lg:table-cell"><div className="h-5 bg-gray-100 rounded w-16" /></td>
-                    <td className="px-5 py-4 hidden lg:table-cell"><div className="h-4 bg-gray-100 rounded w-20" /></td>
-                    <td className="px-5 py-4 hidden md:table-cell"><div className="h-3 bg-gray-100 rounded w-12" /></td>
                     <td className="px-5 py-4 hidden sm:table-cell"><div className="h-5 bg-gray-100 rounded w-16" /></td>
                     <td className="px-5 py-4 hidden lg:table-cell"><div className="h-3 bg-gray-100 rounded w-8" /></td>
                     <td className="px-5 py-4"><div className="h-7 bg-gray-100 rounded w-20 ml-auto" /></td>
@@ -585,7 +545,7 @@ export default function AdminInstructorsPage() {
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-16 text-center">
+                  <td colSpan={7} className="px-5 py-16 text-center">
                     <GraduationCap className="w-10 h-10 text-brand-border mx-auto mb-3" />
                     <p className="text-brand-muted text-sm">{search ? "No instructors match your search" : "No instructors found"}</p>
                   </td>
