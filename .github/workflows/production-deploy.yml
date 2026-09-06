@@ -130,7 +130,7 @@ jobs:
   # ── 3. Deploy (runs only after both images are ready) ──────────────────────
   deploy:
     needs: [meta, build-backend, build-frontend]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, vps]
     environment: production
     steps:
       - name: Checkout
