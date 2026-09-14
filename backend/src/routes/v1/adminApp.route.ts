@@ -78,6 +78,7 @@ router.delete('/contact/:id', adminAppController.deleteContactById);
 router.get('/coupons', adminAppController.getCoupons);
 router.post('/coupons', adminAppController.postCoupons);
 router.patch('/coupons/:id', adminAppController.patchCouponById);
+router.delete('/coupons/:id', adminAppController.deleteCouponById);
 
 router.get('/instructors', adminAppController.getInstructors);
 router.post('/instructors', adminAppController.postInstructors);

@@ -268,6 +268,80 @@ function CouponModal({
   );
 }
 
+function DeleteCouponModal({
+  coupon,
+  onClose,
+  onConfirm,
+  deleting,
+}: {
+  coupon: CouponRow | null;
+  onClose: () => void;
+  onConfirm: () => void;
+  deleting: boolean;
+}) {
+  return (
+    <AnimatePresence>
+      {coupon && (
+        <>
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={onClose}
+          />
+          <motion.div
+            key="modal"
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 16 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-brand-black">Delete coupon</h2>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg text-brand-muted hover:text-brand-black hover:bg-brand-surface transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-sm text-brand-muted">
+                Delete <span className="font-mono font-semibold text-brand-black">{coupon.code}</span>? This
+                cannot be undone.
+              </p>
+              <div className="flex gap-2 justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 border border-brand-border rounded-xl text-sm font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={onConfirm}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
+                >
+                  {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Delete
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function AdminCouponsPage() {
   const [coupons, setCoupons] = useState<CouponRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -275,6 +349,7 @@ export default function AdminCouponsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<CouponRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [couponToDelete, setCouponToDelete] = useState<CouponRow | null>(null);
 
   async function load() {
     setLoading(true);
@@ -312,7 +387,6 @@ export default function AdminCouponsPage() {
   }
 
   async function deleteCoupon(id: string) {
-    if (!confirm("Delete this coupon? This cannot be undone.")) return;
     setDeletingId(id);
     try {
       await assertOk(await adminApiFetch(`/coupons/${id}`, { method: "DELETE" }));
@@ -322,6 +396,7 @@ export default function AdminCouponsPage() {
       toast.error(e instanceof Error ? e.message : "Failed to delete coupon");
     } finally {
       setDeletingId(null);
+      setCouponToDelete(null);
     }
   }
 
@@ -344,6 +419,13 @@ export default function AdminCouponsPage() {
         onSaved={() => {
           void load();
         }}
+      />
+
+      <DeleteCouponModal
+        coupon={couponToDelete}
+        onClose={() => setCouponToDelete(null)}
+        onConfirm={() => couponToDelete && void deleteCoupon(couponToDelete.id)}
+        deleting={deletingId === couponToDelete?.id}
       />
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -435,7 +517,7 @@ export default function AdminCouponsPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => void deleteCoupon(c.id)}
+                          onClick={() => setCouponToDelete(c)}
                           disabled={deletingId === c.id}
                           className="p-1.5 rounded-lg text-brand-muted hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
                           title="Delete"

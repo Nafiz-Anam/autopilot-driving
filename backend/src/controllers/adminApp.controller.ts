@@ -404,6 +404,14 @@ const patchCouponById = catchAsync(async (req: Request, res: Response) => {
   return res.status(httpStatus.OK).send({ data });
 });
 
+const deleteCouponById = catchAsync(async (req: Request, res: Response) => {
+  const deleted = await adminAppService.deleteCouponById(pid(req));
+  if (!deleted) {
+    return res.status(httpStatus.NOT_FOUND).send({ error: 'Coupon not found' });
+  }
+  return res.status(httpStatus.OK).send({ success: true });
+});
+
 const getInstructors = catchAsync(async (req: Request, res: Response) => {
   const data = await adminAppService.listInstructors({
     search: String(req.query.search ?? ''),
@@ -733,6 +741,7 @@ export default {
   getCoupons,
   postCoupons,
   patchCouponById,
+  deleteCouponById,
   getInstructors,
   patchInstructors,
   getInstructorById,

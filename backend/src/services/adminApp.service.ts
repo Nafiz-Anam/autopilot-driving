@@ -998,6 +998,19 @@ const createCoupon = async (payload: {
   return rows[0] ?? null;
 };
 
+const deleteCouponById = async (id: string) => {
+  const hasCoupon = await legacyTableExists('Coupon');
+  if (!hasCoupon) {
+    return false;
+  }
+
+  const rows = await prisma.$queryRawUnsafe<any[]>(
+    `DELETE FROM "Coupon" WHERE id = $1 RETURNING id`,
+    id
+  );
+  return rows.length > 0;
+};
+
 const patchCouponById = async (
   id: string,
   payload: {
@@ -1977,6 +1990,7 @@ export default {
   listCoupons,
   createCoupon,
   patchCouponById,
+  deleteCouponById,
   listInstructors,
   patchInstructorById,
   getInstructorById,

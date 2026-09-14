@@ -12,7 +12,12 @@ export async function adminApiFetch(path: string, init?: RequestInit): Promise<R
 export async function assertOk(res: Response): Promise<Response> {
   if (!res.ok) {
     const payload = await res.json().catch(() => null);
-    throw new Error(payload?.error || payload?.message || `Request failed (${res.status})`);
+    const errField = payload?.error;
+    const message =
+      (typeof errField === "string" ? errField : errField?.message) ||
+      payload?.message ||
+      `Request failed (${res.status})`;
+    throw new Error(message);
   }
   return res;
 }
