@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../client';
 import config from '../config/config';
 import { encrypt, decrypt } from '../utils/tokenEncryption';
+import instructorAvailabilityModeService from './instructorAvailabilityMode.service';
 
 const PROVIDER = 'google_calendar';
 
@@ -109,6 +110,7 @@ export async function disconnect(userId: string): Promise<void> {
   await stopWatch(userId).catch(() => {});
   await prisma.calendarWatch.deleteMany({ where: { userId, provider: PROVIDER } });
   await prisma.userIntegration.deleteMany({ where: { userId, provider: PROVIDER } });
+  await instructorAvailabilityModeService.autoFlipToCustomSlotsIfNeeded(userId);
 }
 
 export async function markDisabled(userId: string, reason: string): Promise<void> {
@@ -118,6 +120,7 @@ export async function markDisabled(userId: string, reason: string): Promise<void
     data: { enabled: false },
   });
   await prisma.calendarWatch.deleteMany({ where: { userId, provider: PROVIDER } });
+  await instructorAvailabilityModeService.autoFlipToCustomSlotsIfNeeded(userId);
 }
 
 export async function handleOAuthCallback(code: string, userId: string): Promise<void> {

@@ -15,6 +15,8 @@ router.get('/profile', instructorAppController.getProfile);
 router.put('/profile', instructorAppController.putProfile);
 router.post('/profile/password', instructorAppController.changePassword);
 
+router.get('/schedule', instructorAppController.getSchedule);
+router.post('/schedule', instructorAppController.postSchedule);
 router.get('/schedule/overview', instructorAppController.getScheduleOverview);
 
 router.get('/students', instructorAppController.getStudents);

@@ -3,6 +3,7 @@ import prisma from '../client';
 import refundService from './refund.service';
 import emailService from './email.service';
 import progressReportService from './progressReport.service';
+import instructorAvailabilityModeService from './instructorAvailabilityMode.service';
 import { LONDON_TZ } from '../utils/instructorAvailability';
 
 type InstructorProfileRow = {
@@ -12,6 +13,13 @@ type InstructorProfileRow = {
   userEmail: string;
   userPhone: string | null;
   userImage: string | null;
+};
+
+type AvailabilityInput = {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isAvailable: boolean;
 };
 
 function getInitials(name: string): string {
@@ -64,6 +72,14 @@ const updateInstructorProfileByUserId = async (userId: string, body: Record<stri
   const instructor = instructorRows[0];
   if (!instructor) return null;
 
+  if (body.availabilityMode !== undefined) {
+    await instructorAvailabilityModeService.assertSafeModeSwitch(
+      instructor.id,
+      body.availabilityMode as 'CUSTOM_SLOTS' | 'CALENDAR_SYNC',
+      body.force === true
+    );
+  }
+
   const setClauses: string[] = [];
   const values: unknown[] = [];
   let idx = 1;
@@ -103,6 +119,11 @@ const updateInstructorProfileByUserId = async (userId: string, body: Record<stri
     values.push(body.isFemale);
     idx++;
   }
+  if (body.availabilityMode !== undefined) {
+    setClauses.push(`"availabilityMode" = $${idx}::"AvailabilityMode"`);
+    values.push(body.availabilityMode);
+    idx++;
+  }
 
   if (setClauses.length > 0) {
     await prisma.$executeRawUnsafe(
@@ -136,9 +157,57 @@ const updateInstructorProfileByUserId = async (userId: string, body: Record<stri
   return getInstructorProfileByUserId(userId);
 };
 
-const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toStr: string) => {
+const getInstructorScheduleByUserId = async (userId: string) => {
   const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
     `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+    userId
+  );
+  const instructor = instructorRows[0];
+  if (!instructor) return null;
+
+  const availabilityRows = await prisma.$queryRawUnsafe<Array<{ row: Record<string, unknown> }>>(
+    `SELECT to_jsonb(a) AS row
+     FROM "Availability" a
+     WHERE a."instructorId" = $1
+     ORDER BY a."dayOfWeek" ASC, a."startTime" ASC`,
+    instructor.id
+  );
+
+  return availabilityRows.map(a => a.row);
+};
+
+const replaceInstructorScheduleByUserId = async (userId: string, slots: AvailabilityInput[]) => {
+  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+    `SELECT id FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
+    userId
+  );
+  const instructor = instructorRows[0];
+  if (!instructor) return null;
+
+  await prisma.$transaction([
+    prisma.$executeRawUnsafe(`DELETE FROM "Availability" WHERE "instructorId" = $1`, instructor.id),
+    ...slots.map(slot =>
+      prisma.$executeRawUnsafe(
+        `INSERT INTO "Availability" (
+          id, "instructorId", "dayOfWeek", "startTime", "endTime", "isAvailable"
+        ) VALUES (
+          gen_random_uuid(), $1, $2, $3::time, $4::time, $5
+        )`,
+        instructor.id,
+        slot.dayOfWeek,
+        slot.startTime,
+        slot.endTime,
+        slot.isAvailable
+      )
+    ),
+  ]);
+
+  return { success: true, count: slots.length };
+};
+
+const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toStr: string) => {
+  const instructorRows = await prisma.$queryRawUnsafe<Array<{ id: string; availabilityMode: string }>>(
+    `SELECT id, "availabilityMode"::text AS "availabilityMode" FROM "Instructor" WHERE "userId" = $1 LIMIT 1`,
     userId
   );
   const instructor = instructorRows[0];
@@ -189,6 +258,7 @@ const getScheduleOverviewByUserId = async (userId: string, fromStr: string, toSt
   return {
     from: fromStr,
     to: toStr,
+    availabilityMode: instructor.availabilityMode,
     calendarConnected: !!integration?.enabled,
     calendarAutoDisconnected: !!integration && !integration.enabled,
     calendarProvider: integration?.provider ?? null,
@@ -772,6 +842,8 @@ const markMyBookingComplete = async (bookingId: string, userId: string) => {
 export default {
   getInstructorProfileByUserId,
   updateInstructorProfileByUserId,
+  getInstructorScheduleByUserId,
+  replaceInstructorScheduleByUserId,
   getScheduleOverviewByUserId,
   getInstructorStudentsByUserId,
   getInstructorStatsByUserId,

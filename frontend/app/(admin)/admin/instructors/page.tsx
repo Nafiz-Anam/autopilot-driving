@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
@@ -10,6 +10,9 @@ import {
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-api";
 import ConfirmModal from "@/components/admin/ConfirmModal";
+import AvailabilityGridEditor from "@/components/shared/AvailabilityGridEditor";
+
+type AvailabilityMode = "CUSTOM_SLOTS" | "CALENDAR_SYNC";
 
 interface InstructorRecord {
   id: string;
@@ -21,6 +24,7 @@ interface InstructorRecord {
   areas: string[];
   isFemale: boolean;
   isActive: boolean;
+  availabilityMode: AvailabilityMode;
   user: { id: string; name: string | null; email: string; phone: string | null; image: string | null };
   _count: { bookings: number };
 }
@@ -64,10 +68,14 @@ function InstructorModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState<"profile" | "schedule">("profile");
+  const [mode, setMode] = useState<AvailabilityMode>("CUSTOM_SLOTS");
 
   useEffect(() => {
     if (open) {
       setError("");
+      setActiveTab("profile");
+      if (editInstructor) setMode(editInstructor.availabilityMode);
       setForm(
         editInstructor
           ? {
@@ -86,6 +94,20 @@ function InstructorModal({
       );
     }
   }, [open, editInstructor]);
+
+  const fetchSchedule = useCallback(
+    () => adminApiFetch(`/instructors/${editInstructor?.id}/schedule`),
+    [editInstructor?.id]
+  );
+  const saveSchedule = useCallback(
+    (slots: unknown) =>
+      adminApiFetch(`/instructors/${editInstructor?.id}/schedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slots }),
+      }),
+    [editInstructor?.id]
+  );
 
   if (!open) return null;
 
@@ -156,6 +178,7 @@ function InstructorModal({
             areas: form.areas.split(",").map((s) => s.trim()).filter(Boolean),
             isFemale: form.isFemale,
             isActive: form.isActive,
+            availabilityMode: "CUSTOM_SLOTS",
             user: { id: "", name: form.name, email: form.email, phone: form.phone || null, image: null },
             _count: { bookings: 0 },
           };
@@ -178,7 +201,18 @@ function InstructorModal({
             <X className="w-4 h-4" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+        {editInstructor && (
+          <div className="flex border-b border-brand-border shrink-0 px-6">
+            {(["profile", "schedule"] as const).map((tab) => (
+              <button key={tab} type="button" onClick={() => setActiveTab(tab)}
+                className={cn("px-4 py-2.5 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px",
+                  activeTab === tab ? "border-brand-red text-brand-red" : "border-transparent text-brand-muted hover:text-brand-black")}>
+                {tab}
+              </button>
+            ))}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto" style={{ display: activeTab === "profile" ? undefined : "none" }}>
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>}
 
           <p className="text-xs font-bold text-brand-muted uppercase tracking-wide">Account</p>
@@ -271,6 +305,34 @@ function InstructorModal({
             </button>
           </div>
         </form>
+
+        {editInstructor && activeTab === "schedule" && (
+          <div className="p-6 overflow-y-auto flex-1">
+            <div className="mb-4 flex items-center gap-2 text-xs">
+              <span className="text-brand-muted">Availability mode:</span>
+              <span className="font-semibold text-brand-black px-2 py-0.5 rounded-lg bg-brand-surface border border-brand-border">
+                {mode === "CUSTOM_SLOTS" ? "Custom Slots" : "Calendar Sync"}
+              </span>
+              <span className="text-brand-muted">— set by the instructor, not editable here.</span>
+            </div>
+            {mode === "CALENDAR_SYNC" ? (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 text-xs text-blue-800">
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  This instructor uses calendar-based availability, so there is no weekly template to manage. Slot management
+                  is only available once the instructor switches themselves to Custom Slots mode.
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-brand-muted mb-4">
+                  Students book against the weekly template below.
+                </p>
+                <AvailabilityGridEditor fetchSchedule={fetchSchedule} saveSchedule={saveSchedule} />
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -324,6 +386,12 @@ function InstructorDetailsModal({ instructor, onClose }: { instructor: Instructo
             <div>
               <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Bookings</p>
               <p className="font-semibold text-brand-black">{instructor._count.bookings}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-brand-muted uppercase tracking-wide mb-0.5">Availability Mode</p>
+              <p className="font-semibold text-brand-black">
+                {instructor.availabilityMode === "CUSTOM_SLOTS" ? "Custom Slots" : "Calendar Sync"}
+              </p>
             </div>
           </div>
           {instructor.areas.length > 0 && (

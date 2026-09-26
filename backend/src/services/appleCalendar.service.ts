@@ -3,6 +3,7 @@ import moment from 'moment-timezone';
 import prisma from '../client';
 import { encrypt, decrypt } from '../utils/tokenEncryption';
 import { LONDON_TZ } from '../utils/instructorAvailability';
+import instructorAvailabilityModeService from './instructorAvailabilityMode.service';
 
 const PROVIDER = 'apple_ics';
 const SOURCE = 'apple_ics';
@@ -203,6 +204,7 @@ export async function disconnect(userId: string): Promise<void> {
       where: { instructorId, source: SOURCE },
     });
   }
+  await instructorAvailabilityModeService.autoFlipToCustomSlotsIfNeeded(userId);
 }
 
 /**
