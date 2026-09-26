@@ -45,10 +45,16 @@ ENV TZ=Europe/London
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/package.json ./package.json
+# .next/cache is written at runtime (ISR + image optimizer cache) by the
+# nextjs user — must exist and be owned by it before USER switches below,
+# otherwise every cache write (incl. /_next/image) fails with EACCES and
+# the requested image/page comes back broken.
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next
+
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 USER nextjs
 
