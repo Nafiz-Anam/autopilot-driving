@@ -6,6 +6,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { instructorApiFetch } from "@/lib/instructor-api";
 import AvailabilityGridEditor from "@/components/shared/AvailabilityGridEditor";
+import ConfirmModal from "@/components/shared/ConfirmModal";
 
 type AvailabilityMode = "CUSTOM_SLOTS" | "CALENDAR_SYNC";
 
@@ -214,6 +215,8 @@ export default function InstructorSchedulePage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [modeSaving, setModeSaving] = useState(false);
+  const [pendingMode, setPendingMode] = useState<AvailabilityMode | null>(null);
+  const [forceConfirmMode, setForceConfirmMode] = useState<AvailabilityMode | null>(null);
 
   const range = useMemo(() => {
     if (view === "week") {
@@ -281,9 +284,7 @@ export default function InstructorSchedulePage() {
         body: JSON.stringify({ availabilityMode: next, force }),
       });
       if (res.status === 409) {
-        if (window.confirm("You have no available slots configured, so students won't be able to book you. Switch anyway?")) {
-          return handleSetMode(next, true);
-        }
+        setForceConfirmMode(next);
         return;
       }
       if (!res.ok) {
@@ -343,14 +344,20 @@ export default function InstructorSchedulePage() {
 
         {section === "availability" && (
           <div className="bg-white rounded-2xl border border-brand-border shadow-sm p-5">
-            {/* Mode toggle */}
-            <div className="flex items-center gap-2 mb-4 p-1 bg-brand-surface rounded-xl w-fit">
+            {/* Mode switch — not a view tab; picking an option changes how booking works */}
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted mb-2">
+              Availability source
+            </p>
+            <div className="flex items-center gap-2 mb-4 p-1 bg-brand-surface rounded-xl w-fit border border-brand-border">
               {(["CUSTOM_SLOTS", "CALENDAR_SYNC"] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
                   disabled={modeSaving}
-                  onClick={() => handleSetMode(m)}
+                  onClick={() => {
+                    if (m === data?.availabilityMode) return;
+                    setPendingMode(m);
+                  }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     data?.availabilityMode === m ? "bg-white text-brand-black shadow-sm" : "text-brand-muted hover:text-brand-black"
                   }`}
@@ -520,6 +527,38 @@ export default function InstructorSchedulePage() {
       {selectedBooking && (
         <BookingDetailsModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
       )}
+
+      <ConfirmModal
+        open={!!pendingMode}
+        variant="warning"
+        title={pendingMode === "CALENDAR_SYNC" ? "Switch to Calendar Sync?" : "Switch to Custom Slots?"}
+        message={
+          pendingMode === "CALENDAR_SYNC"
+            ? "Your weekly template will be ignored. Availability will instead follow the free/busy blocks from your connected calendar."
+            : "Your connected calendar will stop controlling availability. Students will book against your custom weekly template instead."
+        }
+        confirmLabel="Switch"
+        onConfirm={() => {
+          const next = pendingMode;
+          setPendingMode(null);
+          if (next) handleSetMode(next);
+        }}
+        onCancel={() => setPendingMode(null)}
+      />
+
+      <ConfirmModal
+        open={!!forceConfirmMode}
+        variant="warning"
+        title="No availability configured"
+        message="You have no available slots configured, so students won't be able to book you. Switch anyway?"
+        confirmLabel="Switch anyway"
+        onConfirm={() => {
+          const next = forceConfirmMode;
+          setForceConfirmMode(null);
+          if (next) handleSetMode(next, true);
+        }}
+        onCancel={() => setForceConfirmMode(null)}
+      />
     </div>
   );
 }

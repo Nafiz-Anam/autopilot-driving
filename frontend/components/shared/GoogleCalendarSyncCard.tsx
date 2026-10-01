@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, LinkIcon, Unlink, CheckCircle2, AlertCircle } from "lucide-react";
 import { backendApiUrl } from "@/lib/backend-api";
 import { getNextAuthBridgeHeaders, getNextAuthBridgeToken } from "@/lib/backend-auth-fetch";
+import ConfirmModal from "@/components/shared/ConfirmModal";
 
 type Status = {
   connected: boolean;
@@ -37,6 +38,7 @@ export function GoogleCalendarSyncCard({ role }: Props) {
   const [connectHref, setConnectHref] = useState<string | null>(null);
   const [busy, setBusy] = useState<false | "connecting" | "disconnecting" | "resyncing">(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "err"; msg: string } | null>(null);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   const load = useCallback(async () => {
     setLoadError(false);
@@ -80,7 +82,7 @@ export function GoogleCalendarSyncCard({ role }: Props) {
   }, []);
 
   async function disconnect() {
-    if (!confirm("Disconnect Google Calendar? Future lessons will stop syncing to your calendar.")) return;
+    setConfirmDisconnect(false);
     setBusy("disconnecting");
     try {
       const headers = await getNextAuthBridgeHeaders();
@@ -175,7 +177,7 @@ export function GoogleCalendarSyncCard({ role }: Props) {
               Resync now
             </button>
             <button
-              onClick={disconnect}
+              onClick={() => setConfirmDisconnect(true)}
               disabled={!!busy}
               className="flex items-center justify-center gap-2 px-3 py-2.5 border border-red-200 text-red-700 text-xs font-semibold rounded-xl hover:bg-red-50 transition-colors disabled:opacity-60"
             >
@@ -207,6 +209,16 @@ export function GoogleCalendarSyncCard({ role }: Props) {
       ) : (
         <p className="text-xs text-brand-muted text-center py-2">Sign-in required</p>
       )}
+
+      <ConfirmModal
+        open={confirmDisconnect}
+        variant="warning"
+        title="Disconnect Google Calendar?"
+        message="Future lessons will stop syncing to your calendar."
+        confirmLabel="Disconnect"
+        onConfirm={disconnect}
+        onCancel={() => setConfirmDisconnect(false)}
+      />
     </div>
   );
 }

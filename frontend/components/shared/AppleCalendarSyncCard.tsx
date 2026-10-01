@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, LinkIcon, Unlink, CheckCircle2, AlertCircle, Apple, Info } from "lucide-react";
 import { backendApiFetch } from "@/lib/backend-auth-fetch";
+import ConfirmModal from "@/components/shared/ConfirmModal";
 
 type Status = {
   connected: boolean;
@@ -23,6 +24,7 @@ export function AppleCalendarSyncCard({ role }: Props) {
   const [busy, setBusy] = useState<false | "connecting" | "disconnecting" | "resyncing">(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "err"; msg: string } | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   const load = useCallback(async () => {
     setLoadError(false);
@@ -62,7 +64,7 @@ export function AppleCalendarSyncCard({ role }: Props) {
   }
 
   async function disconnect() {
-    if (!confirm("Disconnect Apple Calendar? Existing blocks will be removed.")) return;
+    setConfirmDisconnect(false);
     setBusy("disconnecting");
     try {
       await backendApiFetch("/integrations/apple-calendar/disconnect", { method: "DELETE" });
@@ -145,7 +147,7 @@ export function AppleCalendarSyncCard({ role }: Props) {
               Resync now
             </button>
             <button
-              onClick={disconnect}
+              onClick={() => setConfirmDisconnect(true)}
               disabled={!!busy}
               className="flex items-center justify-center gap-2 px-3 py-2.5 border border-red-200 text-red-700 text-xs font-semibold rounded-xl hover:bg-red-50 transition-colors disabled:opacity-60"
             >
@@ -218,6 +220,16 @@ export function AppleCalendarSyncCard({ role }: Props) {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmDisconnect}
+        variant="warning"
+        title="Disconnect Apple Calendar?"
+        message="Existing blocks will be removed."
+        confirmLabel="Disconnect"
+        onConfirm={disconnect}
+        onCancel={() => setConfirmDisconnect(false)}
+      />
     </div>
   );
 }
