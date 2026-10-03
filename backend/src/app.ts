@@ -105,6 +105,10 @@ app.post(
 );
 
 // ── Body parsing ──────────────────────────────────────────────────────────────
+// Weekly availability save sends all 168 day x hour slots (~15kb), which is over
+// the global limit. Parse it first with a larger cap; the global parser skips
+// bodies that are already parsed.
+app.use('/v1/instructor/schedule', express.json({ limit: '256kb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
